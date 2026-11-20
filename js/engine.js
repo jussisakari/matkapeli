@@ -507,6 +507,35 @@ window.MP = window.MP || {};
         tone(1760, 0.2, 0.35, 'triangle', 0.3);
       } catch (_) {}
     },
+    // A little tune (for the band poster)
+    tune() {
+      if (!ready()) return;
+      try {
+        const notes = [523, 659, 784, 659, 880, 784, 1047];
+        notes.forEach((f, i) => tone(f, i * 0.14, 0.18, 'square', 0.12));
+      } catch (_) {}
+    },
+    // Funny "boing" for toys
+    boing() {
+      if (!ready()) return;
+      try {
+        const ac = audio.ctx;
+        const t0 = ac.currentTime;
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(300, t0);
+        osc.frequency.exponentialRampToValueAtTime(700, t0 + 0.12);
+        osc.frequency.exponentialRampToValueAtTime(400, t0 + 0.25);
+        gain.gain.setValueAtTime(0.0001, t0);
+        gain.gain.exponentialRampToValueAtTime(0.4, t0 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.3);
+        osc.connect(gain);
+        gain.connect(audio.master);
+        osc.start(t0);
+        osc.stop(t0 + 0.35);
+      } catch (_) {}
+    },
     // "Kukkokiekuu!" – four notes, the last one long and sliding down
     rooster() {
       if (!ready()) return;
