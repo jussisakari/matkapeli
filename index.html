@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Matkapeli</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="game" width="320" height="180"></canvas>
+
+  <div id="rotate-hint">
+    <div class="rotate-icon">📱↻</div>
+    <div>Käännä tabletti</div>
+  </div>
+
+  <!-- Classic scripts (not modules) so the game works from file:// -->
+  <script src="js/sprites.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/scenes/start.js"></script>
+  <script src="js/scenes/home.js"></script>
+  <script src="js/scenes/brush.js"></script>
+  <script src="js/scenes/wardrobe.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

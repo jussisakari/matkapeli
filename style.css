@@ -1,0 +1,59 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  color: #fff;
+  font-family: sans-serif;
+  /* No scrolling, zooming, text selection or tap highlight on tablets */
+  touch-action: none;
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#game {
+  display: block;
+  /* Size is set by engine.js (a whole-number multiple of 320×180) */
+  width: 320px;
+  height: 180px;
+  background: #000;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  touch-action: none;
+}
+
+#rotate-hint {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: #0b1030;
+  color: #ffe680;
+  font-size: 8vw;
+  font-weight: bold;
+  text-align: center;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4vw;
+  z-index: 10;
+}
+
+.rotate-icon {
+  font-size: 20vw;
+}
+
+/* Portrait tablet/phone: ask to turn the device */
+@media (orientation: portrait) {
+  #rotate-hint { display: flex; }
+}
