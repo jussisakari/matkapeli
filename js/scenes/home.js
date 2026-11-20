@@ -26,6 +26,11 @@ window.MP = window.MP || {};
     poster:   { x: 200, y: 38,  w: 36, h: 46 },
   };
 
+  // Waking up at the start (seconds): sleep → sit up → yawn and stretch → hop out
+  const WAKE = { sitUp: 1.6, sitDone: 2.4, yawnStart: 2.7, yawnEnd: 3.9, hop: 4.2, land: 4.8 };
+  const START_X = 102;       // where the character lands next to the bed
+  const IN_BED_SCALE = 0.9;  // a bit smaller while in bed
+
   // What the character says, and which thing the arrow points at, in each step
   const QUESTS = {
     brush: { say: 'Huomenta! Mennään pesemään hampaat.', target: 'sink' },
@@ -171,9 +176,13 @@ window.MP = window.MP || {};
       if (params && params.quest) MP.state.quest = params.quest;
       if (MP.state.quest === 'wake') MP.state.quest = 'brush';
 
-      this.player = this.player || new MP.Player(102, { minX: 12, maxX: WORLD_W - 12 });
+      this.player = this.player || new MP.Player(START_X, { minX: 12, maxX: WORLD_W - 12 });
       const q = MP.state.quest;
-      if (params && params.quest === 'wake') this.player.place(102, 1);
+      // Coming from the start screen: wake-up animation first
+      this.intro = params && params.quest === 'wake' ? { t: 0, yawned: false } : null;
+      this.introHead = { x: START_X, y: 100 };
+      this.tiredUntil = 0;
+      if (this.intro) this.player.place(START_X, 1);
       else if (q === 'dress') this.player.place(SPOTS.sink.standX, -1);
       else if (q === 'door') this.player.place(SPOTS.wardrobe.standX, 1);
 
@@ -184,7 +193,86 @@ window.MP = window.MP || {};
       this.busy = false;          // true while leaving for another scene
       this.toys = { teddy: 0, panda: 0 };
       this.notes = [];
-      this.sayQuest(0.6);
+      if (!this.intro) this.sayQuest(0.6);
+    },
+
+    // End of the wake-up animation (also when the player taps to skip it)
+    finishIntro(skipped) {
+      this.intro = null;
+      this.player.place(START_X, 1);
+      this.tiredUntil = MP.time + (skipped ? 1.5 : 3.2);
+      if (!skipped) MP.sfx.tap();
+      this.sayQuest(skipped ? 0.2 : 0.9);
+    },
+
+    // Draws the character in bed: lying, sitting up, yawning, hopping out.
+    // Called in world coordinates, right after the bed.
+    drawIntro(ctx) {
+      const t = this.intro.t;
+      const S = IN_BED_SCALE;
+      const hipX = POS.bed + 5.6, hipY = 132;   // the body turns around the hips
+
+      const blanket = () => {
+        ctx.save();
+        ctx.lineWidth = 0.8;
+        ctx.strokeStyle = MP.COLORS.outline;
+        ctx.fillStyle = MP.COLORS.blanket;
+        MP.roundRect(ctx, POS.bed - 7, 126, 30, 16, 4);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = MP.COLORS.blanketDots;
+        for (let xx = POS.bed - 3; xx < POS.bed + 22; xx += 5) {
+          ctx.beginPath(); ctx.arc(xx, 131, 0.9, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(xx + 2.5, 136.5, 0.9, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.restore();
+      };
+
+      if (t < WAKE.hop) {
+        // Lying down → sitting up (smooth turn from -90° to 0°)
+        const u = MP.clamp((t - WAKE.sitUp) / (WAKE.sitDone - WAKE.sitUp), 0, 1);
+        const angle = -Math.PI / 2 * (1 - u * u * (3 - 2 * u));
+        let eyes = t < WAKE.sitUp ? 'closed' : 'sleepy';
+        let mouth = 'flat';
+        let armUp = 0;
+        if (t >= WAKE.yawnStart && t < WAKE.yawnEnd) {
+          const k = Math.sin(MP.clamp((t - WAKE.yawnStart) / (WAKE.yawnEnd - WAKE.yawnStart), 0, 1) * Math.PI);
+          armUp = k;
+          eyes = 'closed';
+          mouth = k > 0.3 ? 'yawn' : 'flat';
+        }
+        ctx.save();
+        ctx.translate(hipX, hipY);
+        ctx.rotate(angle);
+        MP.drawPerson(ctx, 0, 12 * S, { scale: S, eyes, mouth, armUp });
+        ctx.restore();
+        blanket();
+
+        const d = 29 * S; // from the hips to just above the head
+        this.introHead = { x: hipX + d * Math.sin(angle), y: hipY - d * Math.cos(angle) };
+
+        // Floating "z z z" while sleeping
+        if (t < WAKE.sitUp) {
+          for (let i = 0; i < 3; i++) {
+            const p = (t * 0.7 + i / 3) % 1;
+            ctx.save();
+            ctx.globalAlpha = 1 - p;
+            MP.drawText(ctx, 'z', POS.bed - 12 + p * 12, 116 - p * 22, {
+              size: 0.7 + p * 0.6, color: '#4a78c8', outline: '#ffffff',
+            });
+            ctx.restore();
+          }
+        }
+      } else {
+        // Hop out of bed onto the floor
+        const u = MP.clamp((t - WAKE.hop) / (WAKE.land - WAKE.hop), 0, 1);
+        blanket();
+        const x = MP.lerp(hipX, START_X, u);
+        const y = MP.lerp(hipY + 12 * S, FLOOR, u) - Math.sin(u * Math.PI) * 12;
+        const sc = MP.lerp(S, 1, u);
+        MP.drawPerson(ctx, x, y, { scale: sc, eyes: 'sleepy', mouth: 'flat', walking: true, walkTime: t });
+        this.introHead = { x, y: y - 44 * sc };
+      }
     },
 
     cameraTarget() {
@@ -234,6 +322,12 @@ window.MP = window.MP || {};
     onTap(x, y) {
       if (this.busy) return;
 
+      // Tap during the wake-up animation skips it
+      if (this.intro) {
+        this.finishIntro(true);
+        return;
+      }
+
       // The "Jatkuu pian…" panel: tap closes it
       if (this.panel) {
         if (MP.time - this.panel.from > 0.5) {
@@ -274,6 +368,17 @@ window.MP = window.MP || {};
     },
 
     update(dt) {
+      if (this.intro) {
+        this.intro.t += dt;
+        if (this.intro.t >= WAKE.yawnStart && !this.intro.yawned) {
+          this.intro.yawned = true;
+          MP.sfx.yawn();
+          this.say('Hoh-hoijaa…', WAKE.yawnEnd - WAKE.yawnStart);
+        }
+        if (this.intro.t >= WAKE.land) this.finishIntro(false);
+        return;
+      }
+
       this.player.update(dt);
 
       // Walking to the sink is enough to start brushing
@@ -297,13 +402,30 @@ window.MP = window.MP || {};
       ctx.save();
       ctx.translate(-cam, 0);
 
-      // --- Bedroom ---
+      // --- Walls and floors of all three rooms ---
       dottedWall(ctx, 0, '#fbe3c8', 'rgba(230,170,130,0.35)');
       woodFloor(ctx, 0, 320);
+      tiledWall(ctx, 320);
+      tileFloor(ctx, 320, 320);
+      stripedWall(ctx, 640);
+      woodFloor(ctx, 640, 320);
+
+      // Ceiling and skirting boards (drawn BEFORE the furniture, so they stay behind it)
+      ctx.fillStyle = '#6e4226';
+      ctx.fillRect(0, 0, WORLD_W, 5);
+      ctx.fillStyle = '#e8c9a0'; ctx.fillRect(0, FLOOR - 3, 320, 3);
+      ctx.fillStyle = '#b8d3dc'; ctx.fillRect(320, FLOOR - 3, 320, 3);
+      ctx.fillStyle = '#c9d6b5'; ctx.fillRect(640, FLOOR - 3, 320, 3);
+      ctx.strokeStyle = 'rgba(43,35,64,0.5)';
+      ctx.lineWidth = 0.5;
+      ctx.beginPath(); ctx.moveTo(0, FLOOR); ctx.lineTo(WORLD_W, FLOOR); ctx.stroke();
+
+      // --- Bedroom ---
       rug(ctx, 150);
       MP.draw('window', ctx, POS.window - 15, 34, { t });
       MP.draw('poster', ctx, POS.poster, 38);
       MP.draw('bed', ctx, POS.bed, FLOOR);
+      if (this.intro) this.drawIntro(ctx);
       for (const toy of ['teddy', 'panda']) {
         const u = (t - this.toys[toy]) / 0.45;
         const hop = u >= 0 && u < 1 ? -Math.sin(u * Math.PI) * 7 : 0;
@@ -312,26 +434,18 @@ window.MP = window.MP || {};
       MP.draw('ball', ctx, POS.ball, FLOOR, { r: 4 });
 
       // --- Bathroom ---
-      tiledWall(ctx, 320);
-      tileFloor(ctx, 320, 320);
       MP.draw('toilet', ctx, POS.toilet, FLOOR);
       MP.draw('mirror', ctx, POS.mirror, 98);
       MP.draw('sink', ctx, POS.sink, FLOOR);
       towel(ctx, POS.towel);
 
       // --- Hallway ---
-      stripedWall(ctx, 640);
-      woodFloor(ctx, 640, 320);
       MP.draw('wardrobe', ctx, POS.wardrobe, FLOOR);
       coatHooks(ctx, POS.hooks);
       doormat(ctx, POS.door);
       MP.draw('door', ctx, POS.door, FLOOR, { open: this.doorOpen });
 
-      // Ceiling, skirting board and the walls between rooms
-      ctx.fillStyle = '#6e4226';
-      ctx.fillRect(0, 0, WORLD_W, 5);
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, FLOOR - 3, WORLD_W, 3);
+      // Walls between the rooms
       partition(ctx, 320);
       partition(ctx, 640);
 
@@ -363,13 +477,21 @@ window.MP = window.MP || {};
         }
       }
 
-      // --- The character ---
-      this.player.draw(ctx, FLOOR, cam);
+      // --- The character (still a bit tired right after waking up) ---
+      if (!this.intro) {
+        let extra = null;
+        if (t < this.tiredUntil) {
+          const blink = (t % 1.3) < 0.18;
+          extra = { eyes: blink ? 'closed' : 'sleepy', mouth: 'flat' };
+        }
+        this.player.draw(ctx, FLOOR, cam, extra);
+      }
 
       // --- Speech bubble over the head ---
       const b = this.bubble;
       if (b && t >= b.from && t < b.until) {
-        MP.drawBubble(ctx, b.text, this.player.x - cam, FLOOR - 46, { maxWidth: 120 });
+        const head = this.intro ? this.introHead : { x: this.player.x, y: FLOOR - 46 };
+        MP.drawBubble(ctx, b.text, head.x - cam, head.y, { maxWidth: 120 });
       }
 
       // --- "Jatkuu pian…" panel ---

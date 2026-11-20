@@ -63,11 +63,12 @@ MP.Player = class {
   }
 
   // floorY = where the feet are. camX = how far the camera has scrolled.
-  draw(ctx, floorY, camX) {
-    MP.drawPerson(ctx, this.x - (camX || 0), floorY, {
+  // extra = more drawPerson options, e.g. { eyes: 'sleepy' }
+  draw(ctx, floorY, camX, extra) {
+    MP.drawPerson(ctx, this.x - (camX || 0), floorY, Object.assign({
       walking: this.walking,
       walkTime: this.walkTime,
       flip: this.facing < 0,
-    });
+    }, extra));
   }
 };

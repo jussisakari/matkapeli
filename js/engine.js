@@ -507,6 +507,34 @@ window.MP = window.MP || {};
         tone(1760, 0.2, 0.35, 'triangle', 0.3);
       } catch (_) {}
     },
+    // Sleepy yawn: a wobbly sliding-down sound
+    yawn() {
+      if (!ready()) return;
+      try {
+        const ac = audio.ctx;
+        const t0 = ac.currentTime;
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        const lfo = ac.createOscillator();
+        const lfoGain = ac.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(420, t0);
+        osc.frequency.exponentialRampToValueAtTime(220, t0 + 0.9);
+        lfo.frequency.value = 6;
+        lfoGain.gain.value = 12;
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc.frequency);
+        gain.gain.setValueAtTime(0.0001, t0);
+        gain.gain.exponentialRampToValueAtTime(0.25, t0 + 0.15);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.0);
+        osc.connect(gain);
+        gain.connect(audio.master);
+        osc.start(t0);
+        lfo.start(t0);
+        osc.stop(t0 + 1.05);
+        lfo.stop(t0 + 1.05);
+      } catch (_) {}
+    },
     // A little tune (for the band poster)
     tune() {
       if (!ready()) return;

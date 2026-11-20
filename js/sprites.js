@@ -199,7 +199,8 @@ MP.findItem = function (slot, id) {
 
   // =========================================================================
   // PERSON
-  // MP.drawPerson(ctx, x, y, { character, outfit, walking, walkTime, flip, scale, hair })
+  // MP.drawPerson(ctx, x, y, { character, outfit, walking, walkTime, flip, scale, hair,
+  //                            eyes, mouth, armUp })
   //   (x, y) = between the feet. About 42 units tall at scale 1.
   //   character/outfit default to the player's choices in MP.state.
   // =========================================================================
@@ -311,7 +312,9 @@ MP.findItem = function (slot, id) {
     for (const side of [-1, 1]) {
       c.save();
       c.translate(side * 5.6, -21.5);
-      c.rotate(side * 0.18 - side * sw * 0.45);
+      const rest = side * 0.18 - side * sw * 0.45;
+      const up = -side * (Math.PI - 0.35);            // arms stretched up
+      c.rotate(rest + (up - rest) * (opts.armUp || 0));
       rr(c, -1.7, 0, 3.4, 8.5, 1.7); fs(c, arms);
       if (kind === 'pharaoh') { rr(c, -1.9, 2.5, 3.8, 1.4, 0.7); fs(c, suit.gold); } // arm band
       circle(c, 0, 9.4, 1.8); fs(c, hands);
@@ -378,17 +381,40 @@ MP.findItem = function (slot, id) {
 
     // Head
     circle(c, 0, -30.5, 7.6); fs(c, C.skin);
-    // Face: eyes, shine, cheeks, smile
-    c.fillStyle = C.outline;
-    ellipse(c, -2.7, -30, 0.95, 1.35); c.fill();
-    ellipse(c, 2.7, -30, 0.95, 1.35); c.fill();
-    c.fillStyle = '#fff';
-    circle(c, -2.4, -30.5, 0.35); c.fill();
-    circle(c, 3.0, -30.5, 0.35); c.fill();
+    // Face. opts.eyes: 'open' (default), 'sleepy', 'closed'
+    //       opts.mouth: 'smile' (default), 'yawn', 'flat'
+    const eyes = opts.eyes || 'open';
+    for (const sd of [-1, 1]) {
+      const ex = sd * 2.7;
+      if (eyes === 'closed') {
+        c.beginPath();
+        c.moveTo(ex - 1.1, -30.2);
+        c.quadraticCurveTo(ex, -29, ex + 1.1, -30.2);
+        c.stroke();
+      } else if (eyes === 'sleepy') {
+        c.fillStyle = C.outline;
+        c.beginPath(); c.ellipse(ex, -30, 0.95, 1.35, 0, 0, Math.PI); c.fill();   // lower half only
+        c.beginPath(); c.moveTo(ex - 1.3, -30.1); c.lineTo(ex + 1.3, -30.1); c.stroke(); // heavy eyelid
+      } else {
+        c.fillStyle = C.outline;
+        ellipse(c, ex, -30, 0.95, 1.35); c.fill();
+        c.fillStyle = '#fff';
+        circle(c, ex + 0.3, -30.5, 0.35); c.fill();
+      }
+    }
     c.fillStyle = C.cheeks;
     circle(c, -4.6, -27.6, 1.4); c.fill();
     circle(c, 4.6, -27.6, 1.4); c.fill();
-    c.beginPath(); c.arc(0, -28, 1.9, 0.2 * Math.PI, 0.8 * Math.PI); c.stroke();
+    const mouth = opts.mouth || 'smile';
+    if (mouth === 'yawn') {
+      ellipse(c, 0, -26.8, 1.5, 2); fs(c, '#7a2e3a');
+      c.fillStyle = '#ff8fa3';
+      ellipse(c, 0, -25.6, 0.9, 0.6); c.fill();
+    } else if (mouth === 'flat') {
+      c.beginPath(); c.moveTo(-1.1, -27.4); c.lineTo(1.1, -27.4); c.stroke();
+    } else {
+      c.beginPath(); c.arc(0, -28, 1.9, 0.2 * Math.PI, 0.8 * Math.PI); c.stroke();
+    }
 
     if (kind === 'pharaoh') {
       // Striped headdress, gold band and a little snake on the forehead
