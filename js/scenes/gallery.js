@@ -13,10 +13,11 @@ MP.scenes.gallery = {
   enter() {
     const vis = (slot) => MP.CLOTHES[slot].filter((it) => !it.hidden);
     this.outfits = [{ shirt: 'pyjama', bottom: 'pyjama', hat: 'none' }];
+    // Costumes first, so they are easy to see
+    for (const k of MP.CLOTHES.costume) if (k.id !== 'none') this.outfits.push({ costume: k.id });
     for (const s of vis('shirt')) for (const b of vis('bottom')) for (const h of vis('hat')) {
       this.outfits.push({ shirt: s.id, bottom: b.id, hat: h.id });
     }
-    for (const k of MP.CLOTHES.costume) if (k.id !== 'none') this.outfits.push({ costume: k.id });
   },
 
   onTap() {

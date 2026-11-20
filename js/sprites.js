@@ -86,6 +86,8 @@ MP.CLOTHES = {
       gloves: '#2ec4c4', web: '#c9b8e8', hood: '#ffffff', hoodInner: '#ff8fc0' },
     { id: 'iron',    name: 'Rautasankari', type: 'iron', top: '#c62828', legs: '#c62828', boots: '#f2c230',
       gold: '#f2c230', glow: '#bff3ff' },
+    { id: 'panther', name: 'Pantterisankari', type: 'panther', top: '#1c1c24', legs: '#1c1c24', boots: '#1c1c24',
+      accent: '#b8a2e0', silver: '#d8dde6' },
     { id: 'pharaoh', name: 'Faarao',       top: '#f4efe1', kilt: '#f4efe1', boots: '#c8913a',
       gold: '#f2c230', blue: '#2f5fb5', red: '#d33a3a' },
     { id: 'mermaid', name: 'Merenneito',   top: '#b46be0', legs: '#2bb3a3', scales: '#1d7f74',
@@ -262,11 +264,12 @@ MP.findItem = function (slot, id) {
     // Indoors (outfit.shoes === false) we wear socks – no shoes inside in Finland!
     const socks = !suit && outfit.shoes === false;
     const sit = !!opts.sit;             // sitting (legs shorter, lap shows)
-    const hands = kind === 'spider' ? (suit.gloves || suit.top) : kind === 'iron' ? suit.top : C.skin;
+    const hands = kind === 'spider' ? (suit.gloves || suit.top)
+      : (kind === 'iron' || kind === 'panther') ? suit.top : C.skin;
     const arms = (kind === 'pharaoh' || kind === 'mermaid') ? C.skin : top;
     const isGirl = charId === 'girl';
     const hairColor = opts.hair || ch.hair;
-    const showHair = kind !== 'spider' && kind !== 'pharaoh' && kind !== 'iron';
+    const showHair = kind !== 'spider' && kind !== 'pharaoh' && kind !== 'iron' && kind !== 'panther';
 
     const t = opts.walkTime || 0;
     const sw = opts.walking ? Math.sin(t * 11) : 0;
@@ -368,7 +371,7 @@ MP.findItem = function (slot, id) {
     // Body / shirt
     rr(c, -6, -23.5, 12, 11, 3.5); fs(c, top);
     const stripe = !suit && shirt.stripe;
-    if (stripe || kind === 'spider' || kind === 'pharaoh' || kind === 'iron') {
+    if (stripe || kind === 'spider' || kind === 'pharaoh' || kind === 'iron' || kind === 'panther') {
       c.save();
       rr(c, -6, -23.5, 12, 11, 3.5); c.clip();
       if (stripe) {
@@ -376,6 +379,15 @@ MP.findItem = function (slot, id) {
         for (let yy = -22; yy < -12; yy += 2.6) c.fillRect(-7, yy, 14, 1.2);
       } else if (kind === 'spider') {
         web(c, 0, -18.5, 9, suit.web, 0.35);
+      } else if (kind === 'panther') {
+        // silver-lilac V stripes
+        c.save();
+        c.strokeStyle = suit.accent; c.lineWidth = 0.5;
+        c.beginPath();
+        c.moveTo(-6, -20.5); c.lineTo(0, -14.5); c.lineTo(6, -20.5);
+        c.moveTo(-6, -17); c.lineTo(0, -11); c.lineTo(6, -17);
+        c.stroke();
+        c.restore();
       } else if (kind === 'iron') {
         // gold belly plate
         c.fillStyle = suit.gold;
@@ -409,6 +421,34 @@ MP.findItem = function (slot, id) {
       for (const side of [-1, 1]) {
         striped(c, () => rr(c, side * 7.8 - 1.9, -30, 3.8, 12.5, 1.5), suit.gold, suit.blue, 1.6);
       }
+    }
+
+    if (kind === 'panther') {
+      // Silver necklace of little claws
+      for (let i = -2; i <= 2; i++) {
+        const nx = i * 2.1, ny = -22.6 + Math.abs(i) * -0.35;
+        c.beginPath(); c.moveTo(nx - 0.8, ny); c.lineTo(nx + 0.8, ny); c.lineTo(nx, ny + 2); c.closePath();
+        c.fillStyle = suit.silver; c.fill(); c.lineWidth = 0.35; c.stroke(); c.lineWidth = 0.7;
+      }
+      // Mask with little cat ears and white eyes
+      for (const sd of [-1, 1]) {
+        c.beginPath(); c.moveTo(sd * 3, -36.6); c.lineTo(sd * 6.3, -39.8); c.lineTo(sd * 6.8, -34.2); c.closePath();
+        fs(c, suit.top);
+      }
+      circle(c, 0, -30.5, 7.6); fs(c, suit.top);
+      c.save();
+      c.strokeStyle = suit.accent; c.lineWidth = 0.45;
+      c.beginPath();
+      c.moveTo(-4.5, -36); c.lineTo(0, -32.5); c.lineTo(4.5, -36);
+      c.moveTo(0, -32.5); c.lineTo(0, -28);
+      c.stroke();
+      c.restore();
+      for (const sd of [-1, 1]) {
+        ellipse(c, sd * 3, -30.6, 1.9, 1, -sd * 0.35);
+        c.fillStyle = '#ffffff'; c.fill(); c.lineWidth = 0.8; c.stroke(); c.lineWidth = 0.7;
+      }
+      c.restore();
+      return;
     }
 
     if (kind === 'iron') {
