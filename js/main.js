@@ -2,94 +2,82 @@
 window.MP = window.MP || {};
 
 // ---------------------------------------------------------------------------
-// TEST SCENES for milestone 1 (they are replaced by the real start screen in
-// milestone 3). They show the pixel font, a speech bubble, where taps land,
-// drag trails, sounds and the fade between scenes.
+// TEST SCENE for milestone 2 (replaced by the real start screen in milestone 3).
+// Shows every sprite, and the girl and boy in different clothes.
+// Tap the big character to try the next outfit.
 // ---------------------------------------------------------------------------
-MP.scenes.test = {
-  taps: [],
-  trail: [],
-  button: { x: 236, y: 152, w: 76, h: 20 },
+MP.scenes.gallery = {
+  outfitIndex: 0,
+  outfits: [],
 
   enter() {
-    this.taps = [];
-    this.trail = [];
-  },
-
-  onPointerDown(x, y) {
-    this.trail = [{ x, y }];
-  },
-
-  onPointerMove(x, y) {
-    this.trail.push({ x, y });
-    MP.sfx.brush();
+    // Every combination of visible clothes (pyjamas first)
+    const vis = (slot) => MP.CLOTHES[slot].filter((it) => !it.hidden || slot === 'hat');
+    this.outfits = [{ shirt: 'pyjama', bottom: 'pyjama', hat: 'none' }];
+    for (const s of vis('shirt')) for (const b of vis('bottom')) for (const h of vis('hat')) {
+      this.outfits.push({ shirt: s.id, bottom: b.id, hat: h.id });
+    }
   },
 
   onTap(x, y) {
-    if (MP.hit(this.button, x, y)) {
-      MP.sfx.bling();
-      MP.goTo(MP.scenes.test2);
-      return;
-    }
     MP.sfx.tap();
-    this.taps.push({ x, y, t: MP.time });
-  },
-
-  update() {
-    // Taps disappear after 2 seconds
-    this.taps = this.taps.filter((p) => MP.time - p.t < 2);
+    this.outfitIndex = (this.outfitIndex + 1) % this.outfits.length;
   },
 
   draw(ctx) {
-    ctx.fillStyle = '#1b2a5a';
+    ctx.fillStyle = '#cfe7f5';
     ctx.fillRect(0, 0, MP.W, MP.H);
+    ctx.fillStyle = '#e8c9a0';
+    ctx.fillRect(0, 150, MP.W, 30);
 
-    MP.drawText(ctx, 'Hei Ella ÄÖ', MP.W / 2, 8, { size: 2, color: '#ffe680', shadow: '#b8860b', align: 'center' });
-    MP.drawText(ctx, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ ÅÄÖ', MP.W / 2, 32, { align: 'center' });
-    MP.drawText(ctx, "0123456789 !?.,:-' …", MP.W / 2, 42, { align: 'center' });
+    const walk = Math.floor(MP.time / 0.15) % 2;
 
-    // A placeholder "character" with a speech bubble
-    ctx.fillStyle = '#f2c9a0';
-    ctx.fillRect(60, 128, 12, 24);
-    MP.drawBubble(ctx, 'Huomenta! Mennään pesemään hampaat.', 66, 124, { maxWidth: 110 });
+    // Row 1: characters
+    MP.drawCharacter(ctx, 12, 34, { character: 'girl', outfit: {} });
+    MP.drawCharacter(ctx, 32, 34, { character: 'girl', outfit: {}, frame: walk });
+    MP.drawCharacter(ctx, 52, 34, { character: 'girl', outfit: { shirt: 'red', bottom: 'jeans', hat: 'cap' }, flip: true });
+    MP.drawCharacter(ctx, 72, 34, { character: 'girl', outfit: { shirt: 'sailor', bottom: 'skirtPink', hat: 'sunhat' } });
+    MP.drawCharacter(ctx, 92, 34, { character: 'girl', outfit: { shirt: 'yellow', bottom: 'skirtPurple', hat: 'beanie' }, frame: walk });
+    MP.drawCharacter(ctx, 116, 34, { character: 'boy', outfit: {} });
+    MP.drawCharacter(ctx, 136, 34, { character: 'boy', outfit: { shirt: 'green', bottom: 'brown', hat: 'beanie' }, frame: walk });
+    MP.drawCharacter(ctx, 156, 34, { character: 'boy', outfit: { shirt: 'sailor', bottom: 'jeans', hat: 'cap' }, flip: true });
 
-    MP.drawText(ctx, 'Napauta tai vedä!', 200, 100, { align: 'center', color: '#9fd3ff' });
-    MP.drawText(ctx, 'Skaala ' + MP.pixelScale, 4, 170, { color: '#8899cc' });
+    // Big character: tap to change clothes
+    const o = this.outfits[this.outfitIndex];
+    MP.drawCharacter(ctx, 290, 92, { character: 'girl', outfit: o, scale: 3 });
+    MP.drawText(ctx, (this.outfitIndex + 1) + '/' + this.outfits.length, 290, 96, { align: 'center', color: '#1a1a2e' });
 
-    // Drag trail
-    ctx.fillStyle = '#00e5ff';
-    for (const p of this.trail) ctx.fillRect(Math.floor(p.x), Math.floor(p.y), 1, 1);
+    // Row 2: furniture standing on the floor (y = 150)
+    // Window shows sky + sun behind the see-through glass
+    ctx.fillStyle = '#7ec8ff';
+    ctx.fillRect(4, 42, 24, 20);
+    MP.drawSprite(ctx, 'sun', 14, 45);
+    MP.drawSprite(ctx, 'window', 4, 40);
+    MP.drawSprite(ctx, 'bed', 4, 150 - 18);
+    MP.drawSprite(ctx, 'teddy', 48, 150 - 14);
+    MP.drawSprite(ctx, 'ball', 62, 150 - 8);
+    MP.drawSprite(ctx, 'toilet', 74, 150 - 19);
+    MP.drawSprite(ctx, 'mirror', 94, 92);
+    MP.drawSprite(ctx, 'sink', 92, 150 - 23);
+    MP.drawSprite(ctx, 'cup', 96, 150 - 23 - 11 + 1);
+    MP.drawSprite(ctx, 'wardrobe', 116, 150 - 46);
+    MP.drawSprite(ctx, 'door', 148, 150 - 42);
 
-    // Tap markers: a small cross exactly where the finger was
-    for (const p of this.taps) {
-      ctx.globalAlpha = 1 - (MP.time - p.t) / 2;
-      ctx.fillStyle = '#ffeb3b';
-      const x = Math.floor(p.x), y = Math.floor(p.y);
-      ctx.fillRect(x - 2, y, 5, 1);
-      ctx.fillRect(x, y - 2, 1, 5);
-      ctx.globalAlpha = 1;
-    }
-
-    MP.drawButton(ctx, 'Vaihda', this.button);
-  },
-};
-
-MP.scenes.test2 = {
-  button: { x: 110, y: 120, w: 100, h: 24 },
-  onTap(x, y) {
-    if (MP.hit(this.button, x, y)) {
-      MP.sfx.tap();
-      MP.goTo(MP.scenes.test);
-    }
-  },
-  draw(ctx) {
-    ctx.fillStyle = '#ffcf9e';
-    ctx.fillRect(0, 0, MP.W, MP.H);
-    MP.drawText(ctx, 'Toinen kohtaus', MP.W / 2, 50, { size: 2, color: '#7a3b00', align: 'center' });
-    MP.drawButton(ctx, 'Takaisin', this.button, { size: 1, color: '#ff8c42', shade: '#b35400' });
+    // Row 3: small things
+    ctx.fillStyle = '#0b1030';
+    ctx.fillRect(176, 106, 60, 40);
+    MP.drawSprite(ctx, 'moon', 180, 110);
+    MP.drawSprite(ctx, 'star', 196, 112);
+    MP.drawSprite(ctx, 'star', 206, 124);
+    MP.drawSprite(ctx, 'sparkle', 222, 112);
+    MP.drawSprite(ctx, 'bird', 190, 132);
+    MP.drawSprite(ctx, 'arrow', 210, 133 + Math.round(Math.sin(MP.time * 6) * 2));
+    MP.drawSprite(ctx, 'hand', 180, 156);
+    MP.drawSprite(ctx, 'toothbrush', 200, 160);
+    MP.drawSprite(ctx, 'toothbrush', 240, 166, { scale: 2 });
   },
 };
 
 // ---------------------------------------------------------------------------
 MP.load();
-MP.start(MP.scenes.test);
+MP.start(MP.scenes.gallery);
