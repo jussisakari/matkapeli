@@ -87,6 +87,7 @@ window.MP = window.MP || {};
   const PARENT_SPEED = 65;
   const STAIR_SPEED = 95;
   const TV_MAX = 30;         // seconds of TV before mom or dad switches it off
+  const HALLWAY_X = 650;     // downstairs, the hallway starts here (shoes are OK only there)
 
   // The TV view (when watching): TV in the middle, remote control on the right
   const TV_VIEW = { x: 40, y: 12, w: 236, h: 150 };
@@ -770,6 +771,32 @@ window.MP = window.MP || {};
       });
     },
 
+    // ---- Shoes are only for going out ----
+    shoesInside() {
+      if (!MP.state.outfit.shoes) return false;
+      return this.floor === 0 || this.player.x < HALLWAY_X;
+    },
+
+    shoesNotAllowed() {
+      this.player.stop();
+      const x = this.player.x;
+      const maxX = this.floor === 0 ? UP_MAX_X : WORLD_W - 10;
+      const fromLeft = x > 200;
+      const fromX = fromLeft ? Math.max(10, x - 170) : Math.min(maxX, x + 170);
+      this.callParent({
+        floorY: this.floor === 0 ? FLOOR_UP : FLOOR_DOWN,
+        fromX, standX: fromLeft ? x - 24 : x + 24, talkFor: 2.6,
+        say: 'Hei! Sisällä ei kävellä kengillä! Kengät pois.',
+        onTalk: () => {
+          MP.state.outfit.shoes = false;
+          MP.state.tasks.shoes = false;
+          MP.save();
+          MP.sfx.tap();
+        },
+        onGone: () => this.say('Ai niin! Kengät laitetaan vasta, kun lähdetään.', 3.5),
+      });
+    },
+
     // ---- Using things ----
     // Called when the character has walked to a thing
     use(id) {
@@ -962,6 +989,11 @@ window.MP = window.MP || {};
         this.updateStairs(dt);
       } else if (!this.sitting) {
         this.player.update(dt);
+      }
+
+      // Shoes on inside the house? Mom or dad comes to say it's not allowed
+      if (this.shoesInside() && !this.parent && !this.stairs && !this.visit && !this.busy) {
+        this.shoesNotAllowed();
       }
 
       // Smooth camera that stops at the ends of the house and follows up and down
