@@ -436,6 +436,7 @@ MP.findItem = function (slot, id) {
         fs(c, suit.top);
       }
       circle(c, 0, -30.5, 7.6); fs(c, suit.top);
+      if (opts.back) { c.restore(); return; }
       c.save();
       c.strokeStyle = suit.accent; c.lineWidth = 0.45;
       c.beginPath();
@@ -460,6 +461,7 @@ MP.findItem = function (slot, id) {
       circle(c, 0, -20.3, 1.9); fs(c, suit.glow);
       // Helmet with a gold face plate and glowing eyes
       circle(c, 0, -30.5, 7.8); fs(c, suit.top);
+      if (opts.back) { c.restore(); return; }
       rr(c, -5.4, -34.5, 10.8, 10.5, 3.4); fs(c, suit.gold);
       c.fillStyle = suit.glow;
       for (const sd of [-1, 1]) {
@@ -484,7 +486,7 @@ MP.findItem = function (slot, id) {
       web(c, 0, -29.5, 9.5, suit.web, 0.38);
       c.restore();
       circle(c, 0, -30.5, 7.6); c.stroke();
-      for (const sd of [-1, 1]) {
+      for (const sd of opts.back ? [] : [-1, 1]) {
         ellipse(c, sd * 3, -31, 2, 1.3, -sd * 0.55);
         c.fillStyle = '#ffffff'; c.fill();
         c.lineWidth = 0.9; c.stroke(); c.lineWidth = 0.7;
@@ -496,10 +498,14 @@ MP.findItem = function (slot, id) {
     // Head
     circle(c, 0, -30.5, 7.6); fs(c, C.skin);
     // opts.back: seen from behind – only hair, no face
-    const back = !!opts.back && showHair;
+    const back = !!opts.back;
     if (back) {
-      circle(c, 0, -30.8, 7.9); fs(c, hairColor);
-      c.beginPath(); c.arc(0.5, -34, 2.2, 0.3, Math.PI * 1.4); c.stroke();
+      if (showHair) {
+        circle(c, 0, -30.8, 7.9); fs(c, hairColor);
+        c.beginPath(); c.arc(0.5, -34, 2.2, 0.3, Math.PI * 1.4); c.stroke();
+      } else if (kind === 'pharaoh') {
+        striped(c, () => circle(c, 0, -31, 8.6), suit.gold, suit.blue, 1.6);
+      }
     } else {
     // Face. opts.eyes: 'open' (default), 'sleepy', 'closed'
     //       opts.mouth: 'smile' (default), 'yawn', 'flat'

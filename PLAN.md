@@ -61,10 +61,8 @@ matkapeli/
 7. **Going out**: tapping the front door before everything is done says "Aamutoimet on vielä kesken! Vielä: …" with the list of what's left. When all tasks are done: "Kaikki aamutoimet tehty! Nyt lähdetään ulos!", the arrow points at the door, and tapping it shows "Jatkuu pian…" (placeholder for the street).
 
 ## Later steps (not built now, just planned for)
-- `street.js`: outside the home. The camera is further away, so the **character is smaller** and you see more of the neighbourhood. Walk along the street (side-scrolling) to a **crossroad**:
-  - one way leads to the **taxi station**,
-  - the other way leads to the **outdoor playground** (leikkipuisto).
-- `playground.js`: the outdoor playground (swings, slide, sandbox…) with small things to do.
+- `street.js` (**built**): outside in **3D** (Three.js, saved in `js/lib/` so it works offline). The camera follows the character from behind; the character is our normal drawing seen from behind. **Tap to walk**; a "Käänny" button turns around. The street has houses, trees, lamps, hills and clouds. At the **crossroad** a signpost points left to the **taxi station** (tap the taxi → "Jatkuu pian… taksilla Egyptiin!") and right to the **playground** (swing and slide you ride, a roundabout that spins, a sandbox where a sand castle appears).
+- Shortcuts for testing: `index.html#ulos`, `#koti`, `#hampaat`, `#vaatekaappi`, `#aamupala`, `#galleria`.
 - `taxi.js`: taxi ride. Choose a destination on a map (Egypt first), with a driving animation.
 - `egypt.js`: desert, pyramids, camel, a small task.
 

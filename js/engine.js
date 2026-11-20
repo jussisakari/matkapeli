@@ -216,8 +216,13 @@ window.MP = window.MP || {};
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.globalAlpha = 1;
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if (s && s.transparent) {
+      // A 3D scene is drawn on another canvas below this one
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    } else {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
     MP.gameTransform();
     ctx.imageSmoothingEnabled = true;
     try {

@@ -810,9 +810,10 @@ window.MP = window.MP || {};
       }
       if (id === 'door') {
         if (this.allDone()) {
+          // Everything done: out we go!
           this.doorOpen = true;
-          this.panel = { from: MP.time };
           MP.sfx.bling();
+          this.leave(MP.scenes.street);
         } else {
           const left = this.missing().map((k) => k.name).join(', ');
           this.say('Aamutoimet on vielä kesken! Vielä: ' + left + '.', 5);
