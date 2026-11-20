@@ -79,7 +79,13 @@ MP.CLOTHES = {
   ],
   costume: [
     { id: 'none',   name: 'Ei asua' },
-    { id: 'spider',  name: 'Hämähäkkiasu', top: '#d62828', legs: '#2b4fa8', boots: '#d62828', web: '#7a1418' },
+    { id: 'spider',  name: 'Hämähäkkiasu', type: 'spider', top: '#d62828', legs: '#2b4fa8', boots: '#d62828', web: '#7a1418' },
+    { id: 'spiderBlack', name: 'Musta hämähäkki', type: 'spider', top: '#26262e', legs: '#26262e', boots: '#d62828',
+      gloves: '#d62828', web: '#d62828', emblem: '#d62828' },
+    { id: 'spiderGhost', name: 'Aavehämähäkki', type: 'spider', top: '#ffffff', legs: '#ffffff', boots: '#2ec4c4',
+      gloves: '#2ec4c4', web: '#c9b8e8', hood: '#ffffff', hoodInner: '#ff8fc0' },
+    { id: 'iron',    name: 'Rautasankari', type: 'iron', top: '#c62828', legs: '#c62828', boots: '#f2c230',
+      gold: '#f2c230', glow: '#bff3ff' },
     { id: 'pharaoh', name: 'Faarao',       top: '#f4efe1', kilt: '#f4efe1', boots: '#c8913a',
       gold: '#f2c230', blue: '#2f5fb5', red: '#d33a3a' },
     { id: 'mermaid', name: 'Merenneito',   top: '#b46be0', legs: '#2bb3a3', scales: '#1d7f74',
@@ -206,12 +212,12 @@ MP.findItem = function (slot, id) {
     c.lineWidth = 0.7;
   }
 
-  function spiderEmblem(c, x, y, s) {
+  function spiderEmblem(c, x, y, s, color) {
     c.save();
     c.translate(x, y);
     c.scale(s, s);
-    c.fillStyle = C.outline;
-    c.strokeStyle = C.outline;
+    c.fillStyle = color || C.outline;
+    c.strokeStyle = color || C.outline;
     c.lineWidth = 0.35;
     ellipse(c, 0, 0.2, 0.6, 0.9); c.fill();
     circle(c, 0, -0.9, 0.45); c.fill();
@@ -247,7 +253,7 @@ MP.findItem = function (slot, id) {
     const hat = MP.findItem('hat', outfit.hat);
     const costume = MP.findItem('costume', outfit.costume);
     const suit = costume.id !== 'none' ? costume : null;
-    const kind = suit ? suit.id : null; // 'spider', 'pharaoh' or 'mermaid'
+    const kind = suit ? (suit.type || suit.id) : null; // 'spider', 'iron', 'pharaoh' or 'mermaid'
 
     const top = suit ? suit.top : shirt.color;
     const legs = suit ? (suit.legs || C.skin) : bottom.color;
@@ -256,11 +262,11 @@ MP.findItem = function (slot, id) {
     // Indoors (outfit.shoes === false) we wear socks – no shoes inside in Finland!
     const socks = !suit && outfit.shoes === false;
     const sit = !!opts.sit;             // sitting (legs shorter, lap shows)
-    const hands = kind === 'spider' ? suit.top : C.skin;
+    const hands = kind === 'spider' ? (suit.gloves || suit.top) : kind === 'iron' ? suit.top : C.skin;
     const arms = (kind === 'pharaoh' || kind === 'mermaid') ? C.skin : top;
     const isGirl = charId === 'girl';
     const hairColor = opts.hair || ch.hair;
-    const showHair = kind !== 'spider' && kind !== 'pharaoh';
+    const showHair = kind !== 'spider' && kind !== 'pharaoh' && kind !== 'iron';
 
     const t = opts.walkTime || 0;
     const sw = opts.walking ? Math.sin(t * 11) : 0;
@@ -354,6 +360,7 @@ MP.findItem = function (slot, id) {
       c.rotate(rest + (up - rest) * (opts.armUp || 0));
       rr(c, -1.7, 0, 3.4, 8.5, 1.7); fs(c, arms);
       if (kind === 'pharaoh') { rr(c, -1.9, 2.5, 3.8, 1.4, 0.7); fs(c, suit.gold); } // arm band
+      if (kind === 'iron') { rr(c, -1.9, 4.6, 3.8, 3.6, 1.2); fs(c, suit.gold); }    // gold forearm
       circle(c, 0, 9.4, 1.8); fs(c, hands);
       c.restore();
     }
@@ -361,7 +368,7 @@ MP.findItem = function (slot, id) {
     // Body / shirt
     rr(c, -6, -23.5, 12, 11, 3.5); fs(c, top);
     const stripe = !suit && shirt.stripe;
-    if (stripe || kind === 'spider' || kind === 'pharaoh') {
+    if (stripe || kind === 'spider' || kind === 'pharaoh' || kind === 'iron') {
       c.save();
       rr(c, -6, -23.5, 12, 11, 3.5); c.clip();
       if (stripe) {
@@ -369,6 +376,11 @@ MP.findItem = function (slot, id) {
         for (let yy = -22; yy < -12; yy += 2.6) c.fillRect(-7, yy, 14, 1.2);
       } else if (kind === 'spider') {
         web(c, 0, -18.5, 9, suit.web, 0.35);
+      } else if (kind === 'iron') {
+        // gold belly plate
+        c.fillStyle = suit.gold;
+        c.beginPath(); c.moveTo(-3.6, -17.5); c.lineTo(3.6, -17.5); c.lineTo(2.6, -12); c.lineTo(-2.6, -12); c.closePath();
+        c.fill(); c.stroke();
       } else {
         // Pharaoh's wide collar
         c.fillStyle = suit.gold; ellipse(c, 0, -23.8, 7.5, 6); c.fill();
@@ -399,10 +411,35 @@ MP.findItem = function (slot, id) {
       }
     }
 
+    if (kind === 'iron') {
+      // Glowing chest light
+      c.save();
+      c.fillStyle = 'rgba(191,243,255,0.45)';
+      circle(c, 0, -20.3, 3.2); c.fill();
+      c.restore();
+      circle(c, 0, -20.3, 1.9); fs(c, suit.glow);
+      // Helmet with a gold face plate and glowing eyes
+      circle(c, 0, -30.5, 7.8); fs(c, suit.top);
+      rr(c, -5.4, -34.5, 10.8, 10.5, 3.4); fs(c, suit.gold);
+      c.fillStyle = suit.glow;
+      for (const sd of [-1, 1]) {
+        c.save(); c.translate(sd * 2.6, -31); c.rotate(-sd * 0.15);
+        rr(c, -1.5, -0.55, 3, 1.1, 0.5); c.fill(); c.stroke();
+        c.restore();
+      }
+      c.beginPath(); c.moveTo(-1.8, -26.6); c.lineTo(1.8, -26.6); c.lineWidth = 0.5; c.stroke();
+      c.restore();
+      return;
+    }
+
     if (kind === 'spider') {
-      // Spider mask: red head, web lines, big white eyes
-      spiderEmblem(c, 0, -19.5, 1.1);
-      circle(c, 0, -30.5, 7.6); c.fillStyle = suit.top; c.fill();
+      // Spider mask: web lines and big white eyes (and a hood for some suits)
+      spiderEmblem(c, 0, -19.5, 1.1, suit.emblem);
+      if (suit.hood) {
+        circle(c, 0, -31, 9.8); fs(c, suit.hood);
+        circle(c, 0, -30.7, 8.8); c.fillStyle = suit.hoodInner; c.fill();
+      }
+      circle(c, 0, -30.5, 7.6); c.fillStyle = suit.mask || suit.top; c.fill();
       c.save(); circle(c, 0, -30.5, 7.6); c.clip();
       web(c, 0, -29.5, 9.5, suit.web, 0.38);
       c.restore();

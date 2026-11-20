@@ -49,12 +49,13 @@ window.MP = window.MP || {};
     wardrobe:   { x: 254, y: 92,  w: 40, h: 62, standX: 248 },
     toilet:     { x: 370, y: 112, w: 30, h: 42, standX: 404 },
     sink:       { x: 464, y: 84,  w: 34, h: 70, standX: 461 },
-    stairsUp:   { x: 672, y: 96,  w: 70, h: 58, standX: UP_MAX_X },
+    // Big areas for the stairs: upstairs the whole landing, downstairs the whole staircase
+    stairsUp:   { x: 640, y: 30,  w: 320, h: 126, standX: UP_MAX_X, arrowX: 712, arrowY: 112 },
     sofa:       { x: 78,  y: 290, w: 64, h: 44, standX: 110 },
     tv:         { x: 198, y: 270, w: 68, h: 62, standX: 110 },
     table:      { x: 556, y: 288, w: 68, h: 46, standX: 590 },
     shoes:      { x: 752, y: 306, w: 40, h: 26, standX: 772 },
-    stairsDown: { x: 812, y: 250, w: 66, h: 84, standX: 872 },
+    stairsDown: { x: 696, y: 182, w: 190, h: 138, standX: 872, arrowX: 846, arrowY: 268 },
     door:       { x: 916, y: 280, w: 32, h: 54, standX: 904 },
   };
   const floorOf = (spot) => (spot.y >= DOWN_Y ? 1 : 0);
@@ -84,7 +85,7 @@ window.MP = window.MP || {};
   const ALARM_EVERY = 1.4;   // seconds between "rrring!" sounds
   const PARENT_AFTER = 10;   // if the alarm rings this long, mom or dad comes to wake you
   const PARENT_SPEED = 65;
-  const STAIR_SPEED = 70;
+  const STAIR_SPEED = 95;
   const TV_MAX = 30;         // seconds of TV before mom or dad switches it off
 
   // The TV view (when watching): TV in the middle, remote control on the right
@@ -446,6 +447,21 @@ window.MP = window.MP || {};
     });
   }
 
+  // Little sign that shows where the stairs go. dir: 1 = down, -1 = up
+  function stairSign(ctx, x, y, text, dir) {
+    withLine(ctx, () => {
+      box(ctx, x - 30, y, 60, 15, 4, '#fff7e0');
+      ctx.beginPath(); ctx.moveTo(x, y - 6); ctx.lineTo(x, y); ctx.stroke();
+    });
+    MP.drawText(ctx, text, x - 6, y + 4, { size: 0.72, color: MP.COLORS.outline, align: 'center' });
+    ctx.save();
+    ctx.translate(x + 22, y + 7.5 + dir * 4);
+    if (dir < 0) ctx.rotate(Math.PI);
+    ctx.scale(0.55, 0.55);
+    MP.draw('arrow', ctx, 0, 0);
+    ctx.restore();
+  }
+
   // Railing around the stairwell upstairs
   function landingRailing(ctx) {
     withLine(ctx, () => {
@@ -777,7 +793,9 @@ window.MP = window.MP || {};
         return;
       }
       const task = TASKS.find((k) => k.spot === id);
-      if (MP.state.tasks[task.id]) {
+      // The toilet and the wardrobe can be used again any time
+      const again = id === 'toilet' || id === 'wardrobe';
+      if (MP.state.tasks[task.id] && !again) {
         this.say(ALREADY[id], 2.5);
         return;
       }
@@ -1060,6 +1078,8 @@ window.MP = window.MP || {};
       // ===== Stairs and walls between rooms =====
       staircase(ctx);
       landingRailing(ctx);
+      stairSign(ctx, 800, 66, 'Alakertaan', 1);
+      stairSign(ctx, 670, DOWN_Y + 52, 'Yläkertaan', -1);
       for (const x of [320, 640]) {
         partition(ctx, x);
         ctx.save();
@@ -1096,13 +1116,15 @@ window.MP = window.MP || {};
         spots = wanted.filter((s) => floorOf(s) === this.floor);
         if (!spots.length && wanted.length) spots = [this.floor === 0 ? SPOTS.stairsUp : SPOTS.stairsDown];
       }
-      for (const s of spots) MP.draw('arrow', ctx, s.x + s.w / 2, s.y - 3 + Math.sin(t * 6) * 2.5);
+      const arrowX = (s) => (s.arrowX != null ? s.arrowX : s.x + s.w / 2);
+      const arrowY = (s) => (s.arrowY != null ? s.arrowY : s.y - 3);
+      for (const s of spots) MP.draw('arrow', ctx, arrowX(s), arrowY(s) + Math.sin(t * 6) * 2.5);
 
       ctx.restore();
 
       // If none of them is on the screen, an arrow at the edge shows the way to the nearest one
       if (spots.length) {
-        const xs = spots.map((s) => s.x + s.w / 2 - cam);
+        const xs = spots.map((s) => arrowX(s) - cam);
         if (!xs.some((sx) => sx > 4 && sx < MP.W - 4)) {
           const nearest = xs.reduce((a, b) => (Math.abs(b - MP.W / 2) < Math.abs(a - MP.W / 2) ? b : a));
           const dir = nearest > MP.W / 2 ? 1 : -1;
