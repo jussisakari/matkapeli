@@ -79,7 +79,11 @@ MP.CLOTHES = {
   ],
   costume: [
     { id: 'none',   name: 'Ei asua' },
-    { id: 'spider', name: 'Hämähäkkiasu', top: '#d62828', legs: '#2b4fa8', boots: '#d62828', web: '#7a1418' },
+    { id: 'spider',  name: 'Hämähäkkiasu', top: '#d62828', legs: '#2b4fa8', boots: '#d62828', web: '#7a1418' },
+    { id: 'pharaoh', name: 'Faarao',       top: '#f4efe1', kilt: '#f4efe1', boots: '#c8913a',
+      gold: '#f2c230', blue: '#2f5fb5', red: '#d33a3a' },
+    { id: 'mermaid', name: 'Merenneito',   top: '#b46be0', legs: '#2bb3a3', scales: '#1d7f74',
+      fin: '#7fe0c8', shell: '#ffc6e0', starfish: '#ffb347' },
   ],
 };
 
@@ -147,6 +151,32 @@ MP.findItem = function (slot, id) {
     c.restore();
   }
 
+  // Fills a shape and paints horizontal stripes inside it
+  function striped(c, pathFn, base, stripe, step) {
+    pathFn(); c.fillStyle = base; c.fill();
+    c.save();
+    pathFn(); c.clip();
+    c.fillStyle = stripe;
+    for (let yy = -60; yy < 10; yy += step) c.fillRect(-20, yy, 40, step / 2);
+    c.restore();
+    pathFn(); c.stroke();
+  }
+
+  // Five-pointed starfish
+  function starfish(c, x, y, r, color) {
+    c.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const a = -Math.PI / 2 + i * Math.PI / 5;
+      const rad = i % 2 ? r * 0.45 : r;
+      const px = x + Math.cos(a) * rad, py = y + Math.sin(a) * rad;
+      if (i) c.lineTo(px, py); else c.moveTo(px, py);
+    }
+    c.closePath();
+    c.lineWidth = 0.5;
+    c.fillStyle = color; c.fill(); c.stroke();
+    c.lineWidth = 0.7;
+  }
+
   function spiderEmblem(c, x, y, s) {
     c.save();
     c.translate(x, y);
@@ -187,13 +217,17 @@ MP.findItem = function (slot, id) {
     const hat = MP.findItem('hat', outfit.hat);
     const costume = MP.findItem('costume', outfit.costume);
     const suit = costume.id !== 'none' ? costume : null;
+    const kind = suit ? suit.id : null; // 'spider', 'pharaoh' or 'mermaid'
 
     const top = suit ? suit.top : shirt.color;
-    const legs = suit ? suit.legs : bottom.color;
+    const legs = suit ? (suit.legs || C.skin) : bottom.color;
     const skirt = !suit && bottom.type === 'skirt';
-    const shoes = suit ? suit.boots : C.shoes;
-    const hands = suit ? suit.top : C.skin;
+    const shoes = suit ? (suit.boots || C.shoes) : C.shoes;
+    const hands = kind === 'spider' ? suit.top : C.skin;
+    const arms = (kind === 'pharaoh' || kind === 'mermaid') ? C.skin : top;
     const isGirl = charId === 'girl';
+    const hairColor = opts.hair || ch.hair;
+    const showHair = kind !== 'spider' && kind !== 'pharaoh';
 
     const t = opts.walkTime || 0;
     const sw = opts.walking ? Math.sin(t * 11) : 0;
@@ -205,26 +239,72 @@ MP.findItem = function (slot, id) {
     c.scale(opts.flip ? -s : s, s);
 
     // Long hair behind the head (girl)
-    if (isGirl && !suit) { rr(c, -8.3, -37, 16.6, 22, 6); fs(c, opts.hair || ch.hair); }
+    if (isGirl && showHair) { rr(c, -8.3, -37, 16.6, kind === 'mermaid' ? 29 : 22, 6); fs(c, hairColor); }
 
-    // Legs + shoes (they swing when walking)
-    for (const side of [-1, 1]) {
+    if (kind === 'mermaid') {
+      // Fish tail instead of legs (it sways when walking)
       c.save();
-      c.translate(side * 2.4, -12.5);
-      c.rotate(side * sw * 0.35);
-      rr(c, -1.8, 0, 3.6, 11, 1.7); fs(c, skirt ? C.skin : legs);
-      ellipse(c, 0.9, 11.3, 2.9, 1.7); fs(c, shoes);
+      c.translate(0, -14.5);
+      c.rotate(sw * 0.12);
+      const tail = () => {
+        c.beginPath();
+        c.moveTo(-5.2, 0);
+        c.quadraticCurveTo(-5.6, 7.5, -1.4, 12);
+        c.lineTo(1.4, 12);
+        c.quadraticCurveTo(5.6, 7.5, 5.2, 0);
+        c.closePath();
+      };
+      tail(); c.fillStyle = suit.legs; c.fill();
+      c.save(); tail(); c.clip();
+      c.strokeStyle = suit.scales; c.lineWidth = 0.4;
+      for (let row = 0; row < 6; row++) {
+        const yy = 1.5 + row * 2;
+        c.beginPath();
+        for (let xx = -5 + (row % 2); xx < 6; xx += 2) {
+          c.moveTo(xx - 1, yy);
+          c.quadraticCurveTo(xx, yy + 1.4, xx + 1, yy);
+        }
+        c.stroke();
+      }
       c.restore();
-    }
-
-    // Pants top or skirt
-    if (skirt) {
+      tail(); c.stroke();
       c.beginPath();
-      c.moveTo(-5, -14); c.lineTo(5, -14); c.lineTo(7.5, -6.5);
-      c.quadraticCurveTo(0, -5, -7.5, -6.5);
-      c.closePath(); fs(c, legs);
+      c.moveTo(0, 11.4);
+      c.quadraticCurveTo(-5, 11, -7.2, 15.2);
+      c.quadraticCurveTo(-3, 13.6, 0, 14);
+      c.quadraticCurveTo(3, 13.6, 7.2, 15.2);
+      c.quadraticCurveTo(5, 11, 0, 11.4);
+      c.closePath(); fs(c, suit.fin);
+      c.restore();
     } else {
-      rr(c, -5, -14.5, 10, 5, 1.8); fs(c, legs);
+      // Legs + shoes (they swing when walking)
+      for (const side of [-1, 1]) {
+        c.save();
+        c.translate(side * 2.4, -12.5);
+        c.rotate(side * sw * 0.35);
+        rr(c, -1.8, 0, 3.6, 11, 1.7); fs(c, skirt ? C.skin : legs);
+        ellipse(c, 0.9, 11.3, 2.9, 1.7); fs(c, shoes);
+        c.restore();
+      }
+
+      if (kind === 'pharaoh') {
+        // White kilt with a gold front panel and belt
+        c.beginPath();
+        c.moveTo(-5.2, -15); c.lineTo(5.2, -15); c.lineTo(6.6, -7.5);
+        c.quadraticCurveTo(0, -6.6, -6.6, -7.5);
+        c.closePath(); fs(c, suit.kilt);
+        c.beginPath();
+        c.moveTo(-1.6, -14); c.lineTo(1.6, -14); c.lineTo(2.4, -7.2); c.lineTo(-2.4, -7.2);
+        c.closePath(); fs(c, suit.gold);
+        rr(c, -5.4, -15.6, 10.8, 2.2, 1); fs(c, suit.gold);
+      } else if (skirt) {
+        c.beginPath();
+        c.moveTo(-5, -14); c.lineTo(5, -14); c.lineTo(7.5, -6.5);
+        c.quadraticCurveTo(0, -5, -7.5, -6.5);
+        c.closePath(); fs(c, legs);
+      } else {
+        rr(c, -5, -14.5, 10, 5, 1.8); fs(c, legs);
+      }
     }
 
     // Arms (swing opposite to the legs)
@@ -232,7 +312,8 @@ MP.findItem = function (slot, id) {
       c.save();
       c.translate(side * 5.6, -21.5);
       c.rotate(side * 0.18 - side * sw * 0.45);
-      rr(c, -1.7, 0, 3.4, 8.5, 1.7); fs(c, top);
+      rr(c, -1.7, 0, 3.4, 8.5, 1.7); fs(c, arms);
+      if (kind === 'pharaoh') { rr(c, -1.9, 2.5, 3.8, 1.4, 0.7); fs(c, suit.gold); } // arm band
       circle(c, 0, 9.4, 1.8); fs(c, hands);
       c.restore();
     }
@@ -240,20 +321,45 @@ MP.findItem = function (slot, id) {
     // Body / shirt
     rr(c, -6, -23.5, 12, 11, 3.5); fs(c, top);
     const stripe = !suit && shirt.stripe;
-    if (stripe || suit) {
+    if (stripe || kind === 'spider' || kind === 'pharaoh') {
       c.save();
       rr(c, -6, -23.5, 12, 11, 3.5); c.clip();
       if (stripe) {
         c.fillStyle = stripe;
         for (let yy = -22; yy < -12; yy += 2.6) c.fillRect(-7, yy, 14, 1.2);
-      } else {
+      } else if (kind === 'spider') {
         web(c, 0, -18.5, 9, suit.web, 0.35);
+      } else {
+        // Pharaoh's wide collar
+        c.fillStyle = suit.gold; ellipse(c, 0, -23.8, 7.5, 6); c.fill();
+        c.fillStyle = suit.blue; ellipse(c, 0, -23.8, 6, 4.6); c.fill();
+        c.fillStyle = suit.gold; ellipse(c, 0, -23.8, 4.6, 3.3); c.fill();
+        c.fillStyle = C.skin; ellipse(c, 0, -23.8, 3.2, 2); c.fill();
       }
       c.restore();
       rr(c, -6, -23.5, 12, 11, 3.5); c.stroke();
     }
 
-    if (suit) {
+    if (kind === 'mermaid') {
+      // Shell on the top
+      c.beginPath(); c.moveTo(0, -15.2); c.arc(0, -15.2, 3.4, Math.PI * 1.12, Math.PI * 1.88); c.closePath();
+      fs(c, suit.shell);
+      c.beginPath();
+      for (const a of [1.3, 1.5, 1.7]) {
+        c.moveTo(0, -15.2);
+        c.lineTo(Math.cos(a * Math.PI) * 3, -15.2 + Math.sin(a * Math.PI) * 3);
+      }
+      c.lineWidth = 0.4; c.stroke(); c.lineWidth = 0.7;
+    }
+
+    if (kind === 'pharaoh') {
+      // Striped cloth hanging down on both sides of the head
+      for (const side of [-1, 1]) {
+        striped(c, () => rr(c, side * 7.8 - 1.9, -30, 3.8, 12.5, 1.5), suit.gold, suit.blue, 1.6);
+      }
+    }
+
+    if (kind === 'spider') {
       // Spider mask: red head, web lines, big white eyes
       spiderEmblem(c, 0, -19.5, 1.1);
       circle(c, 0, -30.5, 7.6); c.fillStyle = suit.top; c.fill();
@@ -284,7 +390,27 @@ MP.findItem = function (slot, id) {
     circle(c, 4.6, -27.6, 1.4); c.fill();
     c.beginPath(); c.arc(0, -28, 1.9, 0.2 * Math.PI, 0.8 * Math.PI); c.stroke();
 
+    if (kind === 'pharaoh') {
+      // Striped headdress, gold band and a little snake on the forehead
+      const nemes = () => {
+        c.beginPath();
+        c.moveTo(-8.8, -26.5);
+        c.lineTo(-8.4, -31.5);
+        c.arc(0, -31.5, 8.4, Math.PI, 2 * Math.PI);
+        c.lineTo(8.8, -26.5);
+        c.lineTo(6.6, -28.5);
+        c.quadraticCurveTo(6.4, -33.4, 0, -33.6);
+        c.quadraticCurveTo(-6.4, -33.4, -6.6, -28.5);
+        c.closePath();
+      };
+      striped(c, nemes, suit.gold, suit.blue, 1.6);
+      rr(c, -6.9, -34.6, 13.8, 1.8, 0.9); fs(c, suit.gold);
+      ellipse(c, 0, -36.2, 1, 1.4); fs(c, suit.gold);
+      c.fillStyle = suit.red; circle(c, 0, -36.4, 0.4); c.fill();
+    }
+
     // Hair on top of the head
+    if (showHair) {
     c.beginPath();
     if (isGirl) {
       c.moveTo(-8.1, -29);
@@ -303,10 +429,15 @@ MP.findItem = function (slot, id) {
       c.quadraticCurveTo(-1.5, -35, -4, -33.6);
       c.quadraticCurveTo(-6.6, -33, -7.9, -30);
     }
-    c.closePath(); fs(c, opts.hair || ch.hair);
+    c.closePath(); fs(c, hairColor);
+    }
 
-    // Hats
-    if (hat.id === 'cap') {
+    // Hats (not with costumes). The mermaid has a starfish in the hair.
+    if (kind === 'mermaid') {
+      starfish(c, isGirl ? 5.6 : 4.8, -37.4, 2.6, suit.starfish);
+    } else if (suit) {
+      // the costume has its own head piece
+    } else if (hat.id === 'cap') {
       rr(c, 0, -34.2, 12, 2.6, 1.3); fs(c, hat.shade);
       c.beginPath(); c.arc(0, -33.6, 8.2, Math.PI, 2 * Math.PI); c.closePath(); fs(c, hat.color);
       circle(c, 0, -41.6, 0.9); fs(c, hat.shade);
@@ -487,12 +618,33 @@ MP.findItem = function (slot, id) {
       c.beginPath(); c.moveTo(-12, -45); c.lineTo(12, -45);
       c.lineWidth = 1; c.strokeStyle = C.metal; c.stroke();
       c.restore();
-      const hang = [MP.CLOTHES.shirt[1].color, MP.CLOTHES.shirt[2].color, MP.CLOTHES.shirt[3].color];
-      hang.forEach((col, i) => {
-        const hx = -9 + i * 5.5;
-        c.beginPath(); c.moveTo(hx, -45); c.lineTo(hx, -43.5); c.stroke();
-        rr(c, hx - 2.4, -43.5, 4.8, 8, 1.5); fs(c, col);
-      });
+      const hook = (hx) => { c.beginPath(); c.moveTo(hx, -45); c.lineTo(hx, -43.5); c.stroke(); };
+      // A shirt
+      hook(-9);
+      rr(c, -11.4, -43.5, 4.8, 8, 1.5); fs(c, MP.CLOTHES.shirt[1].color);
+      // Pharaoh costume
+      const ph = MP.findItem('costume', 'pharaoh');
+      hook(-3.5);
+      rr(c, -6.1, -43.5, 5.2, 11, 1.5); fs(c, ph.top);
+      c.save();
+      rr(c, -6.1, -43.5, 5.2, 11, 1.5); c.clip();
+      c.fillStyle = ph.gold; ellipse(c, -3.5, -43.5, 3.2, 2.6); c.fill();
+      c.fillStyle = ph.blue; ellipse(c, -3.5, -43.5, 2.2, 1.6); c.fill();
+      c.fillStyle = ph.gold; c.fillRect(-7, -37, 7, 1.2);
+      c.restore();
+      rr(c, -6.1, -43.5, 5.2, 11, 1.5); c.stroke();
+      // Mermaid costume (tail + top)
+      const mm = MP.findItem('costume', 'mermaid');
+      hook(2);
+      c.beginPath();
+      c.moveTo(-0.3, -39); c.quadraticCurveTo(-0.6, -34, 1.4, -31.5);
+      c.lineTo(2.6, -31.5); c.quadraticCurveTo(4.6, -34, 4.3, -39);
+      c.closePath(); fs(c, mm.legs);
+      c.beginPath();
+      c.moveTo(2, -32); c.quadraticCurveTo(-0.5, -32, -1, -29.5);
+      c.quadraticCurveTo(2, -30.5, 5, -29.5); c.quadraticCurveTo(4.5, -32, 2, -32);
+      c.closePath(); fs(c, mm.fin);
+      rr(c, -0.4, -43.5, 4.8, 5, 1.5); fs(c, mm.top);
       // Spider costume on a hanger
       const sp = MP.findItem('costume', 'spider');
       const hx = 8.5;

@@ -26,7 +26,7 @@ Build order for the game described in `PLAN.md`. Each milestone ends with someth
 *(Redone in the round cartoon style, chosen from `samples/style-sample-2.html`, style A.)*
 - `MP.COLORS`: named colors (skin, wood, blanket, …).
 - `MP.CHARACTERS`: girl (brown hair + bow) and boy (blond hair).
-- `MP.CLOTHES`: `shirt`, `bottom` (pants or skirt), `hat` (none, cap, beanie, sun hat) and `costume` (none, spider suit). Pyjamas are hidden items worn at the start.
+- `MP.CLOTHES`: `shirt`, `bottom` (pants or skirt), `hat` (none, cap, beanie, sun hat) and `costume` (none, spider suit, pharaoh, mermaid). Pyjamas are hidden items worn at the start.
 - `MP.drawPerson(ctx, x, y, { character, outfit, walking, walkTime, flip, scale, hair })`: (x, y) is between the feet, about 42 units tall. Arms and legs swing while walking.
 - `MP.draw(name, ctx, x, y, opts)`: bed, teddy, panda, window (day or night sky), mirror, sink (with toothbrush cup), toilet, wardrobe (closed or open, with the spider suit hanging inside), front door (closed or open), band poster, sun, moon, star, sparkle, arrow, rooster, hand, toothbrush, ball. `MP.SIZES` gives furniture sizes for tapping.
 - `MP.BAND`: the **Turpapojat** poster (name, colors, the two boys' hair and shirts).

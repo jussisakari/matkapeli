@@ -16,7 +16,7 @@ MP.scenes.gallery = {
     for (const s of vis('shirt')) for (const b of vis('bottom')) for (const h of vis('hat')) {
       this.outfits.push({ shirt: s.id, bottom: b.id, hat: h.id });
     }
-    this.outfits.push({ costume: 'spider' });
+    for (const k of MP.CLOTHES.costume) if (k.id !== 'none') this.outfits.push({ costume: k.id });
   },
 
   onTap() {
@@ -74,14 +74,17 @@ MP.scenes.gallery = {
       { character: 'boy', outfit: { shirt: 'green', bottom: 'brown', hat: 'beanie' } },
       { character: 'boy', outfit: { shirt: 'sailor', bottom: 'jeans' }, walking: true },
       { character: 'boy', outfit: { costume: 'spider' }, walking: true },
+      { character: 'girl', outfit: { costume: 'pharaoh' } },
+      { character: 'girl', outfit: { costume: 'mermaid' }, walking: true },
+      { character: 'boy', outfit: { costume: 'mermaid' } },
     ];
     people.forEach((p, i) => {
-      MP.drawPerson(ctx, 14 + i * 18, 178, Object.assign({ scale: 0.6, walkTime: t }, p));
+      MP.drawPerson(ctx, 12 + i * 16, 178, Object.assign({ scale: 0.6, walkTime: t }, p));
     });
-    MP.draw('rooster', ctx, 125, 177, { scale: 1.2 });
-    MP.draw('hand', ctx, 146, 157);
-    MP.draw('toothbrush', ctx, 166, 166, { angle: -0.2 });
-    MP.draw('ball', ctx, 210, 178, { r: 5 });
+    MP.draw('rooster', ctx, 160, 177, { scale: 1.2 });
+    MP.draw('hand', ctx, 178, 157);
+    MP.draw('toothbrush', ctx, 196, 166, { angle: -0.2 });
+    MP.draw('ball', ctx, 238, 178, { r: 5 });
 
     // Big character: tap to change clothes
     const o = this.outfits[this.outfitIndex];
