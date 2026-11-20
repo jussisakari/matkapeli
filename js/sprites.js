@@ -829,6 +829,34 @@ MP.findItem = function (slot, id) {
     circle(c, 33.5, 2.5, 0.9); fs(c, '#e04848');
   };
 
+  // House seen from outside. (x, y) = middle of the bottom.
+  // opts: { night: 0..1 (how dark), lights: true/false }
+  D.house = function (c, o) {
+    const n = o.night || 0;
+    const dark = '#2a2f5a';
+    const mix = (col) => MP.mixColor(col, dark, n * 0.65);
+    rr(c, 10, -56, 6, 14, 1); fs(c, mix('#9c4a3f'));                    // chimney
+    rr(c, -24, -36, 48, 36, 1.5); fs(c, mix('#f2d7b0'));                 // wall
+    c.beginPath();                                                        // roof
+    c.moveTo(-29, -35); c.lineTo(0, -58); c.lineTo(29, -35); c.closePath();
+    fs(c, mix('#c0504d'));
+    rr(c, -5, -19, 10, 19, 1.5); fs(c, mix('#8a5a35'));                  // door
+    circle(c, 2.6, -9.5, 0.8); fs(c, C.gold);
+    for (const wx of [-19, 9]) {                                          // windows
+      rr(c, wx, -29, 10, 9, 1); fs(c, o.lights ? '#ffd86b' : mix(C.glass));
+      if (o.lights) {
+        c.save();
+        c.globalAlpha = 0.35;
+        c.fillStyle = '#ffd86b';
+        circle(c, wx + 5, -24.5, 9); c.fill();
+        c.restore();
+        rr(c, wx, -29, 10, 9, 1); c.stroke();
+      }
+      c.beginPath(); c.moveTo(wx + 5, -29); c.lineTo(wx + 5, -20); c.moveTo(wx, -24.5); c.lineTo(wx + 10, -24.5); c.stroke();
+    }
+    rr(c, -2.5, -46, 5, 5, 2.5); fs(c, o.lights ? '#ffd86b' : mix(C.glass)); // round attic window
+  };
+
   // Pointing hand, fingertip at (x, y)
   D.hand = function (c, o) {
     c.save();
@@ -874,7 +902,7 @@ MP.findItem = function (slot, id) {
   // Furniture: (x, y) = middle of the bottom. window: top-left. mirror: middle.
   // Small things (sun, moon, star, sparkle, arrow, rooster, hand, toothbrush,
   // ball) take everything in opts: MP.draw('sun', ctx, 0, 0, { x, y, r }).
-  const POSITIONED = { bed: 1, teddy: 1, panda: 1, window: 1, mirror: 1, sink: 1, toilet: 1, wardrobe: 1, door: 1, poster: 1 };
+  const POSITIONED = { bed: 1, teddy: 1, panda: 1, window: 1, mirror: 1, sink: 1, toilet: 1, wardrobe: 1, door: 1, poster: 1, house: 1 };
   MP.draw = function (name, c, x, y, opts) {
     const fn = D[name];
     if (!fn) throw new Error('No drawing called "' + name + '"');

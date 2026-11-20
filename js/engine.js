@@ -18,6 +18,15 @@ window.MP = window.MP || {};
   MP.lerp = (a, b, t) => a + (b - a) * t;
   MP.hit = (r, x, y) => x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h;
 
+  // Mixes two '#rrggbb' colors: t = 0 gives a, t = 1 gives b.
+  MP.mixColor = function (a, b, t) {
+    t = MP.clamp(t, 0, 1);
+    const pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16);
+    const ch = (p, s) => (p >> s) & 255;
+    const mix = (s) => Math.round(ch(pa, s) + (ch(pb, s) - ch(pa, s)) * t);
+    return 'rgb(' + mix(16) + ',' + mix(8) + ',' + mix(0) + ')';
+  };
+
   // =========================================================================
   // Canvas and scaling
   // =========================================================================
@@ -496,6 +505,33 @@ window.MP = window.MP || {};
         tone(880, 0, 0.15, 'triangle', 0.35);
         tone(1320, 0.1, 0.2, 'triangle', 0.35);
         tone(1760, 0.2, 0.35, 'triangle', 0.3);
+      } catch (_) {}
+    },
+    // "Kukkokiekuu!" – four notes, the last one long and sliding down
+    rooster() {
+      if (!ready()) return;
+      try {
+        const ac = audio.ctx;
+        const notes = [[520, 0, 0.12], [620, 0.15, 0.12], [740, 0.31, 0.14], [930, 0.5, 0.55]];
+        for (const [f, when, dur] of notes) {
+          const t0 = ac.currentTime + when;
+          const osc = ac.createOscillator();
+          const filter = ac.createBiquadFilter();
+          const gain = ac.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(f, t0);
+          if (dur > 0.3) osc.frequency.exponentialRampToValueAtTime(f * 0.72, t0 + dur);
+          filter.type = 'lowpass';
+          filter.frequency.value = 1800;
+          gain.gain.setValueAtTime(0.0001, t0);
+          gain.gain.exponentialRampToValueAtTime(0.18, t0 + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(audio.master);
+          osc.start(t0);
+          osc.stop(t0 + dur + 0.05);
+        }
       } catch (_) {}
     },
     // "Sh" sound of the toothbrush (plays at most ~12 times a second)
