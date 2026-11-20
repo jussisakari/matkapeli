@@ -62,6 +62,10 @@ window.MP = window.MP || {};
   const START_X = 102;       // where the character lands next to the bed
   const IN_BED_SCALE = 0.9;  // a bit smaller while in bed
   const ALARM_EVERY = 1.4;   // seconds between "rrring!" sounds
+  const PARENT_AFTER = 10;   // if the alarm rings this long, mom or dad comes to wake you
+  const PARENT_FROM_X = 345; // where the parent comes in from (the bathroom side)
+  const PARENT_STAND_X = 124;
+  const PARENT_SPEED = 65;
 
   // ---------------------------------------------------------------------------
   // Small drawing helpers for the rooms
@@ -321,7 +325,9 @@ window.MP = window.MP || {};
       }
 
       // Waking up: sleeping until the alarm clock is tapped
-      this.intro = waking ? { awake: false, t: 0, yawned: false, nextRing: MP.time + 0.6 } : null;
+      this.intro = waking ? { awake: false, t: 0, sleepT: 0, yawned: false, nextRing: MP.time + 0.6 } : null;
+      this.parent = null;         // mom or dad coming to wake you up
+      this.parentBubble = null;
       this.introHead = { x: START_X, y: 100 };
       this.tiredUntil = 0;
 
@@ -363,10 +369,37 @@ window.MP = window.MP || {};
     },
 
     // ---- Waking up ----
-    wakeUp() {
+    wakeUp(byParent) {
       this.intro.awake = true;
       this.intro.t = 0;
-      MP.sfx.tap();
+      if (!byParent) MP.sfx.tap();
+      // If mom or dad was on the way, they turn back
+      if (this.parent && this.parent.state === 'enter') this.parent.state = 'leave';
+    },
+
+    // Mom or dad walks in, says good morning, switches off the alarm and walks out
+    updateParent(dt) {
+      const p = this.parent;
+      if (!p) return;
+      p.walkTime += dt;
+      if (p.state === 'enter') {
+        p.facing = -1;
+        p.x -= PARENT_SPEED * dt;
+        if (p.x <= PARENT_STAND_X) {
+          p.x = PARENT_STAND_X;
+          p.state = 'talk';
+          p.t = 0;
+          this.parentBubble = { text: MP.PARENTS[p.who].say, until: MP.time + 2.2 };
+        }
+      } else if (p.state === 'talk') {
+        p.t += dt;
+        if (p.t >= 0.9 && this.intro && !this.intro.awake) this.wakeUp(true);
+        if (p.t >= 2.2) p.state = 'leave';
+      } else {
+        p.facing = 1;
+        p.x += PARENT_SPEED * dt;
+        if (p.x > PARENT_FROM_X) this.parent = null;
+      }
     },
 
     finishIntro(skipped) {
@@ -540,10 +573,19 @@ window.MP = window.MP || {};
     },
 
     update(dt) {
+      this.updateParent(dt);
+
       // --- Waking up ---
       if (this.intro) {
         const intro = this.intro;
         if (!intro.awake) {
+          intro.sleepT += dt;
+          if (intro.sleepT >= PARENT_AFTER && !this.parent) {
+            this.parent = {
+              who: Math.random() < 0.5 ? 'mom' : 'dad',
+              x: PARENT_FROM_X, facing: -1, state: 'enter', t: 0, walkTime: 0,
+            };
+          }
           if (MP.time >= intro.nextRing) {
             MP.sfx.alarm();
             intro.nextRing = MP.time + ALARM_EVERY;
@@ -644,6 +686,17 @@ window.MP = window.MP || {};
         MP.draw(toy, ctx, POS[toy], FLOOR + hop);
       }
       MP.draw('ball', ctx, POS.ball, FLOOR, { r: 4 });
+
+      // Mom or dad (only when they come to wake you up)
+      const par = this.parent;
+      if (par) {
+        const look = MP.PARENTS[par.who];
+        MP.drawPerson(ctx, par.x, FLOOR, {
+          character: look.character, outfit: look.outfit, hair: look.hair, scale: look.scale,
+          noBow: look.noBow, glasses: look.glasses,
+          walking: par.state !== 'talk', walkTime: par.walkTime, flip: par.facing < 0,
+        });
+      }
 
       // --- Bathroom ---
       MP.draw('toilet', ctx, POS.toilet, FLOOR);
@@ -765,6 +818,12 @@ window.MP = window.MP || {};
         let head = this.intro ? this.introHead : { x: this.player.x, y: FLOOR - 46 };
         if (onToilet) head = { x: POS.toilet + 4, y: FLOOR - 49 };
         MP.drawBubble(ctx, b.text, head.x - cam, head.y, { maxWidth: 130 });
+      }
+
+      // --- Mom's or dad's speech bubble ---
+      if (par && this.parentBubble && t < this.parentBubble.until) {
+        const look = MP.PARENTS[par.who];
+        MP.drawBubble(ctx, this.parentBubble.text, par.x - cam, FLOOR - MP.PERSON_H * look.scale - 4, { maxWidth: 120 });
       }
 
       // --- "Jatkuu pian…" panel ---

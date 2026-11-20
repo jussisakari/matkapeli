@@ -88,6 +88,22 @@ MP.CLOTHES = {
 };
 
 // ---------------------------------------------------------------------------
+// MOM AND DAD (one of them comes to wake you up if the alarm rings too long)
+// ---------------------------------------------------------------------------
+MP.PARENTS = {
+  mom: {
+    name: 'Äiti', character: 'girl', hair: '#6b3a1e', scale: 1.3, noBow: true,
+    outfit: { shirt: 'green', bottom: 'skirtPurple', shoes: false },
+    say: 'Herätys, kultaseni! Aamu on jo!',
+  },
+  dad: {
+    name: 'Isä', character: 'boy', hair: '#4a3020', scale: 1.38, glasses: true,
+    outfit: { shirt: 'sailor', bottom: 'brown', shoes: false },
+    say: 'Herätys, unikeko! Aamu on jo!',
+  },
+};
+
+// ---------------------------------------------------------------------------
 // BAND POSTER in the bedroom
 // ---------------------------------------------------------------------------
 MP.BAND = {
@@ -442,6 +458,13 @@ MP.findItem = function (slot, id) {
     } else {
       c.beginPath(); c.arc(0, -28, 1.9, 0.2 * Math.PI, 0.8 * Math.PI); c.stroke();
     }
+    if (opts.glasses) {
+      c.beginPath();
+      c.arc(-2.7, -30, 2, 0, Math.PI * 2);
+      c.moveTo(4.7, -30); c.arc(2.7, -30, 2, 0, Math.PI * 2);
+      c.moveTo(-0.7, -30.3); c.lineTo(0.7, -30.3);
+      c.stroke();
+    }
 
     if (kind === 'pharaoh') {
       // Striped headdress, gold band and a little snake on the forehead
@@ -507,7 +530,7 @@ MP.findItem = function (slot, id) {
       ellipse(c, 0, -34.2, 12.5, 2.4); fs(c, hat.color);
       c.beginPath(); c.arc(0, -34.6, 6.8, Math.PI, 2 * Math.PI); c.closePath(); fs(c, hat.color);
       rr(c, -6.8, -36.6, 13.6, 2, 1); fs(c, hat.shade);
-    } else if (isGirl) {
+    } else if (isGirl && !opts.noBow) {
       // Bow when there is no hat
       c.save(); c.translate(5.6, -37.2);
       c.beginPath(); c.moveTo(0, 0); c.lineTo(3, -2.2); c.lineTo(3, 2.2); c.closePath(); fs(c, ch.bow);
