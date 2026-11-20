@@ -24,12 +24,10 @@ body {
 
 #game {
   display: block;
-  /* Size is set by engine.js (a whole-number multiple of 320×180) */
+  /* Size is set by engine.js (320×180 game units scaled to fit the screen) */
   width: 320px;
   height: 180px;
   background: #000;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
   touch-action: none;
 }
 

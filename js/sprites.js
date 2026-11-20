@@ -1,700 +1,738 @@
-// sprites.js – colors, pixel font, characters, clothes and all pixel pictures.
+// sprites.js – colors, characters, clothes and all drawings of the game.
 //
-// Every picture is a list of text rows. Each letter is one pixel.
-// A dot "." means an empty (see-through) pixel.
-// Change a color in PALETTE and every picture using that letter changes!
+// Everything is drawn with simple shapes (circles, ovals, rounded boxes).
+// Sizes are in "game units": the whole screen is 320 × 180 units.
+// Try changing the colors below – everything that uses them changes!
 window.MP = window.MP || {};
 
 // ---------------------------------------------------------------------------
-// PALETTE: which color each letter means
+// COLORS
 // ---------------------------------------------------------------------------
-MP.PALETTE = {
-  'K': '#1a1a2e', // black outline
-  'W': '#ffffff', // white
-  'w': '#d8dde6', // light gray (white in shadow)
-  'g': '#8a93a6', // metal gray
-  'S': '#f2c9a0', // skin
-  'M': '#f08a8a', // pink cheeks
-  'O': '#6b3e26', // shoes
-  'B': '#a0643c', // wood
-  'b': '#6e4226', // dark wood
-  'D': '#c98a55', // light wood
-  'R': '#e04848', // red
-  'r': '#a83232', // dark red
-  'Y': '#ffd23f', // yellow
-  'y': '#f0a020', // orange
-  'L': '#bfe6ff', // mirror / door glass
-  'l': '#eef9ff', // shine on glass
-  'N': '#4a78c8', // blue
-  'n': '#2f4a8a', // dark blue
-  'I': '#ff8fc0', // pink
-  'C': '#fff4c2', // moon
-  'c': '#e8d68a', // moon shadow
-  'E': '#4caf50', // green
-  'e': '#2e7d32', // dark green
+MP.COLORS = {
+  outline: '#2b2340',      // the dark line around everything
+  skin: '#f6cfa8',
+  cheeks: 'rgba(240,120,130,0.55)',
+  shoes: '#6b3e26',
+  wood: '#a0643c',
+  woodDark: '#6e4226',
+  woodLight: '#c98a55',
+  porcelain: '#ffffff',     // sink and toilet
+  porcelainShade: '#eef2f8',
+  metal: '#8a93a6',
+  glass: '#bfe6ff',
+  gold: '#ffd23f',
+  sun: '#ffd23f',
+  sunRays: '#ffb000',
+  moon: '#fff4c2',
+  moonShade: '#e8d68a',
+  blanket: '#4a78c8',
+  blanketDots: '#9fc8ff',
+  pillow: '#ffffff',
+  teddy: '#a0643c',
+  teddyNose: '#d9a877',
+  pandaBlack: '#2b2b33',
+  pandaWhite: '#fbfbfb',
+  frontDoor: '#d9534f',
+  frontDoorShade: '#a83a37',
+  toothbrush: '#ff8fc0',
+  cup: '#4a78c8',
+  arrow: '#ffd23f',
+  rooster: '#ffffff',
+  roosterComb: '#e04848',
+  beak: '#ffb000',
 };
 
 // ---------------------------------------------------------------------------
-// CHARACTERS: the girl and the boy. Letters A/a are the hair colors.
+// CHARACTERS: the girl and the boy
 // ---------------------------------------------------------------------------
 MP.CHARACTERS = {
-  girl: { name: 'Tyttö', hair: 'hairGirl', colors: { A: '#8b4a2b', a: '#5e2f18' } },
-  boy:  { name: 'Poika', hair: 'hairBoy',  colors: { A: '#e3b04b', a: '#b07d24' } },
+  girl: { name: 'Tyttö', hair: '#8b4a2b', bow: '#ff8fc0' },
+  boy:  { name: 'Poika', hair: '#e3b04b' },
 };
 
 // ---------------------------------------------------------------------------
-// CLOTHES. Letters: shirt T/t, pants or skirt P/p, hat H/h.
-// "stripe" paints every other row of the shirt with another color.
+// CLOTHES
+// "stripe" paints stripes on a shirt.
 // "hidden" items (pyjamas) are worn at the start but not shown in the wardrobe.
+// A costume covers everything else when it is on.
 // ---------------------------------------------------------------------------
 MP.CLOTHES = {
   shirt: [
-    { id: 'pyjama', name: 'Pyjama',   hidden: true, T: '#9fc8ff', t: '#6f9fe0', stripe: '#e6f2ff' },
-    { id: 'red',    name: 'Punainen', T: '#e04848', t: '#a83232' },
-    { id: 'yellow', name: 'Keltainen', T: '#ffd23f', t: '#d9a400' },
-    { id: 'green',  name: 'Vihreä',   T: '#4caf50', t: '#2e7d32' },
-    { id: 'sailor', name: 'Raita',    T: '#ffffff', t: '#c9d3e6', stripe: '#2f4a8a' },
+    { id: 'pyjama', name: 'Pyjama',    hidden: true, color: '#9fc8ff', stripe: '#e6f2ff' },
+    { id: 'red',    name: 'Punainen',  color: '#e04848' },
+    { id: 'yellow', name: 'Keltainen', color: '#ffd23f' },
+    { id: 'green',  name: 'Vihreä',    color: '#4caf50' },
+    { id: 'sailor', name: 'Raita',     color: '#ffffff', stripe: '#2f4a8a' },
   ],
   bottom: [
-    { id: 'pyjama',      name: 'Pyjama',   hidden: true, layer: 'pants', P: '#9fc8ff', p: '#6f9fe0' },
-    { id: 'jeans',       name: 'Farkut',   layer: 'pants', P: '#3f6fb5', p: '#2a4d85' },
-    { id: 'brown',       name: 'Ruskeat',  layer: 'pants', P: '#8b5a2b', p: '#5e3a18' },
-    { id: 'skirtPink',   name: 'Pinkki hame', layer: 'skirt', P: '#ff8fc0', p: '#d9659a' },
-    { id: 'skirtPurple', name: 'Violetti hame', layer: 'skirt', P: '#9b6bd6', p: '#6e45a8' },
+    { id: 'pyjama',      name: 'Pyjama',        hidden: true, type: 'pants', color: '#9fc8ff' },
+    { id: 'jeans',       name: 'Farkut',        type: 'pants', color: '#3f6fb5' },
+    { id: 'brown',       name: 'Ruskeat',       type: 'pants', color: '#8b5a2b' },
+    { id: 'skirtPink',   name: 'Pinkki hame',   type: 'skirt', color: '#ff8fc0' },
+    { id: 'skirtPurple', name: 'Violetti hame', type: 'skirt', color: '#9b6bd6' },
   ],
   hat: [
     { id: 'none',   name: 'Ei hattua' },
-    { id: 'cap',    name: 'Lippis',    layer: 'cap',    H: '#e04848', h: '#a83232' },
-    { id: 'beanie', name: 'Pipo',      layer: 'beanie', H: '#4a78c8', h: '#2f4a8a' },
-    { id: 'sunhat', name: 'Aurinkohattu', layer: 'sunhat', H: '#ffe08a', h: '#e04848' },
+    { id: 'cap',    name: 'Lippis',       color: '#e04848', shade: '#a83232' },
+    { id: 'beanie', name: 'Pipo',         color: '#4a78c8', shade: '#2f4a8a' },
+    { id: 'sunhat', name: 'Aurinkohattu', color: '#ffe08a', shade: '#e04848' },
+  ],
+  costume: [
+    { id: 'none',   name: 'Ei asua' },
+    { id: 'spider', name: 'Hämähäkkiasu', top: '#d62828', legs: '#2b4fa8', boots: '#d62828', web: '#7a1418' },
   ],
 };
 
 // ---------------------------------------------------------------------------
-// CHARACTER LAYERS (16 pixels wide, 28 tall). "y" = the row where the layer starts.
-// They are drawn in this order: body → feet → pants/skirt → shirt → hair → hat.
+// BAND POSTER in the bedroom
 // ---------------------------------------------------------------------------
-MP.LAYERS = {
-  body: { y: 0, rows: [
-    '................',
-    '................',
-    '....KKKKKKKK....',
-    '...KSSSSSSSSK...',
-    '...KSSSSSSSSK...',
-    '...KSSSSSSSSK...',
-    '...KSSKSSSKSK...',
-    '...KSSKSSSKSK...',
-    '...KSMSSSSMSK...',
-    '...KSSSSKKSSK...',
-    '....KSSSSSSK....',
-    '.....KKSSKK.....',
-    '...KKSSSSSSKK...',
-    '..KSSSSSSSSSSK..',
-    '.KSSKSSSSSSKSSK.',
-    '.KSSKSSSSSSKSSK.',
-    '.KSSKSSSSSSKSSK.',
-    '.KSSKSSSSSSKSSK.',
-    '.KKKKSSSSSSKKKK.',
-    '....KSSSSSSK....',
-    '....KSSSSSSK....',
-    '....KSSKKSSK....',
-    '....KSSKKSSK....',
-    '....KSSKKSSK....',
-  ] },
-  // Two walking frames for the feet: standing and stepping
-  feet0: { y: 24, rows: [
-    '....KSSKKSSK....',
-    '....KOOKKOOK....',
-    '...KOOOKKOOOK...',
-    '...KKKKKKKKKK...',
-  ] },
-  feet1: { y: 24, rows: [
-    '...KSSK..KSSK...',
-    '...KOOK..KOOK...',
-    '..KOOOK..KOOOK..',
-    '..KKKKK..KKKKK..',
-  ] },
-  shirt: { y: 12, rows: [
-    '...KKTTTTTTKK...',
-    '..KTTTTTTTTTTK..',
-    '.KTTKTTTTTTKTTK.',
-    '.KTTKTTTTTTKTTK.',
-    '.KttKTTTTTTKttK.',
-    '.....TTTTTT.....',
-    '.....tttttt.....',
-  ] },
-  pants: { y: 19, rows: [
-    '....KPPPPPPK....',
-    '....KPPPPPPK....',
-    '....KPPKKPPK....',
-    '....KPPKKPPK....',
-    '....KppKKppK....',
-  ] },
-  skirt: { y: 19, rows: [
-    '....KPPPPPPK....',
-    '...KPPPPPPPPK...',
-    '..KPPPPPPPPPPK..',
-    '..KppppppppppK..',
-    '..KKKKKKKKKKKK..',
-  ] },
-  hairGirl: { y: 1, rows: [
-    '....KKKKKKKK.KK.',
-    '...KAAAAAAAAKIIK',
-    '..KAAAAAAAAAAKK.',
-    '..KAaAAaAAaAAK..',
-    '..KAK......KAK..',
-    '..KAK......KAK..',
-    '..KAK......KAK..',
-    '..KAK......KAK..',
-    '..KAK......KAK..',
-    '..KAAK....KAAK..',
-    '..KAAK....KAAK..',
-    '..KaaK....KaaK..',
-    '...KK......KK...',
-  ] },
-  hairBoy: { y: 1, rows: [
-    '....KKKKKKKK....',
-    '...KAAAAAAAAK...',
-    '..KAAAAAAAAAAK..',
-    '..KAAaAAAaAAAK..',
-    '...KA......AK...',
-  ] },
-  cap: { y: 0, rows: [
-    '.....KKKKKK.....',
-    '....KHHHHHHK....',
-    '...KHHHHHHHHK...',
-    '...KhhhhhhhhhhK.',
-  ] },
-  beanie: { y: 0, rows: [
-    '......KWWK......',
-    '....KKHHHHKK....',
-    '...KHHHHHHHHK...',
-    '...KHhHhHhHhK...',
-    '...KhhhhhhhhK...',
-  ] },
-  sunhat: { y: 0, rows: [
-    '................',
-    '.....KKKKKK.....',
-    '....KHHHHHHK....',
-    '...KhhhhhhhhK...',
-    'KHHHHHHHHHHHHHHK',
-    '.KKKKKKKKKKKKKK.',
-  ] },
-};
-
-// ---------------------------------------------------------------------------
-// SPRITES: all other pictures
-// ---------------------------------------------------------------------------
-MP.SPRITES = {
-  sun: [
-    '.....Y.....',
-    '.Y...Y...Y.',
-    '..Y.yyy.Y..',
-    '...yYYYy...',
-    '..yYYYYYy..',
-    'YYyYYYYYyYY',
-    '..yYYYYYy..',
-    '...yYYYy...',
-    '..Y.yyy.Y..',
-    '.Y...Y...Y.',
-    '.....Y.....',
-  ],
-  moon: [
-    '...CCCC...',
-    '.CCCCCCCC.',
-    '.CCcCCCCC.',
-    'CCCCCCcCCC',
-    'CCCCCCCCCC',
-    'CCcCCCCCCC',
-    'CCCCCcCCCC',
-    '.CCCCCCCC.',
-    '.CCCCCcCC.',
-    '...CCCC...',
-  ],
-  star: [
-    '..Y..',
-    '.YWY.',
-    'YWWWY',
-    '.YWY.',
-    '..Y..',
-  ],
-  sparkle: [
-    '...W...',
-    '...W...',
-    '..WYW..',
-    'WWYYYWW',
-    '..WYW..',
-    '...W...',
-    '...W...',
-  ],
-  arrow: [
-    '..KKKKK..',
-    '..KYYYK..',
-    '..KYYYK..',
-    '..KYYYK..',
-    'KKKYYYKKK',
-    '.KYYYYYK.',
-    '..KYYYK..',
-    '...KYK...',
-    '....K....',
-  ],
-  bird: [
-    '...RR.....',
-    '..KRRK....',
-    '.KWWWWK...',
-    'YKWKWWWK..',
-    '.KWWWWWWKK',
-    '..KWWWWWWK',
-    '...KKKKKK.',
-    '....Y..Y..',
-  ],
-  ball: [
-    '..KKKK..',
-    '.KRRWWK.',
-    'KRRRWWWK',
-    'KWWWRRRK',
-    'KWWWRRRK',
-    'KRRRWWWK',
-    '.KRRWWK.',
-    '..KKKK..',
-  ],
-  teddy: [
-    '.KK......KK.',
-    'KBBK....KBBK',
-    'KBDKKKKKKDBK',
-    '.KBBBBBBBBK.',
-    '.KBKBBBBKBK.',
-    '.KBBBDDBBBK.',
-    '.KBBDKKDBBK.',
-    '..KBBDDBBK..',
-    '.KKBBBBBBKK.',
-    'KBBKDDDDKBBK',
-    'KBBKDDDDKBBK',
-    '.KKBBBBBBKK.',
-    '..KBBKKBBK..',
-    '..KKK..KKK..',
-  ],
-  bed: [
-    'KKKK....................................',
-    'KDBK....................................',
-    'KDBK....................................',
-    'KDBK....................................',
-    'KDBK.KKKKKKKK...........................',
-    'KDBKKWWWWWWWWK..........................',
-    'KDBKKWWWWWWWwKKKKKKKKKKKKKKKKKKKKKKKKKKK',
-    'KDBKKwwwwwwwwKNNNNNNNNNNNNNNNNNNNNNNKDBK',
-    'KDBKKKKKKKKKKKNnNNNnNNNnNNNnNNNnNNNNKDBK',
-    'KDBKNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNKDBK',
-    'KDBKnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnKDBK',
-    'KDBKWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWKDBK',
-    'KDBKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKDBK',
-    'KDBKBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBKDBK',
-    'KDBKbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbKDBK',
-    'KDBKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKDBK',
-    'KDBK................................KDBK',
-    'KKKK................................KKKK',
-  ],
-  // The glass is see-through: the scene draws the sky behind the window.
-  window: [
-    'KKKKKKKKKKKKKKKKKKKKKKKK',
-    'KDDDDDDDDDDDDDDDDDDDDDDK',
-    'KDKKKKKKKKKKKKKKKKKKKKDK',
-    'KDKl.......KKl.......KDK',
-    'KDK.l......KK.l......KDK',
-    'KDK........KK........KDK',
-    'KDK........KK........KDK',
-    'KDK........KK........KDK',
-    'KDK........KK........KDK',
-    'KDKKKKKKKKKKKKKKKKKKKKDK',
-    'KDKl.......KKl.......KDK',
-    'KDK........KK........KDK',
-    'KDK........KK........KDK',
-    'KDK........KK........KDK',
-    'KDK........KK........KDK',
-    'KDK........KK........KDK',
-    'KDKKKKKKKKKKKKKKKKKKKKDK',
-    'KDDDDDDDDDDDDDDDDDDDDDDK',
-    'KBBBBBBBBBBBBBBBBBBBBBBK',
-    'KKKKKKKKKKKKKKKKKKKKKKKK',
-  ],
-  toilet: [
-    'KKKKK.........',
-    'KWWWK.........',
-    'KWWWK.........',
-    'KWWWK.........',
-    'KWWWK.........',
-    'KWWWK.........',
-    'KWWWK.........',
-    'KWWWKKKKKKKKK.',
-    'KWWWwwwwwwwwwK',
-    'KWWWKKKKKKKKKK',
-    'KWWWWWWWWWWWK.',
-    'KWWWWWWWWWWK..',
-    '.KWWWWWWWWWK..',
-    '..KWWWWWWWK...',
-    '...KwWWWWK....',
-    '...KwWWWWK....',
-    '...KwWWWWK....',
-    '..KwwWWWWWK...',
-    '..KKKKKKKKK...',
-  ],
-  sink: [
-    '.......KKK........',
-    '.......KgK........',
-    '.......KgKKKK.....',
-    '.......KggggK.....',
-    '.......KKKKgK.....',
-    'KKKKKKKKKKKKKKKKKK',
-    'KwwwwwwwwwwwwwwwwK',
-    'KWWWWWWWWWWWWWWWWK',
-    '.KWWWWWWWWWWWWWWK.',
-    '..KWWWWWWWWWWWWK..',
-    '...KKKKKKKKKKKK...',
-    '......KWWWWK......',
-    '......KwWWWK......',
-    '......KwWWWK......',
-    '......KwWWWK......',
-    '......KwWWWK......',
-    '......KwWWWK......',
-    '......KwWWWK......',
-    '......KwWWWK......',
-    '......KwWWWK......',
-    '......KwWWWK......',
-    '.....KwWWWWWK.....',
-    '....KKKKKKKKKK....',
-  ],
-  mirror: [
-    '...KKKKKKKK...',
-    '..KYYYYYYYYK..',
-    '.KYlLLLLLLLYK.',
-    'KYlLLLLLLLLLYK',
-    'KYLlLLLLLLLLYK',
-    'KYLLLLLLLLLLYK',
-    'KYLLLLLLLLLLYK',
-    'KYLLLLLLLLLLYK',
-    'KYLLLLLLLLLLYK',
-    'KYLLLLLLLLLLYK',
-    'KYLLLLLLLLLLYK',
-    'KYLLLLLLLLLLYK',
-    '.KYLLLLLLLLYK.',
-    '..KYYYYYYYYK..',
-    '...KKKKKKKK...',
-  ],
-  // Toothbrush in a cup (on the sink)
-  cup: [
-    '...WW..',
-    '...II..',
-    '...I...',
-    '...I...',
-    '...I...',
-    'KKKKKKK',
-    'KnnnnnK',
-    'KnnnnnK',
-    'KnnnnnK',
-    '.KnnnK.',
-    '.KKKKK.',
-  ],
-  // Big toothbrush for the brushing game
-  toothbrush: [
-    '.WWWWWW.................',
-    '.WwWwWw.................',
-    'KKKKKKKKKKKKKKKKKKKKKK..',
-    'KIIIIIIIIIIIIIIIIIIIIIK.',
-    'KKKKKKKKKKKKKKKKKKKKKK..',
-  ],
-  wardrobe: [
-    'KKKKKKKKKKKKKKKKKKKKKKKKKKKK',
-    'KDDDDDDDDDDDDDDDDDDDDDDDDDDK',
-    'KBBBBBBBBBBBBBBBBBBBBBBBBBBK',
-    'KBKKKKKKKKKKKKKKKKKKKKKKKKBK',
-    'KBKBBBBBBBBBBKKBBBBBBBBBBKBK',
-    'KBKBbbbbbbbbBKKBbbbbbbbbBKBK',
-    'KBKBbDDDDDDbBKKBbDDDDDDbBKBK',
-    'KBKBbDDDDDDbBKKBbDDDDDDbBKBK',
-    'KBKBbDDDDDDbBKKBbDDDDDDbBKBK',
-    'KBKBbDDDDDDbBKKBbDDDDDDbBKBK',
-    'KBKBbDDDDDDbBKKBbDDDDDDbBKBK',
-    'KBKBbDDDDDDbBKKBbDDDDDDbBKBK',
-    'KBKBbDDDDDDbBKKBbDDDDDDbBKBK',
-    'KBKBbDDDDDDbBKKBbDDDDDDbBKBK',
-    'KBKBbDDDDDDbBKKBbDDDDDDbBKBK',
-    'KBKBbDDDDDDbBKKBbDDDDDDbBKBK',
-    'KBKBbDDDDDDbBKKBbDDDDDDbBKBK',
-    'KBKBbbbbbbbbBKKBbbbbbbbbBKBK',
-    'KBKBBBBBBBBBBKKBBBBBBBBBBKBK',
-    'KBKBBBBBBBBBBKKBBBBBBBBBBKBK',
-    'KBKBBBBBBBBBYKKYBBBBBBBBBKBK',
-    'KBKBBBBBBBBBBKKBBBBBBBBBBKBK',
-    'KBKBBBBBBBBBBKKBBBBBBBBBBKBK',
-    'KBKBbbbbbbbbBKKBbbbbbbbbBKBK',
-    'KBKBbDDDDDDbBKKBbDDDDDDbBKBK',
-    'KBKBbDDDDDDbBKKBbDDDDDDbBKBK',
-    'KBKBbDDDDDDbBKKBbDDDDDDbBKBK',
-    'KBKBbDDDDDDbBKKBbDDDDDDbBKBK',
-    'KBKBbDDDDDDbBKKBbDDDDDDbBKBK',
-    'KBKBbDDDDDDbBKKBbDDDDDDbBKBK',
-    'KBKBbDDDDDDbBKKBbDDDDDDbBKBK',
-    'KBKBbDDDDDDbBKKBbDDDDDDbBKBK',
-    'KBKBbDDDDDDbBKKBbDDDDDDbBKBK',
-    'KBKBbDDDDDDbBKKBbDDDDDDbBKBK',
-    'KBKBbDDDDDDbBKKBbDDDDDDbBKBK',
-    'KBKBbDDDDDDbBKKBbDDDDDDbBKBK',
-    'KBKBbDDDDDDbBKKBbDDDDDDbBKBK',
-    'KBKBbbbbbbbbBKKBbbbbbbbbBKBK',
-    'KBKBBBBBBBBBBKKBBBBBBBBBBKBK',
-    'KBKBBBBBBBBBBKKBBBBBBBBBBKBK',
-    'KBKKKKKKKKKKKKKKKKKKKKKKKKBK',
-    'KBBBBBBBBBBBBBBBBBBBBBBBBBBK',
-    'KbbbbbbbbbbbbbbbbbbbbbbbbbbK',
-    'KKKKKKKKKKKKKKKKKKKKKKKKKKKK',
-    'KKK......................KKK',
-    'KKK......................KKK',
-  ],
-  door: [
-    'KKKKKKKKKKKKKKKKKKKKKKKK',
-    'KbbbbbbbbbbbbbbbbbbbbbbK',
-    'KbKKKKKKKKKKKKKKKKKKKKbK',
-    'KbKRRRRRRRRRRRRRRRRRRKbK',
-    'KbKRRRRRRRRRRRRRRRRRRKbK',
-    'KbKRRRRRKKKKKKKKRRRRRKbK',
-    'KbKRRRRRKlLLLLLKRRRRRKbK',
-    'KbKRRRRRKLlLLLLKRRRRRKbK',
-    'KbKRRRRRKLLLLLLKRRRRRKbK',
-    'KbKRRRRRKLLLLLLKRRRRRKbK',
-    'KbKRRRRRKLLLLLLKRRRRRKbK',
-    'KbKRRRRRKLLLLLLKRRRRRKbK',
-    'KbKRRRRRKKKKKKKKRRRRRKbK',
-    'KbKRRRRRRRRRRRRRRRRRRKbK',
-    'KbKRRRRRRRRRRRRRRRRRRKbK',
-    'KbKRrrrrrrRRRRrrrrrrRKbK',
-    'KbKRrRRRRrRRRRrRRRRrRKbK',
-    'KbKRrRRRRrRRRRrRRRRrRKbK',
-    'KbKRrRRRRrRRRRrRRRRrRKbK',
-    'KbKRrrrrrrRRRRrrrrrrRKbK',
-    'KbKRRRRRRRRRRRRRRRRRRKbK',
-    'KbKRRRRRRRRRRRRRRRRRRKbK',
-    'KbKRRRRRRRRRRRRRRRRRRKbK',
-    'KbKRRRRRRRRRRRRRRRYYRKbK',
-    'KbKRRRRRRRRRRRRRRRYYRKbK',
-    'KbKRRRRRRRRRRRRRRRRRRKbK',
-    'KbKRRRRRRRRRRRRRRRRRRKbK',
-    'KbKRrrrrrrRRRRrrrrrrRKbK',
-    'KbKRrRRRRrRRRRrRRRRrRKbK',
-    'KbKRrRRRRrRRRRrRRRRrRKbK',
-    'KbKRrRRRRrRRRRrRRRRrRKbK',
-    'KbKRrRRRRrRRRRrRRRRrRKbK',
-    'KbKRrRRRRrRRRRrRRRRrRKbK',
-    'KbKRrRRRRrRRRRrRRRRrRKbK',
-    'KbKRrRRRRrRRRRrRRRRrRKbK',
-    'KbKRrrrrrrRRRRrrrrrrRKbK',
-    'KbKRRRRRRRRRRRRRRRRRRKbK',
-    'KbKRRRRRRRRRRRRRRRRRRKbK',
-    'KbKrrrrrrrrrrrrrrrrrrKbK',
-    'KbKKKKKKKKKKKKKKKKKKKKbK',
-    'KbbbbbbbbbbbbbbbbbbbbbbK',
-    'KKKKKKKKKKKKKKKKKKKKKKKK',
-  ],
-  // Pointing hand for the brushing tutorial
-  hand: [
-    '....KK......',
-    '...KSSK.....',
-    '...KSSK.....',
-    '...KSSK.....',
-    '...KSSKKK...',
-    '.KKKSSKSSKK.',
-    'KSSKSSKSSKSK',
-    'KSSSSSSSSSSK',
-    'KSSSSSSSSSSK',
-    '.KSSSSSSSSK.',
-    '.KSSSSSSSSK.',
-    '..KKKKKKKK..',
+MP.BAND = {
+  name: 'TURPAPOJAT',
+  colorTop: '#6a3fb5',
+  colorBottom: '#e0559a',
+  textColor: '#ffe680',
+  guitar: '#e08a3c',
+  members: [
+    { hair: '#4a3020', shirt: 'red' },     // with the guitar
+    { hair: '#e3b04b', shirt: 'sailor' },  // with the microphone
   ],
 };
 
-// ---------------------------------------------------------------------------
-// FONT: pixel letters, 7 rows tall. "X" = pixel, "." = empty.
-// You can draw your own letters! Every row of one letter must be the same width.
-// ---------------------------------------------------------------------------
-MP.FONT = {
-  'A': ['.XXX.', 'X...X', 'X...X', 'XXXXX', 'X...X', 'X...X', 'X...X'],
-  'B': ['XXXX.', 'X...X', 'X...X', 'XXXX.', 'X...X', 'X...X', 'XXXX.'],
-  'C': ['.XXX.', 'X...X', 'X....', 'X....', 'X....', 'X...X', '.XXX.'],
-  'D': ['XXXX.', 'X...X', 'X...X', 'X...X', 'X...X', 'X...X', 'XXXX.'],
-  'E': ['XXXXX', 'X....', 'X....', 'XXXX.', 'X....', 'X....', 'XXXXX'],
-  'F': ['XXXXX', 'X....', 'X....', 'XXXX.', 'X....', 'X....', 'X....'],
-  'G': ['.XXX.', 'X...X', 'X....', 'X.XXX', 'X...X', 'X...X', '.XXXX'],
-  'H': ['X...X', 'X...X', 'X...X', 'XXXXX', 'X...X', 'X...X', 'X...X'],
-  'I': ['XXX', '.X.', '.X.', '.X.', '.X.', '.X.', 'XXX'],
-  'J': ['..XXX', '...X.', '...X.', '...X.', 'X..X.', 'X..X.', '.XX..'],
-  'K': ['X...X', 'X..X.', 'X.X..', 'XX...', 'X.X..', 'X..X.', 'X...X'],
-  'L': ['X....', 'X....', 'X....', 'X....', 'X....', 'X....', 'XXXXX'],
-  'M': ['X...X', 'XX.XX', 'X.X.X', 'X.X.X', 'X...X', 'X...X', 'X...X'],
-  'N': ['X...X', 'X...X', 'XX..X', 'X.X.X', 'X..XX', 'X...X', 'X...X'],
-  'O': ['.XXX.', 'X...X', 'X...X', 'X...X', 'X...X', 'X...X', '.XXX.'],
-  'P': ['XXXX.', 'X...X', 'X...X', 'XXXX.', 'X....', 'X....', 'X....'],
-  'Q': ['.XXX.', 'X...X', 'X...X', 'X...X', 'X.X.X', 'X..X.', '.XX.X'],
-  'R': ['XXXX.', 'X...X', 'X...X', 'XXXX.', 'X.X..', 'X..X.', 'X...X'],
-  'S': ['.XXXX', 'X....', 'X....', '.XXX.', '....X', '....X', 'XXXX.'],
-  'T': ['XXXXX', '..X..', '..X..', '..X..', '..X..', '..X..', '..X..'],
-  'U': ['X...X', 'X...X', 'X...X', 'X...X', 'X...X', 'X...X', '.XXX.'],
-  'V': ['X...X', 'X...X', 'X...X', 'X...X', 'X...X', '.X.X.', '..X..'],
-  'W': ['X...X', 'X...X', 'X...X', 'X.X.X', 'X.X.X', 'XX.XX', 'X...X'],
-  'X': ['X...X', 'X...X', '.X.X.', '..X..', '.X.X.', 'X...X', 'X...X'],
-  'Y': ['X...X', 'X...X', '.X.X.', '..X..', '..X..', '..X..', '..X..'],
-  'Z': ['XXXXX', '....X', '...X.', '..X..', '.X...', 'X....', 'XXXXX'],
-  'Å': ['..X..', '.....', '.XXX.', 'X...X', 'XXXXX', 'X...X', 'X...X'],
-  'Ä': ['.X.X.', '.....', '.XXX.', 'X...X', 'XXXXX', 'X...X', 'X...X'],
-  'Ö': ['.X.X.', '.....', '.XXX.', 'X...X', 'X...X', 'X...X', '.XXX.'],
-  '0': ['.XXX.', 'X...X', 'X..XX', 'X.X.X', 'XX..X', 'X...X', '.XXX.'],
-  '1': ['.X.', 'XX.', '.X.', '.X.', '.X.', '.X.', 'XXX'],
-  '2': ['.XXX.', 'X...X', '....X', '...X.', '..X..', '.X...', 'XXXXX'],
-  '3': ['XXXX.', '....X', '....X', '.XXX.', '....X', '....X', 'XXXX.'],
-  '4': ['...X.', '..XX.', '.X.X.', 'X..X.', 'XXXXX', '...X.', '...X.'],
-  '5': ['XXXXX', 'X....', 'XXXX.', '....X', '....X', 'X...X', '.XXX.'],
-  '6': ['.XXX.', 'X....', 'X....', 'XXXX.', 'X...X', 'X...X', '.XXX.'],
-  '7': ['XXXXX', '....X', '...X.', '..X..', '.X...', '.X...', '.X...'],
-  '8': ['.XXX.', 'X...X', 'X...X', '.XXX.', 'X...X', 'X...X', '.XXX.'],
-  '9': ['.XXX.', 'X...X', 'X...X', '.XXXX', '....X', '....X', '.XXX.'],
-  '!': ['X', 'X', 'X', 'X', 'X', '.', 'X'],
-  '?': ['.XXX.', 'X...X', '....X', '...X.', '..X..', '.....', '..X..'],
-  '.': ['.', '.', '.', '.', '.', '.', 'X'],
-  ',': ['..', '..', '..', '..', '..', '.X', 'X.'],
-  ':': ['.', 'X', '.', '.', '.', 'X', '.'],
-  '-': ['...', '...', '...', 'XXX', '...', '...', '...'],
-  '/': ['....X', '...X.', '...X.', '..X..', '.X...', '.X...', 'X....'],
-  "'": ['X', 'X', '.', '.', '.', '.', '.'],
-  '…': ['.....', '.....', '.....', '.....', '.....', '.....', 'X.X.X'],
-  ' ': ['...', '...', '...', '...', '...', '...', '...'],
+// Finds a clothing item by id. Unknown ids give the first item (pyjamas / none).
+MP.findItem = function (slot, id) {
+  const list = MP.CLOTHES[slot];
+  return list.find((it) => it.id === id) || list[0];
 };
 
 // ===========================================================================
-// Drawing code (you don't need to change anything below this line)
+// Drawing helpers (you don't need to change these)
 // ===========================================================================
 (function () {
-  const spriteCache = {};
-  const charCache = {};
+  const C = MP.COLORS;
 
-  // Turns text rows into a small canvas. colorOf(letter, x, y) gives the color.
-  function gridToCanvas(rows, colorOf, w, h, offsetY) {
-    const c = document.createElement('canvas');
-    c.width = w || rows[0].length;
-    c.height = h || rows.length;
-    paintRows(c.getContext('2d'), rows, colorOf, offsetY || 0);
-    return c;
+  function rr(c, x, y, w, h, r) { MP.roundRect(c, x, y, w, h, r); }
+  function circle(c, x, y, r) { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); }
+  function ellipse(c, x, y, rx, ry, rot) { c.beginPath(); c.ellipse(x, y, rx, ry, rot || 0, 0, Math.PI * 2); }
+  // fill + outline
+  function fs(c, fill) { c.fillStyle = fill; c.fill(); c.stroke(); }
+  function begin(c, lw) {
+    c.save();
+    c.lineWidth = lw || 0.8;
+    c.lineJoin = 'round';
+    c.lineCap = 'round';
+    c.strokeStyle = C.outline;
   }
 
-  function paintRows(g, rows, colorOf, offsetY) {
-    rows.forEach((row, ry) => {
-      const y = ry + offsetY;
-      for (let x = 0; x < row.length; x++) {
-        const ch = row[x];
-        if (ch === '.') continue;
-        const color = colorOf(ch, x, y);
-        if (!color) continue;
-        g.fillStyle = color;
-        g.fillRect(x, y, 1, 1);
-      }
-    });
-  }
-
-  function flipped(src) {
-    const c = document.createElement('canvas');
-    c.width = src.width;
-    c.height = src.height;
-    const g = c.getContext('2d');
-    g.translate(src.width, 0);
-    g.scale(-1, 1);
-    g.drawImage(src, 0, 0);
-    return c;
-  }
-
-  // MP.sprite('sun') → a canvas (made once, then reused)
-  MP.sprite = function (name, flip) {
-    const key = name + (flip ? '|f' : '');
-    if (spriteCache[key]) return spriteCache[key];
-    let c;
-    if (flip) {
-      c = flipped(MP.sprite(name));
-    } else {
-      const rows = MP.SPRITES[name];
-      if (!rows) throw new Error('No sprite called "' + name + '"');
-      c = gridToCanvas(rows, (ch) => MP.PALETTE[ch]);
+  // Spider web pattern: lines from the middle + sagging rings
+  function web(c, cx, cy, r, color, lw) {
+    c.save();
+    c.strokeStyle = color;
+    c.lineWidth = lw;
+    const n = 10;
+    c.beginPath();
+    for (let i = 0; i < n; i++) {
+      const a = i / n * Math.PI * 2;
+      c.moveTo(cx, cy);
+      c.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
     }
-    spriteCache[key] = c;
-    return c;
-  };
+    for (const k of [0.3, 0.55, 0.8, 1.05]) {
+      for (let i = 0; i < n; i++) {
+        const a1 = i / n * Math.PI * 2, a2 = (i + 1) / n * Math.PI * 2, am = (a1 + a2) / 2;
+        c.moveTo(cx + Math.cos(a1) * r * k, cy + Math.sin(a1) * r * k);
+        c.quadraticCurveTo(cx + Math.cos(am) * r * k * 0.85, cy + Math.sin(am) * r * k * 0.85,
+                           cx + Math.cos(a2) * r * k, cy + Math.sin(a2) * r * k);
+      }
+    }
+    c.stroke();
+    c.restore();
+  }
 
-  // MP.drawSprite(ctx, 'sun', x, y, { flip, scale }) – x, y = top-left corner
-  MP.drawSprite = function (ctx, name, x, y, opts) {
+  function spiderEmblem(c, x, y, s) {
+    c.save();
+    c.translate(x, y);
+    c.scale(s, s);
+    c.fillStyle = C.outline;
+    c.strokeStyle = C.outline;
+    c.lineWidth = 0.35;
+    ellipse(c, 0, 0.2, 0.6, 0.9); c.fill();
+    circle(c, 0, -0.9, 0.45); c.fill();
+    c.beginPath();
+    for (const sd of [-1, 1]) {
+      c.moveTo(0, -0.3); c.lineTo(sd * 1.6, -1.5);
+      c.moveTo(0, 0); c.lineTo(sd * 1.8, -0.3);
+      c.moveTo(0, 0.2); c.lineTo(sd * 1.7, 1.0);
+      c.moveTo(0, 0.4); c.lineTo(sd * 1.3, 1.9);
+    }
+    c.stroke();
+    c.restore();
+  }
+
+  // =========================================================================
+  // PERSON
+  // MP.drawPerson(ctx, x, y, { character, outfit, walking, walkTime, flip, scale, hair })
+  //   (x, y) = between the feet. About 42 units tall at scale 1.
+  //   character/outfit default to the player's choices in MP.state.
+  // =========================================================================
+  MP.PERSON_H = 42;
+
+  MP.drawPerson = function (c, x, y, opts) {
     opts = opts || {};
-    const c = MP.sprite(name, opts.flip);
-    const s = opts.scale || 1;
-    ctx.drawImage(c, Math.round(x), Math.round(y), c.width * s, c.height * s);
-  };
-
-  // Finds a clothing item by id. Unknown ids give the first item (pyjamas / no hat).
-  MP.findItem = function (slot, id) {
-    const list = MP.CLOTHES[slot];
-    return list.find((it) => it.id === id) || list[0];
-  };
-
-  MP.CHAR_W = 16;
-  MP.CHAR_H = 28;
-
-  // Builds the character picture: body + feet + clothes + hair + hat.
-  MP.characterCanvas = function (charId, outfit, frame, flip) {
-    charId = MP.CHARACTERS[charId] ? charId : 'girl';
-    outfit = outfit || {};
-    frame = frame ? 1 : 0;
+    const st = MP.state || {};
+    const charId = MP.CHARACTERS[opts.character] ? opts.character
+      : (MP.CHARACTERS[st.character] ? st.character : 'girl');
+    const ch = MP.CHARACTERS[charId];
+    const outfit = opts.outfit || st.outfit || {};
     const shirt = MP.findItem('shirt', outfit.shirt);
     const bottom = MP.findItem('bottom', outfit.bottom);
     const hat = MP.findItem('hat', outfit.hat);
-    const key = [charId, shirt.id, bottom.id, hat.id, frame, flip ? 'f' : ''].join('|');
-    if (charCache[key]) return charCache[key];
+    const costume = MP.findItem('costume', outfit.costume);
+    const suit = costume.id !== 'none' ? costume : null;
 
-    if (flip) {
-      charCache[key] = flipped(MP.characterCanvas(charId, outfit, frame, false));
-      return charCache[key];
+    const top = suit ? suit.top : shirt.color;
+    const legs = suit ? suit.legs : bottom.color;
+    const skirt = !suit && bottom.type === 'skirt';
+    const shoes = suit ? suit.boots : C.shoes;
+    const hands = suit ? suit.top : C.skin;
+    const isGirl = charId === 'girl';
+
+    const t = opts.walkTime || 0;
+    const sw = opts.walking ? Math.sin(t * 11) : 0;
+    const bob = opts.walking ? -Math.abs(Math.sin(t * 11)) * 0.8 : 0;
+    const s = opts.scale || 1;
+
+    begin(c, 0.7);
+    c.translate(x, y + bob * s);
+    c.scale(opts.flip ? -s : s, s);
+
+    // Long hair behind the head (girl)
+    if (isGirl && !suit) { rr(c, -8.3, -37, 16.6, 22, 6); fs(c, opts.hair || ch.hair); }
+
+    // Legs + shoes (they swing when walking)
+    for (const side of [-1, 1]) {
+      c.save();
+      c.translate(side * 2.4, -12.5);
+      c.rotate(side * sw * 0.35);
+      rr(c, -1.8, 0, 3.6, 11, 1.7); fs(c, skirt ? C.skin : legs);
+      ellipse(c, 0.9, 11.3, 2.9, 1.7); fs(c, shoes);
+      c.restore();
     }
 
-    const ch = MP.CHARACTERS[charId];
-    const base = Object.assign({}, MP.PALETTE, ch.colors);
-    const c = document.createElement('canvas');
-    c.width = MP.CHAR_W;
-    c.height = MP.CHAR_H;
-    const g = c.getContext('2d');
-
-    function layer(name, colors, special) {
-      const L = MP.LAYERS[name];
-      if (!L) return;
-      const pal = Object.assign({}, base, colors);
-      paintRows(g, L.rows, (letter, x, y) => (special && special(letter, x, y)) || pal[letter], L.y);
+    // Pants top or skirt
+    if (skirt) {
+      c.beginPath();
+      c.moveTo(-5, -14); c.lineTo(5, -14); c.lineTo(7.5, -6.5);
+      c.quadraticCurveTo(0, -5, -7.5, -6.5);
+      c.closePath(); fs(c, legs);
+    } else {
+      rr(c, -5, -14.5, 10, 5, 1.8); fs(c, legs);
     }
 
-    layer('body');
-    layer(frame ? 'feet1' : 'feet0');
-    layer(bottom.layer || 'pants', { P: bottom.P, p: bottom.p });
-    layer('shirt', { T: shirt.T, t: shirt.t }, (letter, x, y) =>
-      (letter === 'T' && shirt.stripe && y % 2 === 0) ? shirt.stripe : null);
-    layer(ch.hair);
-    if (hat.layer) layer(hat.layer, { H: hat.H, h: hat.h });
+    // Arms (swing opposite to the legs)
+    for (const side of [-1, 1]) {
+      c.save();
+      c.translate(side * 5.6, -21.5);
+      c.rotate(side * 0.18 - side * sw * 0.45);
+      rr(c, -1.7, 0, 3.4, 8.5, 1.7); fs(c, top);
+      circle(c, 0, 9.4, 1.8); fs(c, hands);
+      c.restore();
+    }
 
-    charCache[key] = c;
-    return c;
+    // Body / shirt
+    rr(c, -6, -23.5, 12, 11, 3.5); fs(c, top);
+    const stripe = !suit && shirt.stripe;
+    if (stripe || suit) {
+      c.save();
+      rr(c, -6, -23.5, 12, 11, 3.5); c.clip();
+      if (stripe) {
+        c.fillStyle = stripe;
+        for (let yy = -22; yy < -12; yy += 2.6) c.fillRect(-7, yy, 14, 1.2);
+      } else {
+        web(c, 0, -18.5, 9, suit.web, 0.35);
+      }
+      c.restore();
+      rr(c, -6, -23.5, 12, 11, 3.5); c.stroke();
+    }
+
+    if (suit) {
+      // Spider mask: red head, web lines, big white eyes
+      spiderEmblem(c, 0, -19.5, 1.1);
+      circle(c, 0, -30.5, 7.6); c.fillStyle = suit.top; c.fill();
+      c.save(); circle(c, 0, -30.5, 7.6); c.clip();
+      web(c, 0, -29.5, 9.5, suit.web, 0.38);
+      c.restore();
+      circle(c, 0, -30.5, 7.6); c.stroke();
+      for (const sd of [-1, 1]) {
+        ellipse(c, sd * 3, -31, 2, 1.3, -sd * 0.55);
+        c.fillStyle = '#ffffff'; c.fill();
+        c.lineWidth = 0.9; c.stroke(); c.lineWidth = 0.7;
+      }
+      c.restore();
+      return;
+    }
+
+    // Head
+    circle(c, 0, -30.5, 7.6); fs(c, C.skin);
+    // Face: eyes, shine, cheeks, smile
+    c.fillStyle = C.outline;
+    ellipse(c, -2.7, -30, 0.95, 1.35); c.fill();
+    ellipse(c, 2.7, -30, 0.95, 1.35); c.fill();
+    c.fillStyle = '#fff';
+    circle(c, -2.4, -30.5, 0.35); c.fill();
+    circle(c, 3.0, -30.5, 0.35); c.fill();
+    c.fillStyle = C.cheeks;
+    circle(c, -4.6, -27.6, 1.4); c.fill();
+    circle(c, 4.6, -27.6, 1.4); c.fill();
+    c.beginPath(); c.arc(0, -28, 1.9, 0.2 * Math.PI, 0.8 * Math.PI); c.stroke();
+
+    // Hair on top of the head
+    c.beginPath();
+    if (isGirl) {
+      c.moveTo(-8.1, -29);
+      c.quadraticCurveTo(-8.4, -39.5, 0, -39.3);
+      c.quadraticCurveTo(8.4, -39.5, 8.1, -29);
+      c.quadraticCurveTo(6.5, -31.5, 4.3, -32.8);
+      c.quadraticCurveTo(2.2, -31, 0.2, -33.2);
+      c.quadraticCurveTo(-2.4, -31, -4.6, -32.8);
+      c.quadraticCurveTo(-6.6, -31.5, -8.1, -29);
+    } else {
+      c.moveTo(-7.9, -30);
+      c.quadraticCurveTo(-8.2, -39.5, 0, -39.5);
+      c.quadraticCurveTo(2, -41.5, 3.2, -40.6);
+      c.quadraticCurveTo(8.3, -38.5, 7.9, -30);
+      c.quadraticCurveTo(5.5, -33.8, 2, -33.6);
+      c.quadraticCurveTo(-1.5, -35, -4, -33.6);
+      c.quadraticCurveTo(-6.6, -33, -7.9, -30);
+    }
+    c.closePath(); fs(c, opts.hair || ch.hair);
+
+    // Hats
+    if (hat.id === 'cap') {
+      rr(c, 0, -34.2, 12, 2.6, 1.3); fs(c, hat.shade);
+      c.beginPath(); c.arc(0, -33.6, 8.2, Math.PI, 2 * Math.PI); c.closePath(); fs(c, hat.color);
+      circle(c, 0, -41.6, 0.9); fs(c, hat.shade);
+    } else if (hat.id === 'beanie') {
+      c.beginPath(); c.arc(0, -33.4, 8.3, Math.PI, 2 * Math.PI); c.closePath(); fs(c, hat.color);
+      rr(c, -8.7, -35.2, 17.4, 3.6, 1.8); fs(c, hat.shade);
+      c.save(); c.strokeStyle = hat.color; c.lineWidth = 0.5;
+      c.beginPath();
+      for (let xx = -6.5; xx <= 6.5; xx += 2.2) { c.moveTo(xx, -34.6); c.lineTo(xx, -32.2); }
+      c.stroke(); c.restore();
+      circle(c, 0, -42.2, 2); fs(c, '#ffffff');
+    } else if (hat.id === 'sunhat') {
+      ellipse(c, 0, -34.2, 12.5, 2.4); fs(c, hat.color);
+      c.beginPath(); c.arc(0, -34.6, 6.8, Math.PI, 2 * Math.PI); c.closePath(); fs(c, hat.color);
+      rr(c, -6.8, -36.6, 13.6, 2, 1); fs(c, hat.shade);
+    } else if (isGirl) {
+      // Bow when there is no hat
+      c.save(); c.translate(5.6, -37.2);
+      c.beginPath(); c.moveTo(0, 0); c.lineTo(3, -2.2); c.lineTo(3, 2.2); c.closePath(); fs(c, ch.bow);
+      c.beginPath(); c.moveTo(0, 0); c.lineTo(-3, -2.2); c.lineTo(-3, 2.2); c.closePath(); fs(c, ch.bow);
+      circle(c, 0, 0, 1.1); fs(c, ch.bow);
+      c.restore();
+    }
+    c.restore();
   };
 
-  // Draws the character so that (x, y) is the middle of the feet.
-  // opts: { character, outfit, frame, flip, scale } (defaults come from MP.state)
-  MP.drawCharacter = function (ctx, x, y, opts) {
-    opts = opts || {};
-    const st = MP.state || {};
-    const c = MP.characterCanvas(
-      opts.character || st.character || 'girl',
-      opts.outfit || st.outfit,
-      opts.frame || 0,
-      !!opts.flip
-    );
-    const s = opts.scale || 1;
-    ctx.drawImage(c, Math.round(x - (c.width * s) / 2), Math.round(y - c.height * s), c.width * s, c.height * s);
+  // =========================================================================
+  // THINGS. MP.draw('bed', ctx, x, y, opts)
+  // For furniture (x, y) is the middle of the bottom edge (where it stands).
+  // MP.SIZES tells how big each one is (for tapping).
+  // =========================================================================
+  MP.SIZES = {
+    bed: { w: 46, h: 29 },
+    teddy: { w: 12, h: 14 },
+    panda: { w: 12, h: 15 },
+    window: { w: 34, h: 28 },   // (x, y) = top-left corner
+    mirror: { w: 16, h: 20 },   // (x, y) = middle
+    sink: { w: 22, h: 34 },
+    toilet: { w: 20, h: 33 },
+    wardrobe: { w: 36, h: 56 },
+    door: { w: 28, h: 48 },
+    poster: { w: 36, h: 46 },   // (x, y) = top-left corner
+  };
+
+  const D = {};
+
+  D.bed = function (c) {
+    rr(c, -23, -28, 5, 28, 2); fs(c, C.wood);
+    rr(c, 19, -17, 4, 17, 2); fs(c, C.wood);
+    rr(c, -19, -13, 40, 8, 2); fs(c, '#ffffff');
+    rr(c, -17, -18, 12, 6, 3); fs(c, C.pillow);
+    rr(c, -9, -16, 30, 9, 3); fs(c, C.blanket);
+    c.fillStyle = C.blanketDots;
+    for (let xx = -5; xx < 19; xx += 5) { circle(c, xx, -11.5, 0.9); c.fill(); }
+    rr(c, -20, -6, 41, 4, 1.5); fs(c, C.woodDark);
+  };
+
+  D.teddy = function (c) {
+    circle(c, -3, -12, 1.8); fs(c, C.teddy);
+    circle(c, 3, -12, 1.8); fs(c, C.teddy);
+    ellipse(c, 0, -4, 4.5, 4.2); fs(c, C.teddy);
+    circle(c, 0, -10, 3.8); fs(c, C.teddy);
+    ellipse(c, 0, -9, 1.8, 1.3); fs(c, C.teddyNose);
+    c.fillStyle = C.outline;
+    circle(c, -1.4, -11, 0.5); c.fill();
+    circle(c, 1.4, -11, 0.5); c.fill();
+    circle(c, 0, -9.4, 0.5); c.fill();
+  };
+
+  D.panda = function (c) {
+    const B = C.pandaBlack, Wt = C.pandaWhite;
+    circle(c, -3.2, -12.6, 1.7); fs(c, B);
+    circle(c, 3.2, -12.6, 1.7); fs(c, B);
+    ellipse(c, -3, -1.2, 2, 1.5); fs(c, B);
+    ellipse(c, 3, -1.2, 2, 1.5); fs(c, B);
+    ellipse(c, 0, -4.5, 4.6, 4.3); fs(c, Wt);
+    ellipse(c, -4, -5.2, 1.4, 2.4); fs(c, B);
+    ellipse(c, 4, -5.2, 1.4, 2.4); fs(c, B);
+    ellipse(c, 0, -10.2, 4.1, 3.7); fs(c, Wt);
+    c.fillStyle = B;
+    ellipse(c, -1.6, -10.6, 1.05, 1.4, 0.5); c.fill();
+    ellipse(c, 1.6, -10.6, 1.05, 1.4, -0.5); c.fill();
+    c.fillStyle = Wt;
+    circle(c, -1.4, -10.9, 0.35); c.fill();
+    circle(c, 1.4, -10.9, 0.35); c.fill();
+    c.fillStyle = B;
+    ellipse(c, 0, -8.9, 0.6, 0.4); c.fill();
+  };
+
+  // Window. opts: { skyTop, skyBottom, sun, moon, stars, t }
+  D.window = function (c, o) {
+    o = o || {};
+    rr(c, 0, 0, 30, 26, 3); fs(c, C.woodLight);
+    const sky = c.createLinearGradient(0, 3, 0, 23);
+    sky.addColorStop(0, o.skyTop || '#6cc0ff');
+    sky.addColorStop(1, o.skyBottom || '#cdeeff');
+    rr(c, 3, 3, 24, 20, 1.5); fs(c, sky);
+    c.save();
+    rr(c, 3, 3, 24, 20, 1.5); c.clip();
+    if (o.stars) {
+      c.fillStyle = '#ffffff';
+      [[6, 6], [12, 9], [22, 5], [8, 16], [24, 15]].forEach(([sx, sy], i) => {
+        c.globalAlpha = 0.5 + 0.5 * Math.sin((o.t || 0) * 3 + i);
+        circle(c, sx, sy, 0.6); c.fill();
+      });
+      c.globalAlpha = 1;
+    }
+    if (o.moon) D.moon(c, { x: 19, y: 10, r: 4 });
+    if (o.sun !== false && !o.moon) {
+      D.sun(c, { x: 19, y: 11, r: 4.5, t: o.t });
+      c.fillStyle = '#ffffff';
+      ellipse(c, 9, 17, 4, 1.8); c.fill();
+      ellipse(c, 12, 16, 3, 2); c.fill();
+    }
+    c.restore();
+    c.save();
+    c.beginPath(); c.moveTo(15, 3); c.lineTo(15, 23); c.moveTo(3, 13); c.lineTo(27, 13);
+    c.lineWidth = 1.6; c.strokeStyle = C.woodLight; c.stroke();
+    c.restore();
+    rr(c, -2, 25, 34, 3, 1.5); fs(c, C.wood);
+  };
+
+  D.mirror = function (c) {
+    ellipse(c, 0, 0, 8, 10); fs(c, C.gold);
+    ellipse(c, 0, 0, 6, 8); fs(c, C.glass);
+    c.save();
+    c.strokeStyle = '#ffffff'; c.lineWidth = 1;
+    c.beginPath(); c.moveTo(-3, -5); c.lineTo(-1, -7); c.moveTo(-3, -1); c.lineTo(2, -6); c.stroke();
+    c.restore();
+  };
+
+  D.sink = function (c) {
+    rr(c, -3, -22, 6, 23, 2); fs(c, C.porcelainShade);
+    c.beginPath();
+    c.moveTo(-11, -24); c.lineTo(11, -24);
+    c.quadraticCurveTo(10, -16, 0, -16);
+    c.quadraticCurveTo(-10, -16, -11, -24);
+    c.closePath(); fs(c, C.porcelain);
+    // Tap
+    c.save();
+    c.beginPath(); c.moveTo(0, -24); c.lineTo(0, -30); c.quadraticCurveTo(0, -31.5, 3, -31.5); c.lineTo(5, -31.5);
+    c.lineWidth = 1.8; c.strokeStyle = C.metal; c.stroke();
+    c.restore();
+    // Cup with toothbrush
+    c.save();
+    c.beginPath(); c.moveTo(-8, -33); c.lineTo(-7, -38);
+    c.lineWidth = 1; c.strokeStyle = C.toothbrush; c.stroke();
+    c.restore();
+    rr(c, -10, -33, 4.5, 9, 1); fs(c, C.cup);
+  };
+
+  D.toilet = function (c) {
+    rr(c, -9.6, -33, 8.2, 2.2, 1); fs(c, C.porcelain);       // tank lid
+    rr(c, -9, -31, 7, 17, 1.5); fs(c, C.porcelain);           // tank
+    circle(c, -5.5, -33.6, 0.9); fs(c, C.metal);              // button
+    rr(c, -1, -7, 6, 7, 1.5); fs(c, C.porcelainShade);        // foot
+    c.beginPath();                                             // bowl
+    c.moveTo(-3, -13.5); c.lineTo(9.5, -13.5);
+    c.quadraticCurveTo(9, -6, 2, -6);
+    c.quadraticCurveTo(-3, -7, -3, -13.5);
+    c.closePath(); fs(c, C.porcelain);
+    rr(c, -3.5, -16, 13.5, 2.6, 1.2); fs(c, C.porcelain);     // seat
+    rr(c, -3, -1.5, 10, 1.5, 0.7); fs(c, C.porcelainShade);   // base
+  };
+
+  // Wardrobe. opts: { open }  When open, the clothes inside are visible.
+  D.wardrobe = function (c, o) {
+    o = o || {};
+    rr(c, -16, -52, 32, 53, 2.5); fs(c, C.wood);
+    if (!o.open) {
+      rr(c, -13, -49, 12.5, 46, 1.5); fs(c, C.woodLight);
+      rr(c, 0.5, -49, 12.5, 46, 1.5); fs(c, C.woodLight);
+      circle(c, -3, -26, 1); fs(c, C.gold);
+      circle(c, 2.5, -26, 1); fs(c, C.gold);
+    } else {
+      rr(c, -13, -49, 26, 46, 1.5); fs(c, '#4a2c18');
+      c.save();
+      c.beginPath(); c.moveTo(-12, -45); c.lineTo(12, -45);
+      c.lineWidth = 1; c.strokeStyle = C.metal; c.stroke();
+      c.restore();
+      const hang = [MP.CLOTHES.shirt[1].color, MP.CLOTHES.shirt[2].color, MP.CLOTHES.shirt[3].color];
+      hang.forEach((col, i) => {
+        const hx = -9 + i * 5.5;
+        c.beginPath(); c.moveTo(hx, -45); c.lineTo(hx, -43.5); c.stroke();
+        rr(c, hx - 2.4, -43.5, 4.8, 8, 1.5); fs(c, col);
+      });
+      // Spider costume on a hanger
+      const sp = MP.findItem('costume', 'spider');
+      const hx = 8.5;
+      c.beginPath(); c.moveTo(hx, -45); c.lineTo(hx, -43.5); c.stroke();
+      rr(c, hx - 2.2, -34.5, 2, 8, 1); fs(c, sp.legs);
+      rr(c, hx + 0.2, -34.5, 2, 8, 1); fs(c, sp.legs);
+      rr(c, hx - 2.8, -43.5, 5.6, 9.5, 1.5); fs(c, sp.top);
+      c.save(); rr(c, hx - 2.8, -43.5, 5.6, 9.5, 1.5); c.clip();
+      web(c, hx, -39.5, 5, sp.web, 0.25);
+      c.restore();
+      spiderEmblem(c, hx, -40, 0.6);
+      // Open doors
+      rr(c, -25, -49, 9, 46, 1.5); fs(c, C.woodLight);
+      rr(c, 16, -49, 9, 46, 1.5); fs(c, C.woodLight);
+    }
+    rr(c, -18, -55, 36, 4, 2); fs(c, C.woodDark);
+  };
+
+  // Front door. opts: { open }
+  D.door = function (c, o) {
+    o = o || {};
+    rr(c, -14, -48, 28, 48, 2); fs(c, C.woodDark);
+    if (o.open) {
+      const sky = c.createLinearGradient(0, -45, 0, 0);
+      sky.addColorStop(0, '#8fd3ff'); sky.addColorStop(1, '#d8f3ff');
+      rr(c, -11, -45, 22, 45, 1.5); fs(c, sky);
+      c.fillStyle = '#7cc56b'; c.fillRect(-10.5, -9, 21, 9);
+      rr(c, -11, -45, 6, 45, 1.5); fs(c, C.frontDoor);
+      return;
+    }
+    rr(c, -11, -45, 22, 45, 1.5); fs(c, C.frontDoor);
+    rr(c, -5, -40, 10, 8, 1.5); fs(c, C.glass);
+    c.save();
+    c.strokeStyle = C.frontDoorShade;
+    rr(c, -8, -28, 6.5, 10, 1); c.stroke();
+    rr(c, 1.5, -28, 6.5, 10, 1); c.stroke();
+    rr(c, -8, -15, 6.5, 11, 1); c.stroke();
+    rr(c, 1.5, -15, 6.5, 11, 1); c.stroke();
+    c.restore();
+    circle(c, 7, -21, 1.2); fs(c, C.gold);
+  };
+
+  // Small things: (x, y) is the middle unless said otherwise.
+  D.sun = function (c, o) {
+    const r = o.r || 6, t = o.t || 0;
+    c.save();
+    c.strokeStyle = C.sunRays;
+    c.lineWidth = r * 0.18;
+    c.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const a = i * Math.PI / 4 + t * 0.5;
+      c.moveTo(o.x + Math.cos(a) * r * 1.35, o.y + Math.sin(a) * r * 1.35);
+      c.lineTo(o.x + Math.cos(a) * r * 1.8, o.y + Math.sin(a) * r * 1.8);
+    }
+    c.stroke();
+    c.restore();
+    c.fillStyle = C.sun;
+    circle(c, o.x, o.y, r); c.fill();
+  };
+
+  D.moon = function (c, o) {
+    const r = o.r || 6;
+    c.fillStyle = C.moon;
+    circle(c, o.x, o.y, r); c.fill();
+    c.fillStyle = C.moonShade;
+    circle(c, o.x - r * 0.35, o.y - r * 0.2, r * 0.22); c.fill();
+    circle(c, o.x + r * 0.3, o.y + r * 0.35, r * 0.16); c.fill();
+    circle(c, o.x + r * 0.25, o.y - r * 0.4, r * 0.1); c.fill();
+  };
+
+  // Four-pointed star / sparkle
+  D.sparkle = function (c, o) {
+    const r = o.r || 4;
+    c.fillStyle = o.color || '#ffffff';
+    c.beginPath();
+    c.moveTo(o.x, o.y - r);
+    c.quadraticCurveTo(o.x, o.y, o.x + r, o.y);
+    c.quadraticCurveTo(o.x, o.y, o.x, o.y + r);
+    c.quadraticCurveTo(o.x, o.y, o.x - r, o.y);
+    c.quadraticCurveTo(o.x, o.y, o.x, o.y - r);
+    c.fill();
+    c.fillStyle = o.center || C.gold;
+    circle(c, o.x, o.y, r * 0.18); c.fill();
+  };
+
+  D.star = function (c, o) {
+    D.sparkle(c, { x: o.x, y: o.y, r: o.r || 2.5, color: o.color || '#fff7c8', center: '#ffffff' });
+  };
+
+  // Arrow pointing down, tip at (x, y)
+  D.arrow = function (c, o) {
+    c.beginPath();
+    c.moveTo(o.x - 2.6, o.y - 14);
+    c.lineTo(o.x + 2.6, o.y - 14);
+    c.lineTo(o.x + 2.6, o.y - 7);
+    c.lineTo(o.x + 6, o.y - 7);
+    c.lineTo(o.x, o.y);
+    c.lineTo(o.x - 6, o.y - 7);
+    c.lineTo(o.x - 2.6, o.y - 7);
+    c.closePath();
+    fs(c, C.arrow);
+  };
+
+  // Rooster, standing at (x, y)
+  D.rooster = function (c, o) {
+    c.save();
+    c.translate(o.x, o.y);
+    const s = o.scale || 1;
+    c.scale(s, s);
+    c.beginPath(); c.moveTo(-1.5, -3); c.lineTo(-1.5, 0); c.moveTo(1.5, -3); c.lineTo(1.5, 0);
+    c.save(); c.strokeStyle = C.beak; c.lineWidth = 0.9; c.stroke(); c.restore();
+    // Tail
+    c.beginPath(); c.moveTo(4, -7); c.quadraticCurveTo(9, -14, 10, -8); c.quadraticCurveTo(9, -5, 4, -4.5); c.closePath();
+    fs(c, '#2f8f5b');
+    ellipse(c, 0, -6, 5.5, 4); fs(c, C.rooster);
+    circle(c, -4, -11, 2.8); fs(c, C.rooster);
+    // Comb and beak
+    c.beginPath(); c.moveTo(-5.5, -13.2); c.quadraticCurveTo(-5, -16, -3.5, -14); c.quadraticCurveTo(-2.5, -16, -1.8, -13); c.closePath();
+    fs(c, C.roosterComb);
+    c.beginPath(); c.moveTo(-6.6, -11.6); c.lineTo(-9, -10.8); c.lineTo(-6.6, -10); c.closePath(); fs(c, C.beak);
+    c.fillStyle = C.outline; circle(c, -4.6, -11.6, 0.5); c.fill();
+    c.restore();
+  };
+
+  // Band poster on the wall. (x, y) = top-left corner, 36 × 46.
+  D.poster = function (c) {
+    const band = MP.BAND;
+    const bg = c.createLinearGradient(0, 0, 0, 46);
+    bg.addColorStop(0, band.colorTop);
+    bg.addColorStop(1, band.colorBottom);
+    rr(c, 0, 0, 36, 46, 1.5); fs(c, bg);
+
+    // Stage lights
+    c.save();
+    rr(c, 0, 0, 36, 46, 1.5); c.clip();
+    c.fillStyle = 'rgba(255,240,150,0.22)';
+    c.beginPath(); c.moveTo(4, 10); c.lineTo(0, 46); c.lineTo(16, 46); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(32, 10); c.lineTo(20, 46); c.lineTo(36, 46); c.closePath(); c.fill();
+    // Stage
+    c.fillStyle = 'rgba(0,0,0,0.25)';
+    c.fillRect(0, 41, 36, 5);
+    c.restore();
+
+    // Band name
+    MP.drawText(c, band.name, 18, 3, { size: 0.58, color: band.textColor, align: 'center', outline: C.outline });
+
+    // The two band members
+    const [m1, m2] = band.members;
+    MP.drawPerson(c, 11, 43, { character: 'boy', outfit: { shirt: m1.shirt, bottom: 'jeans' }, hair: m1.hair, scale: 0.58 });
+    MP.drawPerson(c, 25, 43, { character: 'boy', outfit: { shirt: m2.shirt, bottom: 'jeans' }, hair: m2.hair, scale: 0.58, flip: true });
+
+    // Guitar for the first one
+    c.save();
+    c.translate(11.5, 34.5);
+    c.rotate(-0.6);
+    rr(c, 0, -0.5, 7, 1, 0.4); fs(c, C.woodDark);
+    ellipse(c, -0.5, 0, 2.6, 2); fs(c, band.guitar);
+    c.fillStyle = C.outline; circle(c, -0.3, 0, 0.6); c.fill();
+    c.restore();
+
+    // Microphone for the second one
+    c.save();
+    c.beginPath(); c.moveTo(29, 43); c.lineTo(29, 31.5);
+    c.lineWidth = 0.6; c.strokeStyle = C.metal; c.stroke();
+    c.restore();
+    circle(c, 28.6, 31, 1); fs(c, '#555a66');
+
+    // Music notes and sparkles
+    c.fillStyle = band.textColor;
+    c.strokeStyle = band.textColor;
+    c.lineWidth = 0.5;
+    for (const [nx, ny] of [[4.5, 19], [31.5, 17], [18, 15]]) {
+      ellipse(c, nx, ny, 1, 0.75, -0.3); c.fill();
+      c.beginPath(); c.moveTo(nx + 0.9, ny); c.lineTo(nx + 0.9, ny - 3.5); c.lineTo(nx + 2.2, ny - 2.6); c.stroke();
+    }
+    c.strokeStyle = C.outline;
+    D.sparkle(c, { x: 6, y: 28, r: 1.8 });
+    D.sparkle(c, { x: 31, y: 26, r: 1.5 });
+
+    // Pins
+    circle(c, 2.5, 2.5, 0.9); fs(c, '#e04848');
+    circle(c, 33.5, 2.5, 0.9); fs(c, '#e04848');
+  };
+
+  // Pointing hand, fingertip at (x, y)
+  D.hand = function (c, o) {
+    c.save();
+    c.translate(o.x, o.y);
+    rr(c, -1.6, 0, 3.2, 9, 1.6); fs(c, C.skin);
+    rr(c, -4.5, 6, 9, 8, 3); fs(c, C.skin);
+    ellipse(c, -4.5, 9.5, 1.6, 2.6, 0.4); fs(c, C.skin);
+    c.restore();
+  };
+
+  // Toothbrush. (x, y) = middle of the bristles. opts: { angle, scale }
+  D.toothbrush = function (c, o) {
+    c.save();
+    c.translate(o.x, o.y);
+    c.rotate(o.angle || 0);
+    const s = o.scale || 1;
+    c.scale(s, s);
+    rr(c, -3, 0.5, 26, 3, 1.5); fs(c, C.toothbrush);
+    rr(c, -3.5, -3, 7, 3.8, 1); fs(c, '#ffffff');
+    c.save();
+    c.strokeStyle = '#c9d3e6'; c.lineWidth = 0.4;
+    c.beginPath();
+    for (let i = -2.5; i <= 2.5; i += 1.2) { c.moveTo(i, -2.6); c.lineTo(i, 0.4); }
+    c.stroke();
+    c.restore();
+    c.restore();
+  };
+
+  D.ball = function (c, o) {
+    const r = o.r || 4;
+    circle(c, o.x, o.y - r, r); fs(c, '#ffffff');
+    c.save();
+    circle(c, o.x, o.y - r, r); c.clip();
+    c.fillStyle = C.frontDoor;
+    c.fillRect(o.x - r, o.y - r * 1.4, r * 2, r * 0.8);
+    c.restore();
+    circle(c, o.x, o.y - r, r); c.stroke();
+  };
+
+  MP.DRAW = D;
+
+  // MP.draw('bed', ctx, x, y, opts)
+  // Furniture: (x, y) = middle of the bottom. window: top-left. mirror: middle.
+  // Small things (sun, moon, star, sparkle, arrow, rooster, hand, toothbrush,
+  // ball) take everything in opts: MP.draw('sun', ctx, 0, 0, { x, y, r }).
+  const POSITIONED = { bed: 1, teddy: 1, panda: 1, window: 1, mirror: 1, sink: 1, toilet: 1, wardrobe: 1, door: 1, poster: 1 };
+  MP.draw = function (name, c, x, y, opts) {
+    const fn = D[name];
+    if (!fn) throw new Error('No drawing called "' + name + '"');
+    begin(c, 0.8);
+    if (POSITIONED[name]) {
+      c.translate(x, y);
+      fn(c, opts || {});
+    } else {
+      fn(c, Object.assign({ x, y }, opts));
+    }
+    c.restore();
   };
 })();

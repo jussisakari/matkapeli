@@ -1,11 +1,12 @@
 // engine.js – canvas and scaling, touch/mouse input, game loop, scene switching,
-// saving, pixel text, speech bubbles, buttons and sounds.
+// saving, text, speech bubbles, buttons and sounds.
 window.MP = window.MP || {};
 
 (function () {
   const MP = window.MP;
 
-  // The game is drawn on a small 320×180 canvas that is scaled up.
+  // The game world is always 320×180 "game units". The canvas is drawn at the
+  // screen's real resolution and scaled, so all drawings stay smooth and sharp.
   const W = 320, H = 180;
   MP.W = W;
   MP.H = H;
@@ -24,25 +25,32 @@ window.MP = window.MP || {};
   const ctx = canvas.getContext('2d');
   MP.canvas = canvas;
   MP.ctx = ctx;
-  MP.pixelScale = 1; // how many screen pixels one game pixel is
+  MP.scale = 1; // CSS pixels per game unit
 
   function resize() {
-    // Use real device pixels so every game pixel is exactly N×N screen pixels.
     const dpr = window.devicePixelRatio || 1;
-    const s = Math.max(1, Math.floor(Math.min(innerWidth * dpr / W, innerHeight * dpr / H)));
-    MP.pixelScale = s;
-    canvas.style.width = (W * s / dpr) + 'px';
-    canvas.style.height = (H * s / dpr) + 'px';
+    const s = Math.min(innerWidth / W, innerHeight / H);
+    MP.scale = s;
+    canvas.style.width = Math.floor(W * s) + 'px';
+    canvas.style.height = Math.floor(H * s) + 'px';
+    canvas.width = Math.max(1, Math.round(W * s * dpr));
+    canvas.height = Math.max(1, Math.round(H * s * dpr));
   }
   window.addEventListener('resize', resize);
   window.addEventListener('orientationchange', resize);
+
+  // Sets ctx so that drawing uses game units (0..320 × 0..180).
+  MP.gameTransform = function (c) {
+    const k = canvas.width / W;
+    (c || ctx).setTransform(k, 0, 0, k, 0, 0);
+  };
 
   // =========================================================================
   // Input (Pointer Events = mouse, touch and pen with the same code)
   //
   // Scenes may have these functions (all get game coordinates):
   //   onPointerDown(x, y), onPointerMove(x, y), onPointerUp(x, y), onTap(x, y)
-  // A "tap" is a press that moved less than TAP_SLOP game pixels.
+  // A "tap" is a press that moved less than TAP_SLOP game units.
   // =========================================================================
   const TAP_SLOP = 4;
   MP.pointer = { x: -100, y: -100, down: false };
@@ -198,19 +206,24 @@ window.MP = window.MP || {};
     }
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.imageSmoothingEnabled = false;
     ctx.globalAlpha = 1;
     ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, W, H);
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    MP.gameTransform();
+    ctx.imageSmoothingEnabled = true;
     try {
-      if (s && s.draw) s.draw(ctx);
+      if (s && s.draw) {
+        ctx.save();
+        s.draw(ctx);
+        ctx.restore();
+      }
     } catch (err) {
       reportError(err);
     }
 
     const a = fadeAlpha();
     if (a > 0) {
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      MP.gameTransform();
       ctx.globalAlpha = a;
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, W, H);
@@ -230,9 +243,9 @@ window.MP = window.MP || {};
   // =========================================================================
   const SAVE_KEY = 'matkapeli.v1';
   MP.state = {
-    character: null,                               // 'girl' or 'boy'
-    outfit: { shirt: null, bottom: null, hat: null },
-    quest: 'wake',                                 // where we are in the story
+    character: null,                                          // 'girl' or 'boy'
+    outfit: { shirt: null, bottom: null, hat: null, costume: null },
+    quest: 'wake',                                            // where we are in the story
   };
 
   MP.save = function () {
@@ -261,69 +274,50 @@ window.MP = window.MP || {};
   };
 
   // =========================================================================
-  // Pixel text (letters come from MP.FONT in sprites.js)
+  // Text (a rounded font). size 1 = 8 game units tall letters.
   // =========================================================================
-  MP.LINE_H = 9; // line height in game pixels (7 for the letter + 2 gap)
-  const glyphCache = {};
+  MP.FONT_FAMILY = '"Comic Sans MS", "Chalkboard SE", "Comic Neue", "Trebuchet MS", sans-serif';
+  MP.LINE_H = 10; // line height for size 1
 
-  function glyphOf(ch) {
-    return MP.FONT[ch] ? ch : '?';
-  }
-
-  function glyphCanvas(ch, color) {
-    const key = ch + '|' + color;
-    let c = glyphCache[key];
-    if (c) return c;
-    const rows = MP.FONT[ch];
-    c = document.createElement('canvas');
-    c.width = rows[0].length;
-    c.height = rows.length;
-    const g = c.getContext('2d');
-    g.fillStyle = color;
-    rows.forEach((row, y) => {
-      for (let x = 0; x < row.length; x++) {
-        if (row[x] !== '.') g.fillRect(x, y, 1, 1);
-      }
-    });
-    glyphCache[key] = c;
-    return c;
+  function setFont(c, size) {
+    c.font = 'bold ' + (8 * size) + 'px ' + MP.FONT_FAMILY;
   }
 
   MP.measureText = function (str, size) {
     size = size || 1;
-    const s = String(str).toUpperCase();
-    let w = 0;
-    for (const ch of s) w += MP.FONT[glyphOf(ch)][0].length + 1;
-    return Math.max(0, w - 1) * size;
-  };
-
-  // MP.drawText(ctx, 'Hei!', x, y, { color, size, align: 'left'|'center'|'right', shadow })
-  // (x, y) is the top-left corner (or top-center / top-right).
-  MP.drawText = function (ctx, str, x, y, opts) {
-    opts = opts || {};
-    const size = opts.size || 1;
-    const color = opts.color || '#fff';
-    const s = String(str).toUpperCase();
-    const w = MP.measureText(s, size);
-    if (opts.align === 'center') x -= w / 2;
-    else if (opts.align === 'right') x -= w;
-    x = Math.round(x);
-    y = Math.round(y);
-    if (opts.shadow) {
-      drawLetters(ctx, s, x + size, y + size, opts.shadow, size);
-    }
-    drawLetters(ctx, s, x, y, color, size);
+    ctx.save();
+    setFont(ctx, size);
+    const w = ctx.measureText(String(str)).width;
+    ctx.restore();
     return w;
   };
 
-  function drawLetters(ctx, s, x, y, color, size) {
-    for (const raw of s) {
-      const ch = glyphOf(raw);
-      const g = glyphCanvas(ch, color);
-      ctx.drawImage(g, x, y, g.width * size, g.height * size);
-      x += (g.width + 1) * size;
+  // MP.drawText(ctx, 'Hei!', x, y, { color, size, align: 'left'|'center'|'right', shadow, outline })
+  // (x, y) is the top-left corner (or top-center / top-right).
+  MP.drawText = function (c, str, x, y, opts) {
+    opts = opts || {};
+    const size = opts.size || 1;
+    str = String(str);
+    c.save();
+    setFont(c, size);
+    c.textAlign = opts.align || 'left';
+    c.textBaseline = 'top';
+    c.lineJoin = 'round';
+    if (opts.outline) {
+      c.strokeStyle = opts.outline;
+      c.lineWidth = 2.2 * size;
+      c.strokeText(str, x, y);
     }
-  }
+    if (opts.shadow) {
+      c.fillStyle = opts.shadow;
+      c.fillText(str, x + 0.7 * size, y + 0.7 * size);
+    }
+    c.fillStyle = opts.color || '#fff';
+    c.fillText(str, x, y);
+    const w = c.measureText(str).width;
+    c.restore();
+    return w;
+  };
 
   // Splits text into lines that fit into maxWidth.
   MP.wrapText = function (str, maxWidth, size) {
@@ -343,61 +337,84 @@ window.MP = window.MP || {};
     return lines;
   };
 
+  // Rounded rectangle path
+  MP.roundRect = function (c, x, y, w, h, r) {
+    r = Math.max(0, Math.min(r, w / 2, h / 2));
+    c.beginPath();
+    c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r);
+    c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r);
+    c.arcTo(x, y, x + w, y, r);
+    c.closePath();
+  };
+
   // Speech bubble whose tail tip points at (tipX, tipY).
-  MP.drawBubble = function (ctx, text, tipX, tipY, opts) {
+  MP.drawBubble = function (c, text, tipX, tipY, opts) {
     opts = opts || {};
     const size = opts.size || 1;
-    const pad = 4;
-    const bg = opts.bg || '#ffffff';
-    const border = opts.border || '#1a1a2e';
-    const color = opts.color || '#1a1a2e';
-    const lines = MP.wrapText(text, opts.maxWidth || 150, size);
+    const pad = 5;
+    const lines = MP.wrapText(text, opts.maxWidth || 140, size);
     const textW = Math.max(...lines.map((l) => MP.measureText(l, size)));
     const w = textW + pad * 2;
-    const h = lines.length * MP.LINE_H * size - 2 * size + pad * 2;
-    const bx = Math.round(MP.clamp(tipX - w / 2, 2, W - w - 2));
-    const by = Math.round(Math.max(2, tipY - 3 - h));
-    const tx = Math.round(MP.clamp(tipX, bx + 6, bx + w - 7));
-    const ty = by + h; // first row under the box
+    const h = lines.length * MP.LINE_H * size + pad * 2 - 2 * size;
+    const bx = MP.clamp(tipX - w / 2, 2, W - w - 2);
+    const by = Math.max(2, tipY - 6 - h);
+    const tx = MP.clamp(tipX, bx + 8, bx + w - 8);
+    const r = 6;
 
-    // Box with rounded pixel corners
-    ctx.fillStyle = border;
-    ctx.fillRect(bx + 1, by, w - 2, h);
-    ctx.fillRect(bx, by + 1, w, h - 2);
-    ctx.fillStyle = bg;
-    ctx.fillRect(bx + 1, by + 1, w - 2, h - 2);
-
-    // Tail
-    ctx.fillStyle = border;
-    for (let i = 0; i < 4; i++) ctx.fillRect(tx - (3 - i), ty + i, 2 * (3 - i) + 1, 1);
-    ctx.fillStyle = bg;
-    for (let i = 0; i < 3; i++) ctx.fillRect(tx - (2 - i), ty - 1 + i, 2 * (2 - i) + 1, 1);
+    c.save();
+    c.lineWidth = 0.8;
+    c.lineJoin = 'round';
+    c.strokeStyle = opts.border || '#2b2340';
+    c.fillStyle = opts.bg || '#ffffff';
+    c.beginPath();
+    c.moveTo(bx + r, by);
+    c.arcTo(bx + w, by, bx + w, by + h, r);
+    c.arcTo(bx + w, by + h, bx, by + h, r);
+    c.lineTo(tx + 4, by + h);
+    c.lineTo(tipX, tipY);
+    c.lineTo(tx - 4, by + h);
+    c.arcTo(bx, by + h, bx, by, r);
+    c.arcTo(bx, by, bx + w, by, r);
+    c.closePath();
+    c.fill();
+    c.stroke();
+    c.restore();
 
     lines.forEach((line, i) => {
-      MP.drawText(ctx, line, bx + w / 2, by + pad + i * MP.LINE_H * size, { color, size, align: 'center' });
+      MP.drawText(c, line, bx + w / 2, by + pad + i * MP.LINE_H * size, {
+        color: opts.color || '#2b2340', size, align: 'center',
+      });
     });
   };
 
-  // A big chunky button. rect = { x, y, w, h }. Looks pressed while held down.
-  MP.drawButton = function (ctx, label, rect, opts) {
+  // A big round button. rect = { x, y, w, h }. Looks pressed while held down.
+  MP.drawButton = function (c, label, rect, opts) {
     opts = opts || {};
     const size = opts.size || 1;
     const disabled = !!opts.disabled;
-    const face = disabled ? '#8a8a99' : (opts.color || '#3cb371');
-    const dark = disabled ? '#5a5a66' : (opts.shade || '#1f7a4a');
+    const face = disabled ? '#a9a9b8' : (opts.color || '#3cb371');
+    const dark = disabled ? '#77778a' : (opts.shade || '#1f7a4a');
     const pressed = !disabled && MP.pointer.down && MP.hit(rect, MP.pointer.x, MP.pointer.y);
     const dy = pressed ? 2 : 0;
     const { x, y, w, h } = rect;
+    const r = Math.min(8, h / 2);
 
-    ctx.fillStyle = '#1a1a2e';
-    ctx.fillRect(x + 1, y, w - 2, h);
-    ctx.fillRect(x, y + 1, w, h - 2);
-    ctx.fillStyle = dark;
-    ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
-    ctx.fillStyle = face;
-    ctx.fillRect(x + 1, y + 1 + dy, w - 2, h - 4);
-    MP.drawText(ctx, label, x + w / 2, y + 1 + dy + (h - 4 - 7 * size) / 2, {
-      color: disabled ? '#d0d0d8' : '#ffffff',
+    c.save();
+    c.lineWidth = 0.8;
+    c.strokeStyle = '#2b2340';
+    MP.roundRect(c, x, y + 2, w, h - 2, r);
+    c.fillStyle = dark;
+    c.fill();
+    c.stroke();
+    MP.roundRect(c, x, y + dy, w, h - 2, r);
+    c.fillStyle = face;
+    c.fill();
+    c.stroke();
+    c.restore();
+    MP.drawText(c, label, x + w / 2, y + dy + (h - 2 - 8 * size) / 2, {
+      color: disabled ? '#e4e4ec' : '#ffffff',
       size,
       align: 'center',
       shadow: disabled ? null : dark,

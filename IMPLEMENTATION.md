@@ -6,33 +6,32 @@ Build order for the game described in `PLAN.md`. Each milestone ends with someth
 - `git init` in `C:\git\matkapeli`, add a `.gitignore`.
 - Create the folder layout from PLAN.md, with empty files.
 - `index.html`: a viewport meta tag (`width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no`), one `<canvas id="game">`, a hidden "Käännä tabletti" overlay `<div>`, and classic `<script>` tags in dependency order: `sprites → engine → player → scenes/* → main`.
-- `style.css`: black background, canvas centered, `image-rendering: pixelated`, `touch-action: none`, `overflow: hidden`, `user-select: none`. Show the turn-the-tablet overlay with `@media (orientation: portrait)`.
+- `style.css`: black background, canvas centered, `touch-action: none`, `overflow: hidden`, `user-select: none`. Show the turn-the-tablet overlay with `@media (orientation: portrait)`.
 - All files share one global namespace (`window.MP = {}`), because ES modules don't load from `file://`.
 
 ✅ Check: a black page with an empty canvas and no console errors. **Commit.**
 
 ## Milestone 1: Engine core (`engine.js`)
-1. **Canvas and scaling**: the canvas stays 320×180 inside. On resize, `scale = Math.max(1, Math.floor(Math.min(innerWidth/320, innerHeight/180)))`, and the CSS size is set to 320·scale × 180·scale.
+1. **Canvas and scaling**: the game uses 320×180 game units. On resize, `scale = Math.min(innerWidth/320, innerHeight/180)`; the canvas gets the real device-pixel size and each frame is drawn with a transform, so everything stays smooth.
 2. **Input**: `pointerdown/move/up/cancel` on the canvas, with `setPointerCapture`. Screen positions become canvas positions using `getBoundingClientRect()`, then go to the current scene's `onTap / onPointerDown / onPointerMove / onPointerUp`. A *tap* is a pointerdown→up that moved less than 4 px. It is sent as `onTap(x, y)`.
 3. **Game loop**: `requestAnimationFrame`, with `dt` capped at 0.05 s so a tablet waking from sleep doesn't make the character jump.
 4. **Scene manager**: `MP.goTo(scene, params)` fades to black (0.3 s), calls `scene.enter(params)`, then fades back in. Input is ignored during the fade.
 5. **Shared game state**: `MP.state = { character, outfit, quest }`, with `MP.save()` and `MP.load()` wrapping `localStorage` in try/catch.
-6. **Text**: a small **5×7 bitmap font** in `sprites.js` (A–Z, Å Ä Ö, 0–9 and `! ? . , … :`), with helpers `drawText(ctx, str, x, y, color, size)` and `drawBubble(ctx, text, x, y)` (word wrap plus a tail).
-   *Why:* `fillText` on a 320×180 canvas that gets scaled up looks blurry. A bitmap font stays crisp, and Ella can draw the letters herself. The ✨ in "Hampaat puhtaina! ✨" becomes a small sparkle sprite instead of an emoji.
+6. **Text**: a rounded font (Comic Sans / Chalkboard), with helpers `drawText(ctx, str, x, y, opts)`, `drawBubble(ctx, text, tipX, tipY)` (word wrap plus a tail) and `drawButton(ctx, label, rect)`. The ✨ is drawn as a sparkle shape, not an emoji.
 7. **Sound**: create the `AudioContext` and call `resume()` on the first pointerdown/up, which iPad Safari needs. Three sounds: `MP.sfx.bling()` (two rising notes), `MP.sfx.brush()` (a short burst of filtered noise), and `MP.sfx.tap()`.
 
-✅ Check: a test scene shows "HEI ELLA ÄÖ" in crisp pixels, and a tap draws a dot exactly under your finger at every window size. **Commit.**
+✅ Check: a test scene shows text and a speech bubble, and a tap lands exactly under your finger at every window size. **Commit.**
 
-## Milestone 2: Sprites and palette (`sprites.js`)
-- `PALETTE = { 'K': '#000', 'S': '#f2c9a0' /*skin*/, ... }`. A `.` means transparent.
-- `MP.sprite(name)` turns a grid into an offscreen canvas once and caches it. Flipped versions are cached too, so drawing a flipped sprite is free.
-- **The character, about 16×28 px**, built from layer grids that use placeholder letters:
-  - `body` (skin, eyes, shoes), `hairGirl`/`hairBoy`, `shirt` (`T`=main color, `t`=shade), `pants`/`skirt` (`P`/`p`), `cap`/`beanie`/`sunhat` (`H`/`h`).
-  - `composeCharacter(character, outfit, frame)` stacks the layers, swaps the placeholder letters for the chosen clothing's colors, and caches the result by key, e.g. `"girl|red|skirtBlue|beanie|f1"`.
-  - Two walk frames: only the leg rows differ.
-- Objects: bed, window, sun, moon, toy (ball/teddy), toilet, sink, mirror, toothbrush, wardrobe, door, arrow, star, sparkle, and a pointing hand for the tutorial.
+## Milestone 2: Drawings, characters and clothes (`sprites.js`)
+*(Redone in the round cartoon style, chosen from `samples/style-sample-2.html`, style A.)*
+- `MP.COLORS`: named colors (skin, wood, blanket, …).
+- `MP.CHARACTERS`: girl (brown hair + bow) and boy (blond hair).
+- `MP.CLOTHES`: `shirt`, `bottom` (pants or skirt), `hat` (none, cap, beanie, sun hat) and `costume` (none, spider suit). Pyjamas are hidden items worn at the start.
+- `MP.drawPerson(ctx, x, y, { character, outfit, walking, walkTime, flip, scale, hair })`: (x, y) is between the feet, about 42 units tall. Arms and legs swing while walking.
+- `MP.draw(name, ctx, x, y, opts)`: bed, teddy, panda, window (day or night sky), mirror, sink (with toothbrush cup), toilet, wardrobe (closed or open, with the spider suit hanging inside), front door (closed or open), band poster, sun, moon, star, sparkle, arrow, rooster, hand, toothbrush, ball. `MP.SIZES` gives furniture sizes for tapping.
+- `MP.BAND`: the **Turpapojat** poster (name, colors, the two boys' hair and shirts).
 
-✅ Check: a test scene draws every sprite, plus the girl and boy in a few outfits. **Commit** (and a good moment for Ella to try changing colors).
+✅ Check: a test scene draws everything, plus the girl and boy in different outfits. **Commit** (and a good moment for Ella to try changing colors).
 
 ## Milestone 3: Start screen and sunrise (`scenes/start.js`)
 - The scene has two states: `'choose'` and `'sunrise'`.
@@ -103,7 +102,8 @@ Build order for the game described in `PLAN.md`. Each milestone ends with someth
 ## Decisions made along the way (change them if you disagree)
 | Topic | Choice | Why |
 |---|---|---|
-| Text | Our own 5×7 bitmap font | Crisp pixels, and the letters are editable grids too |
+| Look | Round cartoon drawings (style A), not pixel art | Chosen after comparing samples; smooth on every screen |
+| Text | Rounded system font | Readable and friendly; no font files needed |
 | Brushing threshold | 6 canvas px | Feels the same at every screen size |
 | Up/down brushing | Optional, left on by default (direction taken from the bigger axis) | Small change, more natural for a 7-year-old |
 | Wardrobe before brushing | Doesn't open, gives the hint "Ensin hampaat!" | Keeps the order clear |
