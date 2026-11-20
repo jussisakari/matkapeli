@@ -508,6 +508,34 @@ window.MP = window.MP || {};
         tone(1760, 0.2, 0.35, 'triangle', 0.3);
       } catch (_) {}
     },
+    // Duck on TV: "kvaak!"
+    quack() {
+      if (!ready()) return;
+      try {
+        tone(380, 0, 0.11, 'sawtooth', 0.12);
+        tone(320, 0.12, 0.13, 'sawtooth', 0.12);
+      } catch (_) {}
+    },
+    // TV switching off: a short falling "pew"
+    tvOff() {
+      if (!ready()) return;
+      try {
+        const ac = audio.ctx;
+        const t0 = ac.currentTime;
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(900, t0);
+        osc.frequency.exponentialRampToValueAtTime(80, t0 + 0.3);
+        gain.gain.setValueAtTime(0.0001, t0);
+        gain.gain.exponentialRampToValueAtTime(0.3, t0 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.32);
+        osc.connect(gain);
+        gain.connect(audio.master);
+        osc.start(t0);
+        osc.stop(t0 + 0.35);
+      } catch (_) {}
+    },
     // Alarm clock: "rrring!" (fast beeps for a moment)
     alarm() {
       if (!ready()) return;
