@@ -11,6 +11,7 @@ window.MP = window.MP || {};
   const PLATE = { x: 150, y: 138 };
   const SLOTS = [-16, 0, 16];          // up to 3 foods on the plate
   const GLASS = { x: 206, y: 128 };
+  const PEELS = { x: 186, y: 139 };    // where banana peels are put
   const BITES = 3;                     // bites to eat one food
   const SIPS = 3;                      // sips to drink the glass
   const doneButton = { x: 236, y: 150, w: 76, h: 24 };
@@ -24,6 +25,7 @@ window.MP = window.MP || {};
       this.plate = [];        // { id, name, bites }
       this.drink = null;      // { id, sips }
       this.eaten = 0;
+      this.peels = 0;         // banana peels next to the plate
       this.drank = false;
       this.chewUntil = 0;
       this.leaveAt = 0;
@@ -56,6 +58,11 @@ window.MP = window.MP || {};
           this.bite(i);
           return;
         }
+      }
+      // Banana peel: we don't eat that!
+      if (this.peels && Math.abs(x - PEELS.x) < 10 && Math.abs(y - PEELS.y) < 8) {
+        this.say('Kuorta ei syödä!');
+        return;
       }
       // Glass: take a sip
       if (this.drink && Math.abs(x - GLASS.x) < 10 && Math.abs(y - GLASS.y) < 13) {
@@ -102,6 +109,7 @@ window.MP = window.MP || {};
       if (f.bites >= BITES) {
         this.plate.splice(i, 1);
         this.eaten++;
+        if (f.id === 'banana') this.peels++;   // the peel stays next to the plate
         this.afterEating();
       }
     },
@@ -180,9 +188,18 @@ window.MP = window.MP || {};
 
       // Foods on the plate (they get smaller with every bite)
       this.plate.forEach((f, i) => {
-        const s = 1.25 * (1 - f.bites * 0.25);
-        MP.draw(f.id, ctx, PLATE.x + SLOTS[i], PLATE.y - 4, { scale: s });
+        if (f.id === 'banana') {
+          // Peeled banana: only the fruit gets shorter, not the peel
+          MP.draw('banana', ctx, PLATE.x + SLOTS[i], PLATE.y - 8, { scale: 1.55, peeled: true, eaten: f.bites / BITES });
+        } else {
+          const s = 1.25 * (1 - f.bites * 0.25);
+          MP.draw(f.id, ctx, PLATE.x + SLOTS[i], PLATE.y - 4, { scale: s });
+        }
       });
+      // Empty banana peels next to the plate
+      for (let i = 0; i < this.peels; i++) {
+        MP.draw('banana', ctx, PEELS.x + i * 4, PEELS.y - 4 - i, { scale: 1.1, peeled: true, eaten: 1 });
+      }
 
       // Glass
       if (this.drink) {

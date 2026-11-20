@@ -968,7 +968,28 @@ MP.findItem = function (slot, id) {
     c.restore();
   });
 
+  // Banana. opts.peeled: peel opened down (we don't eat the peel!),
+  // opts.eaten: 0..1 how much of the fruit is eaten (1 = only the peel left)
   D.banana = (c, o) => food(c, o, () => {
+    if (o.peeled) {
+      const left = 1 - MP.clamp(o.eaten || 0, 0, 1);
+      if (left > 0.02) {
+        const top = 1.5 - 11 * left;
+        rr(c, -2.4, top, 4.8, 3 - top, 2.4); fs(c, '#fff3c4');     // the fruit
+      }
+      for (const sd of [-1, 1]) {                                     // peel flaps hanging down
+        c.beginPath();
+        c.moveTo(sd * 2.6, 1.5);
+        c.quadraticCurveTo(sd * 7, 2.5, sd * 7.6, 7);
+        c.quadraticCurveTo(sd * 4.2, 5.6, sd * 1, 4);
+        c.closePath(); fs(c, '#ffd84d');
+      }
+      c.beginPath();
+      c.moveTo(-2, 2.5); c.quadraticCurveTo(0, 9.5, 2, 2.5); c.closePath(); fs(c, '#f2c230');
+      rr(c, -3, 0.5, 6, 4.5, 2); fs(c, '#ffd84d');
+      c.fillStyle = '#6b4a2b'; circle(c, 0, 5.4, 0.8); c.fill();
+      return;
+    }
     c.beginPath(); c.moveTo(-7, -3);
     c.quadraticCurveTo(0, 8, 7, -3);
     c.quadraticCurveTo(0, 0, -7, -3);
