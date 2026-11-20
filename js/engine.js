@@ -254,7 +254,8 @@ window.MP = window.MP || {};
   MP.state = {
     character: null,                                          // 'girl' or 'boy'
     outfit: { shirt: null, bottom: null, hat: null, costume: null },
-    quest: 'wake',                                            // where we are in the story
+    quest: 'wake',                                            // 'wake' = coming from the start screen
+    tasks: null,                                              // morning tasks done (set in home.js)
   };
 
   MP.save = function () {
@@ -505,6 +506,65 @@ window.MP = window.MP || {};
         tone(880, 0, 0.15, 'triangle', 0.35);
         tone(1320, 0.1, 0.2, 'triangle', 0.35);
         tone(1760, 0.2, 0.35, 'triangle', 0.3);
+      } catch (_) {}
+    },
+    // Alarm clock: "rrring!" (fast beeps for a moment)
+    alarm() {
+      if (!ready()) return;
+      try {
+        for (let i = 0; i < 8; i++) tone(i % 2 ? 1250 : 1400, i * 0.09, 0.07, 'square', 0.1);
+      } catch (_) {}
+    },
+    // "Nom nom" when eating
+    nom() {
+      if (!ready()) return;
+      try {
+        tone(220, 0, 0.07, 'square', 0.12);
+        tone(180, 0.09, 0.08, 'square', 0.12);
+      } catch (_) {}
+    },
+    // "Glub" when drinking
+    gulp() {
+      if (!ready()) return;
+      try {
+        const ac = audio.ctx;
+        const t0 = ac.currentTime;
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(520, t0);
+        osc.frequency.exponentialRampToValueAtTime(180, t0 + 0.15);
+        gain.gain.setValueAtTime(0.0001, t0);
+        gain.gain.exponentialRampToValueAtTime(0.35, t0 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.18);
+        osc.connect(gain);
+        gain.connect(audio.master);
+        osc.start(t0);
+        osc.stop(t0 + 0.2);
+      } catch (_) {}
+    },
+    // Toilet flush: rushing water that fades away
+    flush() {
+      if (!ready()) return;
+      try {
+        const ac = audio.ctx;
+        const t0 = ac.currentTime;
+        const src = ac.createBufferSource();
+        src.buffer = noiseBuffer();
+        src.loop = true;
+        const filter = ac.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(2500, t0);
+        filter.frequency.exponentialRampToValueAtTime(250, t0 + 1.3);
+        const gain = ac.createGain();
+        gain.gain.setValueAtTime(0.0001, t0);
+        gain.gain.exponentialRampToValueAtTime(0.4, t0 + 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.4);
+        src.connect(filter);
+        filter.connect(gain);
+        gain.connect(audio.master);
+        src.start(t0);
+        src.stop(t0 + 1.45);
       } catch (_) {}
     },
     // Sleepy yawn: a wobbly sliding-down sound

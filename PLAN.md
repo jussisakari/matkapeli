@@ -43,14 +43,24 @@ matkapeli/
 ## Game flow (this phase)
 1. **Start screen (night)**: dark blue sky, stars that twinkle, moon, a house with lit windows. Title "Matkapeli" with **"Suunnitellut Ella"** clearly under it. Two big character cards: "Tyttö" and "Poika". Tapping one selects it. Big "Aloita" button.
 2. **Sunrise transition (~3 s)**: the sky color fades from night to morning, the moon sets and the sun rises, a bird/rooster "Kukkokiekuu!". Then a fade into the home.
-3. **Home (side view, scrolls left to right)**: **bedroom** (bed, window with sun, teddy bear, panda, and a poster of **Turpapojat**, the band of two boys from Ella's class) → **bathroom** (toilet, sink, mirror, toothbrush) → **hallway** (wardrobe, front door). The character wakes up by the bed and a speech bubble says: "Huomenta! Mennään pesemään hampaat." A bouncing arrow points to the right, toward the sink.
-4. **Walk**: the player taps to the left or right. When they tap the sink or reach it, the brushing scene starts.
+3. **Home (side view, 4 rooms, scrolls left to right)**: **bedroom** (bed, nightstand with an alarm clock, window with sun, teddy bear, panda, and a poster of **Turpapojat**, the band of two boys from Ella's class) → **bathroom** (toilet, sink, mirror, toothbrush) → **kitchen** (fridge, stove, clock, table and chairs) → **hallway** (wardrobe, coat hooks, shoe rack, front door).
+4. **Waking up**: the character sleeps in bed in pyjamas ("z z z") while the **alarm clock rings**. A bouncing arrow points at the clock. Tapping the clock wakes them up: they sit up sleepily, yawn and stretch ("Hoh-hoijaa…"), hop out of bed, and stay tired-eyed for a moment.
+5. **Morning tasks – in any order** (a checklist in the corner shows them with green checks; arrows point at everything still to do):
+   - **Toilet**: pyjamas stay on. The girl sits on the toilet, the boy stands with his back to us. "La la laa…", flush ("Huuuuh!"), "Kädet pesty!".
+   - **Brushing teeth** at the sink (mini-game below).
+   - **Getting dressed** at the wardrobe (below).
+   - **Breakfast** at the kitchen table: choose foods (Jogurtti, Banaani, Omena, Riisipiirakka, Riisipuuro) and a drink (Vesi or Maito), tap to eat (3 bites each) and drink (3 sips). "Valmis!" works after eating something and drinking a glass.
+   - **Shoes** from the shoe rack (after getting dressed). Indoors everyone wears socks – no shoes inside in Finland!
+   - **Walk**: tap left or right to walk; tap a thing to walk there and use it.
 5. **Brushing mini-game (gestures)**: a close-up of a smile with yellowish teeth and a toothbrush. The player moves a finger or the mouse back and forth over the teeth. The brush follows the finger, foam bubbles appear, and the teeth whiten section by section (progress bar). When done: sparkle, "Hienoa! Hampaat puhtaina! ✨", success sound.
 6. **Wardrobe**: the arrow points to the wardrobe in the hallway: "Puetaan vaatteet päälle!" Tapping it opens the wardrobe view: the character large in the middle, with rows of clothes on each side. **Paita** (shirt, 4 options), **Housut/Hame** (pants or skirt, 4 options), **Hattu/Pipo** (hat or beanie, 3 options + no hat), and **Asu** (costume): a spider-hero suit with a mask, a pharaoh (striped headdress, gold collar, kilt) or a mermaid (fish tail, shell top, starfish). A costume covers the other clothes. Tapping a piece puts it straight onto the character. Then press "Valmis!" ("Done!").
-7. **Next goal**: back in the hallway, the character now wears the chosen clothes. The arrow points at the front door: "Nyt lähdetään ulos!" Tapping the door shows "Jatkuu pian…" (a placeholder for the next step: street and taxi station).
+7. **Going out**: tapping the front door before everything is done says "Aamutoimet on vielä kesken! Vielä: …" with the list of what's left. When all tasks are done: "Kaikki aamutoimet tehty! Nyt lähdetään ulos!", the arrow points at the door, and tapping it shows "Jatkuu pian…" (placeholder for the street).
 
 ## Later steps (not built now, just planned for)
-- `street.js`: the street outside the home (also side-scrolling); walk to the taxi station.
+- `street.js`: outside the home. The camera is further away, so the **character is smaller** and you see more of the neighbourhood. Walk along the street (side-scrolling) to a **crossroad**:
+  - one way leads to the **taxi station**,
+  - the other way leads to the **outdoor playground** (leikkipuisto).
+- `playground.js`: the outdoor playground (swings, slide, sandbox…) with small things to do.
 - `taxi.js`: taxi ride. Choose a destination on a map (Egypt first), with a driving animation.
 - `egypt.js`: desert, pyramids, camel, a small task.
 

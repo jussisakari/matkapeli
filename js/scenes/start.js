@@ -61,6 +61,8 @@ window.MP = window.MP || {};
       if (this.selected && MP.hit(startButton, x, y)) {
         MP.state.character = this.selected;
         MP.state.quest = 'wake';
+        // A new morning: start in pyjamas
+        MP.state.outfit = { shirt: 'pyjama', bottom: 'pyjama', hat: 'none', costume: 'none', shoes: false };
         MP.save();
         MP.sfx.bling();
         this.mode = 'sunrise';

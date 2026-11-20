@@ -7,14 +7,14 @@ MP.scenes.wardrobe = {
 
   enter() {
     // For now, put on some clothes so the change shows in the home
-    MP.state.outfit = { shirt: 'red', bottom: 'jeans', hat: 'cap', costume: 'none' };
+    Object.assign(MP.state.outfit, { shirt: 'red', bottom: 'jeans', hat: 'cap', costume: 'none' });
     MP.save();
   },
 
   onTap(x, y) {
     if (MP.hit(this.button, x, y)) {
       MP.sfx.bling();
-      MP.goTo(MP.scenes.home, { quest: 'door' });
+      MP.goTo(MP.scenes.home, { done: 'dress' });
     }
   },
 

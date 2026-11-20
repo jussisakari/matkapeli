@@ -102,6 +102,19 @@ MP.BAND = {
   ],
 };
 
+// ---------------------------------------------------------------------------
+// BREAKFAST: what you can choose (type 'food' goes on the plate, 'drink' in the glass)
+// ---------------------------------------------------------------------------
+MP.FOODS = [
+  { id: 'yoghurt',  name: 'Jogurtti',      type: 'food' },
+  { id: 'banana',   name: 'Banaani',       type: 'food' },
+  { id: 'apple',    name: 'Omena',         type: 'food' },
+  { id: 'ricepie',  name: 'Riisipiirakka', type: 'food' },
+  { id: 'porridge', name: 'Riisipuuro',    type: 'food' },
+  { id: 'water',    name: 'Vesi',          type: 'drink' },
+  { id: 'milk',     name: 'Maito',         type: 'drink' },
+];
+
 // Finds a clothing item by id. Unknown ids give the first item (pyjamas / none).
 MP.findItem = function (slot, id) {
   const list = MP.CLOTHES[slot];
@@ -224,6 +237,9 @@ MP.findItem = function (slot, id) {
     const legs = suit ? (suit.legs || C.skin) : bottom.color;
     const skirt = !suit && bottom.type === 'skirt';
     const shoes = suit ? (suit.boots || C.shoes) : C.shoes;
+    // Indoors (outfit.shoes === false) we wear socks – no shoes inside in Finland!
+    const socks = !suit && outfit.shoes === false;
+    const sit = !!opts.sit;             // sitting (legs shorter, lap shows)
     const hands = kind === 'spider' ? suit.top : C.skin;
     const arms = (kind === 'pharaoh' || kind === 'mermaid') ? C.skin : top;
     const isGirl = charId === 'girl';
@@ -281,11 +297,16 @@ MP.findItem = function (slot, id) {
       // Legs + shoes (they swing when walking)
       for (const side of [-1, 1]) {
         c.save();
-        c.translate(side * 2.4, -12.5);
+        c.translate(side * 2.4, sit ? -9.5 : -12.5);
         c.rotate(side * sw * 0.35);
-        rr(c, -1.8, 0, 3.6, 11, 1.7); fs(c, skirt ? C.skin : legs);
-        ellipse(c, 0.9, 11.3, 2.9, 1.7); fs(c, shoes);
+        const len = sit ? 8.5 : 11;
+        rr(c, -1.8, 0, 3.6, len, 1.7); fs(c, skirt ? C.skin : legs);
+        if (socks) { ellipse(c, 0.6, len + 0.1, 2.3, 1.4); fs(c, '#f4f4f8'); }
+        else { ellipse(c, 0.9, len + 0.3, 2.9, 1.7); fs(c, shoes); }
         c.restore();
+      }
+      if (sit && !skirt && kind !== 'pharaoh') {
+        rr(c, -5.8, -13.5, 11.6, 5, 2.2); fs(c, legs);   // lap: knees towards us
       }
 
       if (kind === 'pharaoh') {
@@ -381,6 +402,12 @@ MP.findItem = function (slot, id) {
 
     // Head
     circle(c, 0, -30.5, 7.6); fs(c, C.skin);
+    // opts.back: seen from behind – only hair, no face
+    const back = !!opts.back && showHair;
+    if (back) {
+      circle(c, 0, -30.8, 7.9); fs(c, hairColor);
+      c.beginPath(); c.arc(0.5, -34, 2.2, 0.3, Math.PI * 1.4); c.stroke();
+    } else {
     // Face. opts.eyes: 'open' (default), 'sleepy', 'closed'
     //       opts.mouth: 'smile' (default), 'yawn', 'flat'
     const eyes = opts.eyes || 'open';
@@ -457,6 +484,7 @@ MP.findItem = function (slot, id) {
     }
     c.closePath(); fs(c, hairColor);
     }
+    } // end of face (not back view)
 
     // Hats (not with costumes). The mermaid has a starfish in the hair.
     if (kind === 'mermaid') {
@@ -855,6 +883,164 @@ MP.findItem = function (slot, id) {
     circle(c, 33.5, 2.5, 0.9); fs(c, '#e04848');
   };
 
+  // Shoe rack by the front door. opts: { taken } (true = our shoes are on)
+  D.shoeRack = function (c, o) {
+    rr(c, -16, -14, 32, 2.5, 1.2); fs(c, C.wood);
+    rr(c, -16, -3, 32, 2.5, 1.2); fs(c, C.wood);
+    rr(c, -16, -15, 2.5, 15, 1); fs(c, C.woodDark);
+    rr(c, 13.5, -15, 2.5, 15, 1); fs(c, C.woodDark);
+    const shoe = (x, y, col) => {
+      c.beginPath();
+      c.moveTo(x - 3, y); c.lineTo(x - 3, y - 2.6); c.quadraticCurveTo(x - 1, y - 3.4, x + 0.5, y - 2.2);
+      c.quadraticCurveTo(x + 3.4, y - 2, x + 3.4, y); c.closePath();
+      fs(c, col);
+    };
+    // Grown-ups' boots on the top shelf
+    shoe(-9, -14, '#5a3a2a'); shoe(-3, -14, '#5a3a2a');
+    shoe(5, -14, '#2f4a8a'); shoe(11, -14, '#2f4a8a');
+    // Our shoes on the bottom shelf (gone when they are on our feet)
+    if (!o.taken) { shoe(-6, -3, C.shoes); shoe(1, -3, C.shoes); }
+    shoe(9, -3, '#e04848');
+  };
+
+  // Small bedside table. (x, y) = middle of the bottom.
+  D.nightstand = function (c) {
+    rr(c, -11, -18, 22, 18, 2); fs(c, C.woodLight);
+    rr(c, -12, -19.5, 24, 3, 1.5); fs(c, C.wood);
+    rr(c, -8, -14, 16, 6, 1.2); fs(c, C.wood);
+    circle(c, 0, -11, 0.9); fs(c, C.gold);
+  };
+
+  // Alarm clock. (x, y) = middle of the bottom. opts: { ringing, t }
+  D.alarmClock = function (c, o) {
+    const t = o.t || 0;
+    c.save();
+    c.translate(o.x, o.y);
+    if (o.ringing) {
+      c.rotate(Math.sin(t * 45) * 0.12);
+      // shaking lines
+      c.save();
+      c.strokeStyle = C.outline; c.lineWidth = 0.6;
+      c.beginPath();
+      for (const sd of [-1, 1]) {
+        c.moveTo(sd * 8, -10); c.lineTo(sd * 10.5, -12);
+        c.moveTo(sd * 8.5, -7); c.lineTo(sd * 11.5, -7);
+        c.moveTo(sd * 8, -4); c.lineTo(sd * 10.5, -2);
+      }
+      c.stroke();
+      c.restore();
+    }
+    // feet and bells
+    c.beginPath(); c.moveTo(-3.5, -2); c.lineTo(-4.5, 0); c.moveTo(3.5, -2); c.lineTo(4.5, 0); c.stroke();
+    circle(c, -3.6, -11.6, 2.2); fs(c, C.gold);
+    circle(c, 3.6, -11.6, 2.2); fs(c, C.gold);
+    c.beginPath(); c.moveTo(0, -12.5); c.lineTo(0, -14); c.stroke();
+    circle(c, 0, -6.5, 5.5); fs(c, '#e04848');
+    circle(c, 0, -6.5, 4); fs(c, '#ffffff');
+    // hands showing 7 o'clock
+    c.beginPath();
+    c.moveTo(0, -6.5); c.lineTo(0, -9.6);
+    c.moveTo(0, -6.5); c.lineTo(-1.4, -4.4);
+    c.stroke();
+    c.restore();
+  };
+
+  // ---- Breakfast foods. (x, y) = middle. opts: { scale, level (drinks: 0..1) } ----
+  function food(c, o, fn) {
+    c.save();
+    c.translate(o.x, o.y);
+    const s = o.scale || 1;
+    c.scale(s, s);
+    fn();
+    c.restore();
+  }
+
+  D.yoghurt = (c, o) => food(c, o, () => {
+    c.beginPath(); c.moveTo(-5, -5); c.lineTo(5, -5); c.lineTo(4, 6); c.lineTo(-4, 6); c.closePath();
+    fs(c, '#ffffff');
+    c.beginPath(); c.moveTo(-4.7, -1.5); c.lineTo(4.7, -1.5); c.lineTo(4.4, 2.5); c.lineTo(-4.4, 2.5); c.closePath();
+    fs(c, '#ff8fc0');
+    c.fillStyle = '#e04848'; circle(c, 0, 0.5, 1); c.fill();
+    rr(c, -5.6, -6.6, 11.2, 1.8, 0.9); fs(c, '#d8dde6');
+    c.save(); c.translate(3, -6); c.rotate(0.5);
+    rr(c, -0.5, -7, 1, 7, 0.5); fs(c, '#c9d3e6');
+    ellipse(c, 0, -7.5, 1.2, 1.6); fs(c, '#c9d3e6');
+    c.restore();
+  });
+
+  D.banana = (c, o) => food(c, o, () => {
+    c.beginPath(); c.moveTo(-7, -3);
+    c.quadraticCurveTo(0, 8, 7, -3);
+    c.quadraticCurveTo(0, 0, -7, -3);
+    c.closePath(); fs(c, '#ffd84d');
+    c.fillStyle = '#6b4a2b';
+    circle(c, -7, -3, 0.8); c.fill();
+    circle(c, 7, -3, 0.8); c.fill();
+  });
+
+  D.apple = (c, o) => food(c, o, () => {
+    c.beginPath(); c.moveTo(0, -3.5);
+    c.bezierCurveTo(4, -7, 8, -2, 5.5, 3);
+    c.bezierCurveTo(4, 6.5, 1.5, 6, 0, 5);
+    c.bezierCurveTo(-1.5, 6, -4, 6.5, -5.5, 3);
+    c.bezierCurveTo(-8, -2, -4, -7, 0, -3.5);
+    c.closePath(); fs(c, '#e04848');
+    c.beginPath(); c.moveTo(0, -3.5); c.quadraticCurveTo(0.3, -6, 1.2, -7); c.stroke();
+    ellipse(c, 2.8, -5.8, 2, 1, -0.5); fs(c, '#4caf50');
+    c.fillStyle = 'rgba(255,255,255,0.6)'; ellipse(c, -3, -1, 1, 1.8); c.fill();
+  });
+
+  // Riisipiirakka: crimped rye crust with rice filling
+  D.ricepie = (c, o) => food(c, o, () => {
+    c.beginPath();
+    for (let i = 0; i <= 28; i++) {
+      const a = i / 28 * Math.PI * 2;
+      const r = i % 2 ? 1.08 : 1;
+      const px = Math.cos(a) * 8 * r, py = Math.sin(a) * 4.5 * r;
+      if (i) c.lineTo(px, py); else c.moveTo(px, py);
+    }
+    c.closePath(); fs(c, '#a8652f');
+    ellipse(c, 0, -0.3, 6, 2.8); fs(c, '#fff3d6');
+    c.fillStyle = '#e9cf95';
+    for (const [px, py] of [[-3, -0.5], [-1, 0.6], [1.5, -1], [3.5, 0.4], [0.2, -1.6]]) {
+      ellipse(c, px, py, 0.7, 0.4); c.fill();
+    }
+  });
+
+  // Riisipuuro: bowl of rice porridge with a butter "eye"
+  D.porridge = (c, o) => food(c, o, () => {
+    ellipse(c, 0, -1.5, 8, 2.6); fs(c, '#fff6e3');
+    c.beginPath(); c.moveTo(-8, -1.5);
+    c.quadraticCurveTo(-7.5, 6, 0, 6);
+    c.quadraticCurveTo(7.5, 6, 8, -1.5);
+    c.quadraticCurveTo(0, 1.5, -8, -1.5);
+    c.closePath(); fs(c, '#4a78c8');
+    c.fillStyle = '#ffd23f'; ellipse(c, 0.5, -1.8, 1.8, 0.8); c.fill();
+  });
+
+  function glass(c, o, liquid) {
+    food(c, o, () => {
+      const lvl = o.level == null ? 1 : MP.clamp(o.level, 0, 1);
+      const shape = () => {
+        c.beginPath(); c.moveTo(-4.5, -7); c.lineTo(4.5, -7); c.lineTo(3.6, 7); c.lineTo(-3.6, 7); c.closePath();
+      };
+      shape(); c.fillStyle = 'rgba(220,240,255,0.55)'; c.fill();
+      if (lvl > 0) {
+        c.save(); shape(); c.clip();
+        c.fillStyle = liquid;
+        c.fillRect(-6, 7 - 12.5 * lvl, 12, 14);
+        c.restore();
+      }
+      shape(); c.stroke();
+      c.save();
+      c.strokeStyle = 'rgba(255,255,255,0.9)'; c.lineWidth = 0.6;
+      c.beginPath(); c.moveTo(-2.8, -5); c.lineTo(-2.3, 4); c.stroke();
+      c.restore();
+    });
+  }
+  D.water = (c, o) => glass(c, o, '#8fd3ff');
+  D.milk = (c, o) => glass(c, o, '#ffffff');
+
   // House seen from outside. (x, y) = middle of the bottom.
   // opts: { night: 0..1 (how dark), lights: true/false }
   D.house = function (c, o) {
@@ -928,7 +1114,7 @@ MP.findItem = function (slot, id) {
   // Furniture: (x, y) = middle of the bottom. window: top-left. mirror: middle.
   // Small things (sun, moon, star, sparkle, arrow, rooster, hand, toothbrush,
   // ball) take everything in opts: MP.draw('sun', ctx, 0, 0, { x, y, r }).
-  const POSITIONED = { bed: 1, teddy: 1, panda: 1, window: 1, mirror: 1, sink: 1, toilet: 1, wardrobe: 1, door: 1, poster: 1, house: 1 };
+  const POSITIONED = { bed: 1, teddy: 1, panda: 1, window: 1, mirror: 1, sink: 1, toilet: 1, wardrobe: 1, door: 1, poster: 1, house: 1, nightstand: 1, shoeRack: 1 };
   MP.draw = function (name, c, x, y, opts) {
     const fn = D[name];
     if (!fn) throw new Error('No drawing called "' + name + '"');

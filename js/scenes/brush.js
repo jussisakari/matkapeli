@@ -8,7 +8,7 @@ MP.scenes.brush = {
   onTap(x, y) {
     if (MP.hit(this.button, x, y)) {
       MP.sfx.bling();
-      MP.goTo(MP.scenes.home, { quest: 'dress' });
+      MP.goTo(MP.scenes.home, { done: 'brush' });
     }
   },
 
