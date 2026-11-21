@@ -339,7 +339,7 @@ window.MP = window.MP || {};
   MP.scenes.winter = {
     transparent: true,
 
-    enter() {
+    enter(params) {
       if (!S.built) build();
       W3.show();
       this.p = { x: 2.2, z: 4.2, heading: 0 };
@@ -362,6 +362,15 @@ window.MP = window.MP || {};
       // the taxi from the airport drives in, then we hop out
       this.arrive = { t: 0 };
       S.ch.setVisible(false);
+      // coming out of the igloo (igloo.js)
+      if (params && params.from === 'igloo') {
+        this.p = { x: IGLOO.x, z: IGLOO.z + 5.8, heading: Math.PI };
+        this.camHeading = this.p.heading;
+        this.arrive = null;
+        this.seen.igloo = true;
+        S.ch.setVisible(true);
+        this.say('Hei hei, pingviinit! Ulkona on taas pakkasta.', 3, 0.4);
+      }
     },
 
     exit() {
@@ -416,8 +425,10 @@ window.MP = window.MP || {};
           MP.sfx.tune();
         }
       } else if (spot === 'igloo') {
-        this.say('Iglu! Se on rakennettu lumiharkoista. Sisällä on yllättävän lämmin!', 4);
+        this.say('Iglu! Mennään sisään.', 1.5);
         MP.sfx.tune();
+        this.leaving = { t: 0, igloo: true };
+        MP.goTo(MP.scenes.igloo);
       } else if (spot === 'sled') {
         this.sledRide = { t: 0 };
         this.say('Mäenlaskuun! Wiii!', 2.5);
@@ -470,7 +481,7 @@ window.MP = window.MP || {};
         }
       }
       // --- Taxi leaving for the airport ---
-      if (this.leaving) {
+      if (this.leaving && !this.leaving.igloo) {
         this.leaving.t += dt;
         const t = Math.max(0, this.leaving.t - 0.8);
         S.taxi.position.x = TAXI_AT.x - t * t * 6;
@@ -558,7 +569,7 @@ window.MP = window.MP || {};
           if (!this.seen[id] && Math.hypot(p.x - pl.x, p.z - pl.z) < pl.r) {
             this.seen[id] = true;
             if (id === 'snowman') this.say('Lumikasa! Napauta sitä, niin rakennetaan lumiukko.', 3.5);
-            if (id === 'igloo') this.say('Iglu! Napauta sitä.', 3);
+            if (id === 'igloo') this.say('Iglu! Napauta sitä, niin mennään sisään.', 3);
             if (id === 'hill') this.say('Pulkkamäki! Napauta kelkkaa.', 3);
             if (id === 'shore') this.say('Meri ja jäävuoria! Ja pingviinejä! Napauta pingviiniä.', 4);
           }

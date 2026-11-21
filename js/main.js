@@ -15,6 +15,7 @@
 //   #lento        the flight animation to Egypt
 //   #egypti       Egypt, the taxi just arrived
 //   #talvimaa     Talvimaa (Winter Land), the taxi just arrived
+//   #iglu         inside the igloo in Talvimaa (and the penguin game)
 //   #thaimaa      Thailand's beach, the tuk-tuk just arrived
 //   #newyork      New York, the taxi just arrived
 //   #australia    Australia, the jeep just arrived
@@ -66,6 +67,7 @@ window.MP = window.MP || {};
     lento:       () => { ready(true); return [MP.scenes.flight, { from: 'home', to: 'egypt' }]; },
     egypti:      () => { ready(true); return [MP.scenes.egypt]; },
     talvimaa:    () => { ready(true); return [MP.scenes.winter]; },
+    iglu:        () => { ready(true); return [MP.scenes.igloo]; },
     thaimaa:     () => { ready(true); return [MP.scenes.thailand]; },
     newyork:     () => { ready(true); return [MP.scenes.newyork]; },
     australia:   () => { ready(true); return [MP.scenes.australia]; },
