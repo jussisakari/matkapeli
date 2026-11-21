@@ -1,6 +1,7 @@
 // concert.js – the Turpapojat concert: a memory that starts from the poster in
 // the child's room. A dream bubble opens: "Muistatko?" – and we are on the stage!
-// The band plays a happy tune (made with the game's own sounds). Stars fall down
+// Choose a song: "Mä löin sua turpaan" or "Hello, it's me". The band plays it
+// (made with the game's own sounds) and the words light up karaoke style. Stars fall down
 // three lanes on the right; tap a star when it reaches the line. Every good tap
 // makes a dance move and the audience cheers. Misses don't stop the song.
 // At the end: applause, flowers on the stage and 1–3 stars.
@@ -10,7 +11,6 @@ window.MP = window.MP || {};
   const MP = window.MP;
   const O = () => MP.COLORS.outline;
 
-  const BEAT = 0.64;             // seconds per beat (an easy tempo)
   const MEMORY = 3.2;            // the dream bubble opening
   const LEAD = 4;                // "1, 2, 3, 4!" before the song
   const FALL = 2.3;              // seconds a star falls before reaching the line
@@ -22,26 +22,43 @@ window.MP = window.MP || {};
   const STAGE_Y = 140;           // where feet stand on the stage
   const DONE_BTN = { x: 98, y: 130, w: 124, h: 22 };
   const LANE_COLORS = ['#ff5f8f', '#ffd23f', '#5fd4ff'];
+  const songBtn = (i) => ({ x: 34 + i * 128, y: 74, w: 120, h: 42 });
 
-  // The tune: [beat, midi note, length in beats]
-  const MELODY = [
-    [0, 60, 1], [1, 64, 1], [2, 67, 1], [3, 64, 1], [4, 65, 1], [5, 69, 1], [6, 67, 2],
-    [8, 67, 1], [9, 65, 1], [10, 64, 1], [11, 62, 1], [12, 60, 1], [13, 62, 1], [14, 64, 2],
-    [16, 60, 1], [17, 64, 1], [18, 67, 1], [19, 64, 1], [20, 65, 1], [21, 69, 1], [22, 67, 2],
-    [24, 72, 1], [25, 71, 1], [26, 69, 1], [27, 67, 1], [28, 65, 1], [29, 64, 1], [30, 62, 1], [31, 64, 1], [32, 60, 2],
+  // ---------------------------------------------------------------------------
+  // The songs of Turpapojat. One verse is 16 beats and it is played twice.
+  //   sing: [beat, syllable, midi note, beats long, star?] – the sung words
+  //   fill: [beat, midi note, beats long] – the guitar between the lines
+  //   bass: [beat, midi note], end: the last note (midi)
+  // ---------------------------------------------------------------------------
+  const SONGS = [
+    {
+      title: 'Mä löin sua turpaan', beat: 0.62, end: 72, endBass: 48,
+      lines: [
+        [[0, 'Mä ', 60, 1, 1], [1, 'löin ', 64, 1], [2, 'su', 67, 0.5, 1], [2.5, 'a ', 67, 0.5], [3, 'tur', 69, 1], [4, 'paan,', 67, 2, 1]],
+        [[8, 'sä ', 65, 1, 1], [9, 'len', 64, 1], [10, 'sit ', 62, 1, 1], [11, 'o', 64, 1], [12, 'jaan!', 60, 2, 1]],
+      ],
+      fill: [[6, 64, 1], [7, 62, 1], [14, 62, 1], [15, 64, 1]],
+      bass: [[0, 48], [2, 48], [4, 53], [6, 48], [8, 53], [10, 55], [12, 48], [14, 55]],
+    },
+    {
+      title: "Hello, it's me", beat: 0.7, end: 69, endBass: 45,
+      lines: [
+        [[0, 'Hel', 64, 1, 1], [1, 'lo, ', 67, 1], [2, "it's ", 69, 1, 1], [3, 'me', 67, 3]],
+        [[8, 'I ', 65, 1, 1], [9, 'am ', 64, 1], [10, 'loo', 62, 1, 1], [11, 'ser', 60, 3]],
+      ],
+      fill: [[6, 64, 1], [7, 65, 1], [14, 59, 1], [15, 62, 1]],
+      bass: [[0, 45], [2, 45], [4, 48], [6, 48], [8, 41], [10, 41], [12, 43], [14, 43]],
+    },
   ];
-  const BASS = [[0, 48], [2, 48], [4, 53], [6, 48], [8, 55], [10, 53], [12, 48], [14, 55],
-    [16, 48], [18, 48], [20, 53], [22, 48], [24, 53], [26, 53], [28, 48], [30, 55], [32, 48]];
-  const SONG_BEATS = 34;
-  // Stars on every other beat; the lane follows the melody (low – middle – high)
-  const CHART = MELODY.filter((m) => m[0] % 2 === 0).map((m) => ({
-    beat: m[0], lane: m[1] <= 62 ? 0 : m[1] <= 66 ? 1 : 2,
-  }));
+  const VERSES = 2, SONG_BEATS = VERSES * 16 + 2;
 
   const hz = (midi) => 440 * Math.pow(2, (midi - 69) / 12);
-  const songStart = MEMORY + LEAD * BEAT;       // when beat 0 of the song plays
+  const laneOf = (midi) => (midi <= 62 ? 0 : midi <= 66 ? 1 : 2);   // low – middle – high
+  // These change with the chosen song
+  let BEAT = 0.62;
+  let songStart = MEMORY + LEAD * BEAT;          // when beat 0 of the song plays
+  let SONG_END = 99;
   const timeOf = (beat) => songStart + beat * BEAT;
-  const SONG_END = timeOf(SONG_BEATS);
 
   const MOVES = ['jump', 'spin', 'wave', 'jump', 'clap', 'spin'];
 
@@ -54,21 +71,11 @@ window.MP = window.MP || {};
   MP.scenes.concert = {
     enter() {
       this.t = 0;
-      this.notes = CHART.map((c) => ({ beat: c.beat, lane: c.lane, time: timeOf(c.beat), state: 'fall', at: 0 }));
+      this.song = null;            // chosen after the dream bubble opens
+      this.notes = [];
       this.events = [];
-      // the music: drums from the count-in, then melody and bass
-      for (let b = -LEAD; b < SONG_BEATS; b++) {
-        const tb = timeOf(b);
-        this.events.push({ t: tb, fn: () => MP.sfx.kick() });
-        if (b >= 0 && ((b % 4) === 1 || (b % 4) === 3)) this.events.push({ t: tb, fn: () => MP.sfx.hat(true) });
-        if (b >= 0) this.events.push({ t: tb + BEAT / 2, fn: () => MP.sfx.hat(false) });
-        if (b < 0) this.events.push({ t: tb, fn: () => MP.sfx.note(b === -1 ? 1320 : 990, 0.08, 'square', 0.08) });
-      }
-      for (const [b, m, len] of MELODY) this.events.push({ t: timeOf(b), fn: () => MP.sfx.note(hz(m), len * BEAT * 0.9, 'triangle', 0.2) });
-      for (const [b, m] of BASS) this.events.push({ t: timeOf(b), fn: () => MP.sfx.note(hz(m), BEAT * 1.8, 'sine', 0.22) });
-      this.events.sort((a, b) => a.t - b.t);
       this.next = 0;
-
+      this.lines = [];             // the lyrics with their times
       this.hits = 0;
       this.move = null;            // { kind, from }
       this.moveN = 0;
@@ -79,11 +86,62 @@ window.MP = window.MP || {};
       this.kpop = MP.state.outfit && MP.state.outfit.shirt === 'kpop' && (!MP.state.outfit.costume || MP.state.outfit.costume === 'none');
     },
 
+    // The song is chosen: make the music, the stars and the lyrics
+    chooseSong(song) {
+      this.song = song;
+      BEAT = song.beat;
+      this.t = MEMORY;
+      songStart = MEMORY + LEAD * BEAT;
+      SONG_END = timeOf(SONG_BEATS);
+      const ev = (t, fn) => this.events.push({ t, fn });
+      // drums from the count-in to the end
+      for (let b = -LEAD; b < SONG_BEATS; b++) {
+        const tb = timeOf(b);
+        ev(tb, () => MP.sfx.kick());
+        if (b >= 0 && ((b % 4) === 1 || (b % 4) === 3)) ev(tb, () => MP.sfx.hat(true));
+        if (b >= 0) ev(tb + BEAT / 2, () => MP.sfx.hat(false));
+        if (b < 0) ev(tb, () => MP.sfx.note(b === -1 ? 1320 : 990, 0.08, 'square', 0.08));
+      }
+      for (let v = 0; v < VERSES; v++) {
+        const o = v * 16;
+        song.lines.forEach((line) => {
+          const pieces = line.map(([b, text, m, len, star]) => {
+            const time = timeOf(o + b);
+            ev(time, () => MP.sfx.note(hz(m), len * BEAT * 0.9, 'triangle', 0.2));
+            if (star) this.notes.push({ time, lane: laneOf(m), state: 'fall', at: 0 });
+            return { text, time, len: len * BEAT };
+          });
+          this.lines.push(pieces);
+        });
+        for (const [b, m, len] of song.fill) ev(timeOf(o + b), () => MP.sfx.note(hz(m), len * BEAT * 0.8, 'square', 0.07));
+        for (const [b, m] of song.bass) ev(timeOf(o + b), () => MP.sfx.note(hz(m), BEAT * 1.8, 'sine', 0.22));
+      }
+      // the big last note, with a star
+      const last = timeOf(VERSES * 16);
+      ev(last, () => MP.sfx.note(hz(song.end), BEAT * 1.8, 'triangle', 0.22));
+      ev(last, () => MP.sfx.note(hz(song.endBass), BEAT * 2, 'sine', 0.24));
+      this.notes.push({ time: last, lane: 2, state: 'fall', at: 0 });
+      this.events.sort((a, b) => a.t - b.t);
+      this.next = 0;
+      MP.sfx.bling();
+    },
+
+    // Someone is singing right now? (the mouth opens)
+    singing() {
+      for (const line of this.lines) {
+        for (const p of line) if (this.t >= p.time && this.t < p.time + Math.min(p.len, 0.5)) return true;
+      }
+      return false;
+    },
+
     onTap(x, y) {
       if (this.t < MEMORY) {
         // skip the dream bubble
         this.t = MEMORY;
-        while (this.next < this.events.length && this.events[this.next].t < this.t) this.next++;
+        return;
+      }
+      if (!this.song) {
+        SONGS.forEach((song, i) => { if (MP.hit(songBtn(i), x, y)) this.chooseSong(song); });
         return;
       }
       if (this.done) {
@@ -118,6 +176,7 @@ window.MP = window.MP || {};
 
     update(dt) {
       this.t += dt;
+      if (!this.song) this.t = Math.min(this.t, MEMORY);    // waiting for the song choice
       while (this.next < this.events.length && this.events[this.next].t <= this.t) {
         if (this.t - this.events[this.next].t < 0.25) this.events[this.next].fn();   // don't play old sounds after a pause
         this.next++;
@@ -193,6 +252,7 @@ window.MP = window.MP || {};
         MP.drawPerson(ctx, m.x, STAGE_Y - Math.max(0, bob), {
           character: 'boy', hair: m.hair, outfit: m.outfit, scale: 1.1,
           armUp: m.mic && this.done ? 0.7 : 0,
+          mouth: m.mic && this.singing() ? 'yawn' : 'smile',
         });
         if (m.guitar) {
           ctx.save();
@@ -257,17 +317,62 @@ window.MP = window.MP || {};
       }
 
       // count-in: 1, 2, 3, 4!
-      if (t >= MEMORY && t < songStart) {
+      if (this.song && t >= MEMORY && t < songStart) {
         const n = Math.floor((t - MEMORY) / BEAT) + 1;
         MP.drawText(ctx, n < LEAD ? String(n) : String(n) + '!', 110, 50, { size: 3, color: '#ffe680', outline: O(), align: 'center' });
         if (n === 1) MP.drawText(ctx, 'Napauta tähtiä viivalla!', 110, 84, { size: 0.9, color: '#ffffff', outline: O(), align: 'center' });
       }
+
+      // --- The lyrics, karaoke style: sung syllables turn yellow ---
+      if (this.song && !this.done) this.drawLyrics(ctx);
+
+      // --- Which song? ---
+      if (!this.song && t >= MEMORY) this.drawSongChoice(ctx, now);
 
       // --- The end: flowers and stars ---
       if (this.done) this.drawEnd(ctx, now);
 
       // --- It's a memory: a dreamy cloud frame, and the bubble opening ---
       this.drawMemory(ctx, now);
+    },
+
+    drawLyrics(ctx) {
+      const t = this.t;
+      // the line being sung (or the next one coming)
+      let line = this.lines[0];
+      for (const l of this.lines) if (t >= l[0].time - BEAT * 1.5) line = l;
+      if (!line) return;
+      const size = 1.15;
+      const words = line.map((p) => p.text);
+      const total = MP.measureText(words.join(''), size);
+      let x = 110 - total / 2;
+      ctx.save();
+      ctx.fillStyle = 'rgba(10,5,30,0.55)';
+      MP.roundRect(ctx, x - 6, 31, total + 12, 15, 5);
+      ctx.fill();
+      ctx.restore();
+      line.forEach((p) => {
+        const sung = t >= p.time;
+        MP.drawText(ctx, p.text, x, 33, { size, color: sung ? '#ffe680' : '#ffffff', outline: O() });
+        x += MP.measureText(p.text, size);
+      });
+    },
+
+    drawSongChoice(ctx, now) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(10,5,30,0.55)';
+      ctx.fillRect(0, 0, MP.W, MP.H);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = O();
+      ctx.fillStyle = '#fff7e0';
+      MP.roundRect(ctx, 24, 42, 272, 86, 10); ctx.fill(); ctx.stroke();
+      ctx.restore();
+      MP.drawText(ctx, 'Mikä biisi soitetaan?', MP.W / 2, 50, { size: 1.2, color: '#e0559a', align: 'center' });
+      SONGS.forEach((song, i) => {
+        const r = songBtn(i);
+        MP.drawButton(ctx, '♪ ' + song.title, r, { size: 0.9, color: i ? '#6b4fb5' : '#e0559a', shade: i ? '#4a3480' : '#a8326c' });
+      });
+      void now;
     },
 
     drawDancer(ctx, x, y, bounce, now) {
@@ -285,7 +390,7 @@ window.MP = window.MP || {};
       ctx.save();
       ctx.translate(x, 0);
       ctx.scale(Math.abs(sx) < 0.15 ? 0.15 * Math.sign(sx || 1) : sx, 1);
-      MP.drawPerson(ctx, 0, y + dy, { scale: 1.2, armUp, walking, walkTime: now, mouth: 'smile' });
+      MP.drawPerson(ctx, 0, y + dy, { scale: 1.2, armUp, walking, walkTime: now, mouth: this.singing() ? 'yawn' : 'smile' });
       ctx.restore();
       // a spotlight circle on the floor
       ctx.save();
