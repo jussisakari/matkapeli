@@ -385,6 +385,7 @@ window.MP = window.MP || {};
       bus: { x: 3.6, z: -4.4 },
       snowman: { x: -2.6, z: 9.2 },
       sled: { x: -13.8, z: 4.2 },
+      icecream: { x: -3.7, z: 0.6 },
     };
 
     // --- Our family car, parked by the street outside the fence (drive.js) ---
@@ -436,6 +437,30 @@ window.MP = window.MP || {};
     S.clickables.push(bus);
     S.bus = bus;
 
+    // --- The ice cream truck (icecream.js): white with pink stripes, a big cone on the roof ---
+    const truck = new T.Group();
+    box(2.2, 2.4, 4.6, '#ffffff', 0, 0.4, 0, truck);
+    box(2.22, 0.35, 4.62, '#ff9ec4', 0, 1.2, 0, truck);
+    box(2.24, 1, 1.8, '#bfe6ff', 0, 1.5, 0.6, truck);                 // the serving window (left side)
+    box(2.1, 1, 0.06, '#bfe6ff', 0, 1.7, 2.31, truck);                 // the windscreen
+    const icCone = new T.Mesh(new T.ConeGeometry(0.45, 1.2, 12), mat('#e8b878'));
+    icCone.rotation.x = Math.PI; icCone.position.set(0, 3.4, -0.6);
+    truck.add(icCone);
+    ball(0.5, '#ff9ec4', 0, 4.1, -0.6, truck);
+    ball(0.4, '#8a5a32', 0, 4.6, -0.6, truck);
+    for (const [wx, wz] of [[-1.1, 1.5], [1.1, 1.5], [-1.1, -1.5], [1.1, -1.5]]) {
+      const wheel = cyl(0.4, 0.3, '#2b2b33', wx, 0.4, wz, truck);
+      wheel.rotation.z = Math.PI / 2;
+      wheel.position.y = 0.4;
+    }
+    const icSign = sign('JÄÄTELÖ', -1.13, 2.4, 0, -Math.PI / 2, '#ffffff', '#e0559a', null, 1.8);
+    S.scene.remove(icSign); truck.add(icSign);
+    truck.position.set(-1.6, 0, -80);
+    add(truck);
+    truck.traverse((m) => { m.userData.spot = 'icecream'; });
+    S.clickables.push(truck);
+    S.truck = truck;
+
     // --- Our own garden: three garden boxes next to the house (garden.js) ---
     S.garden = MP.garden3d(W, T);
     // --- The seasons: snowman, sledding hill, leaf piles, Christmas lights (seasons.js) ---
@@ -478,12 +503,19 @@ window.MP = window.MP || {};
       const bussed = params && params.from === 'bus';
       const schooled = params && params.from === 'school';
       const drove = params && params.from === 'car';
+      const iced = params && params.from === 'icecream';
       this.p = back ? { x: -30, z: -44.3, heading: Math.PI / 2 }
         : swum ? { x: S.spots.pool.x, z: S.spots.pool.z, heading: 0 }
           : gardened ? { x: S.spots.garden.x, z: S.spots.garden.z, heading: Math.PI / 2 }
             : bussed ? { x: S.spots.busstop.x, z: S.spots.busstop.z, heading: Math.PI }
               : schooled ? { x: S.spots.school.x, z: S.spots.school.z, heading: Math.PI }
-                : drove ? { x: S.spots.car.x, z: S.spots.car.z, heading: 0 } : { x: START.x, z: START.z, heading: 0 };
+                : drove ? { x: S.spots.car.x, z: S.spots.car.z, heading: 0 }
+                  : iced ? { x: S.spots.icecream.x, z: S.spots.icecream.z, heading: Math.PI / 2 } : { x: START.x, z: START.z, heading: 0 };
+      // the ice cream truck comes on sunny days (not in winter, not when it rains, not in the evening)
+      const sunny = !MP.isSnowy() && !(MP.isRainy && MP.isRainy()) && !MP.state.dusk;
+      this.truck = iced ? { mode: 'leave', t: 0 } : sunny && Math.random() < 0.5 ? { mode: 'wait0', t: 0 } : null;
+      S.truck.position.set(-1.6, 0, iced ? 0 : -80);
+      S.truck.rotation.y = 0;
       this.bus = bussed ? { mode: 'leave', t: 0 } : null;     // the bus: coming / waiting / leaving
       S.bus.position.set(1.5, 0, bussed ? -4 : -70);
       S.garden.update();
@@ -507,7 +539,8 @@ window.MP = window.MP || {};
       if (swum) S.pet.place(this.p.x + 1.2, this.p.z + 0.6);
       else if (back) { S.pet.place(0, 9); S.pet.happyFrom = MP.time + 0.3; }
       else S.pet.place(this.p.x + 0.8, this.p.z + 1.2);
-      if (drove) this.say('Auto parkkiin! Olipa hauska ajelu – ja auto osasi uida!', 4, 0.4);
+      if (iced) this.say('Nam, olipa hyvää jäätelöä! Jäätelöauto jatkaa matkaa. Hei hei!', 3.5, 0.4);
+      else if (drove) this.say('Auto parkkiin! Olipa hauska ajelu – ja auto osasi uida!', 4, 0.4);
       else if (schooled) this.say('Koulupäivä on ohi! Kultainen tähti vihkoon. Mitä tehdään seuraavaksi?', 4, 0.4);
       else if (bussed) this.say('Kotipysäkillä! Bussi 67 jatkaa matkaa. Olipa kiva reissu keskustaan!', 4, 0.4);
       else if (gardened) this.say('Kasvimaa on hoidettu! Huomenna kasvit ovat taas vähän isompia.', 3.5, 0.4);
@@ -575,6 +608,14 @@ window.MP = window.MP || {};
         this.ride = { t: 0, home: true };          // stops walking while the screen fades
         this.bus = { mode: 'go', t: 0 };
         setTimeout(() => MP.goTo(MP.scenes.helsinki), 1200);
+        return;
+      }
+      if (spot === 'icecream') {
+        if (!this.truck || this.truck.mode !== 'wait') return;
+        this.say('Jäätelöä, kiitos!', 1.5);
+        MP.sfx.bling();
+        this.ride = { t: 0, home: true };          // stops walking while the screen fades
+        MP.goTo(MP.scenes.icecream);
         return;
       }
       if (spot === 'garden') {
@@ -699,6 +740,32 @@ window.MP = window.MP || {};
           if (S.bus.position.z < -75) this.bus = null;
         } else if (bus.mode === 'wait' && bus.t > 25) {
           bus.mode = 'leave'; bus.t = 1.5;             // nobody came: the bus drives on
+        }
+      }
+
+      // --- The ice cream truck: comes playing its tune, waits, drives away ---
+      const tr = this.truck;
+      if (tr) {
+        tr.t += dt;
+        const TUNE = [784, 659, 784, 880, 784, 659, 523, 587];
+        if (tr.mode !== 'wait0' && tr.mode !== 'gone' && !(tr.mode === 'wait' && tr.t > 4) && Math.floor(tr.t * 3) !== Math.floor((tr.t - dt) * 3)) {
+          const k = Math.floor(tr.t * 3) % 12;
+          if (k < TUNE.length) MP.sfx.note(TUNE[k], 0.28, 'triangle', 0.08);
+        }
+        if (tr.mode === 'wait0' && tr.t > 6) {
+          tr.mode = 'come'; tr.t = 0;
+          this.say('Kuuletko? Jäätelöauton musiikki! Se tulee tänne!', 3.5);
+        } else if (tr.mode === 'come') {
+          const u = MP.clamp(tr.t / 6, 0, 1);
+          S.truck.position.z = -80 + 80 * (1 - (1 - u) * (1 - u));
+          if (u >= 1) { tr.mode = 'wait'; tr.t = 0; MP.sfx.bling(); this.say('Jäätelöauto pysähtyi kotikadulle! Napauta autoa, niin ostetaan jäätelöä.', 4); }
+        } else if (tr.mode === 'wait' && tr.t > 45) {
+          tr.mode = 'leave'; tr.t = 0;
+        } else if (tr.mode === 'leave') {
+          // turns around and drives away
+          S.truck.rotation.y = Math.min(Math.PI, tr.t * 2);
+          if (tr.t > 1.5) S.truck.position.z = -(tr.t - 1.5) * (tr.t - 1.5) * 5;
+          if (S.truck.position.z < -80) { tr.mode = 'gone'; }
         }
       }
 

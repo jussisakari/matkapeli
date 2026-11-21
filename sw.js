@@ -48,6 +48,7 @@ const FILES = [
     './js/scenes/labyrinth.js',
     './js/scenes/start.js',
     './js/scenes/street.js',
+    './js/scenes/icecream.js',
     './js/scenes/swim.js',
     './js/scenes/garden.js',
     './js/scenes/helsinki.js',

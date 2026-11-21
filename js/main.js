@@ -46,6 +46,7 @@
 //   #labyrintti   the labyrinth under Ramses II's temple
 //   #kirjat       the bookshelf
 //   #galleria     all drawings and outfits
+//   #jaatelo      the ice cream truck (build an ice cream)
 //   #turpavierailu Turpapojat visit our living room
 //   #valokuvakoppi the funny photo booth in the hallway
 //   #yokyla       the sleepover at Mummi and Ukki's
@@ -79,6 +80,7 @@ window.MP = window.MP || {};
     leivonta:    () => { ready(false); return [MP.scenes.baking]; },
     synttarit:   () => { ready(false); return [MP.scenes.party]; },
     rummut:      () => { ready(false); return [MP.scenes.drums]; },
+    jaatelo:     () => { ready(true); return [MP.scenes.icecream]; },
     turpavierailu: () => { ready(false); return [MP.scenes.bandvisit]; },
     valokuvakoppi: () => { ready(false); return [MP.scenes.photobooth]; },
     yokyla:      () => { ready(true); return [MP.scenes.sleepover]; },
