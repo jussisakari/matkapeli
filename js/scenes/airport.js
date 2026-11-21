@@ -359,7 +359,8 @@ window.MP = window.MP || {};
       // big windows to the runway
       ctx.save();
       ctx.beginPath(); ctx.rect(60, 12, 260, 88); ctx.clip();
-      ctx.fillStyle = '#9fdcff';
+      const evening = this.country === 'home' && MP.state.dusk;
+      ctx.fillStyle = evening ? '#f59a6a' : '#9fdcff';
       ctx.fillRect(60, 12, 260, 88);
       ctx.fillStyle = { desert: '#e2c28b', forest: '#7cc56b', snow: '#f4f8ff', beach: '#f3e0b0', city: '#9aa0aa' }[look.land];
       ctx.fillRect(60, 80, 260, 20);
@@ -397,6 +398,7 @@ window.MP = window.MP || {};
       ctx.fillStyle = '#ffffff';
       for (let x = 64; x < 320; x += 14) ctx.fillRect(x, 92, 7, 1);
       MP.drawPlane(ctx, 250, 84, 0.9, 0, true);
+      if (evening && MP.eveningLight) MP.eveningLight(ctx, 0.9);     // back home in the evening
       ctx.restore();
       ctx.lineWidth = 1.2;
       ctx.strokeStyle = '#8a93a6';

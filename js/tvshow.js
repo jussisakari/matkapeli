@@ -138,6 +138,156 @@ window.MP = window.MP || {};
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // In the evening: "Masked Singer Suomi" – singers in big masks take turns.
+  // Each one: a title card ("Seuraavaksi: POPCORN!"), then singing with lights.
+  // ---------------------------------------------------------------------------
+  MP.MASKED = {
+    LEN: 12,          // seconds per singer
+    TITLE: 1.8,       // the title card at the start
+    singers: [
+      { id: 'popcorn', name: 'POPCORN', step: 0.28, wave: 'triangle',
+        tune: [67, 69, 71, 72, 74, 72, 71, 69, 67, 64, 67, 72] },
+      { id: 'pharaoh', name: 'FAARAO', step: 0.36, wave: 'square',
+        tune: [64, 65, 68, 69, 71, 69, 68, 65, 64, 68, 65, 64] },
+    ],
+  };
+  MP.maskedNow = function (t) {
+    const M = MP.MASKED;
+    const i = Math.floor(t / M.LEN) % M.singers.length;
+    return { singer: M.singers[i], lt: t % M.LEN };
+  };
+
+  // Popcorn: a striped popcorn box with a fluffy popcorn head and big eyes
+  function popcorn(c, lt, sing) {
+    // legs
+    c.fillStyle = '#ffffff';
+    c.fillRect(72, 70, 5, 12); c.strokeRect(72, 70, 5, 12);
+    c.fillRect(83, 70, 5, 12); c.strokeRect(83, 70, 5, 12);
+    c.fillStyle = '#e04848';
+    ell(c, 74.5, 82, 4, 1.8, 0, '#e04848');
+    ell(c, 85.5, 82, 4, 1.8, 0, '#e04848');
+    // the box
+    c.beginPath(); c.moveTo(60, 38); c.lineTo(100, 38); c.lineTo(94, 72); c.lineTo(66, 72); c.closePath();
+    c.fillStyle = '#ffffff'; c.fill();
+    c.save(); c.clip();
+    c.fillStyle = '#e04848';
+    for (let x = 58; x < 102; x += 10) c.fillRect(x, 36, 5, 40);
+    c.restore();
+    c.beginPath(); c.moveTo(60, 38); c.lineTo(100, 38); c.lineTo(94, 72); c.lineTo(66, 72); c.closePath(); c.stroke();
+    // popcorn puffs on top
+    const puffs = [[62, 36, 6], [70, 31, 7], [80, 28, 8], [90, 31, 7], [98, 36, 6], [66, 26, 5], [76, 21, 6], [86, 22, 6], [94, 27, 5], [81, 15, 5]];
+    for (const [px, py, r] of puffs) ell(c, px, py + Math.sin(lt * 6 + px) * 0.6, r, r * 0.85, 0, '#fff3c4');
+    // the face on the box: big eyes and a singing mouth
+    ell(c, 73, 48, 4.5, 5.5, 0, '#ffffff');
+    ell(c, 87, 48, 4.5, 5.5, 0, '#ffffff');
+    c.fillStyle = O;
+    c.beginPath(); c.arc(74, 49, 2.2, 0, Math.PI * 2); c.arc(86, 49, 2.2, 0, Math.PI * 2); c.fill();
+    const open = sing ? 2 + Math.abs(Math.sin(lt * 9)) * 4 : 1;
+    ell(c, 80, 60, 5, open, 0, '#7a1418');
+    // arms with the microphone
+    c.lineWidth = 3; c.strokeStyle = '#ffffff';
+    c.beginPath(); c.moveTo(97, 46); c.lineTo(104, 54 - Math.sin(lt * 3) * 3); c.stroke();
+    c.beginPath(); c.moveTo(63, 46); c.lineTo(56, 40 + Math.sin(lt * 4) * 6); c.stroke();
+    c.lineWidth = 1; c.strokeStyle = O;
+    c.fillStyle = '#2b2b33'; c.fillRect(102, 52 - Math.sin(lt * 3) * 3, 3, 7);
+    ell(c, 103.5, 51 - Math.sin(lt * 3) * 3, 2.6, 2.6, 0, '#8a93a6');
+  }
+
+  // Faarao: a golden mask, a blue-and-gold striped headdress and a golden robe
+  function pharaoh(c, lt, sing) {
+    // robe
+    c.beginPath(); c.moveTo(68, 44); c.lineTo(92, 44); c.lineTo(98, 82); c.lineTo(62, 82); c.closePath();
+    c.fillStyle = '#f4efe1'; c.fill(); c.stroke();
+    c.fillStyle = '#e0b43a';
+    c.beginPath(); c.moveTo(66, 44); c.lineTo(94, 44); c.lineTo(90, 52); c.lineTo(70, 52); c.closePath(); c.fill(); c.stroke();  // gold collar
+    for (let i = 0; i < 4; i++) { c.fillStyle = i % 2 ? '#2f5fb5' : '#e0b43a'; c.fillRect(71 + i * 0.5, 46 + i * 1.5, 18 - i, 1.2); }
+    // headdress (stripes)
+    c.beginPath(); c.moveTo(68, 18); c.lineTo(92, 18); c.lineTo(98, 46); c.lineTo(62, 46); c.closePath();
+    c.fillStyle = '#e0b43a'; c.fill();
+    c.save(); c.clip();
+    c.fillStyle = '#2f5fb5';
+    for (let y = 18; y < 48; y += 5) c.fillRect(60, y, 40, 2.5);
+    c.restore();
+    c.beginPath(); c.moveTo(68, 18); c.lineTo(92, 18); c.lineTo(98, 46); c.lineTo(62, 46); c.closePath(); c.stroke();
+    // golden face mask
+    ell(c, 80, 31, 9, 11, 0, '#f2c230');
+    c.fillStyle = O;
+    for (const ex of [76, 84]) {
+      c.beginPath(); c.ellipse(ex, 29, 2.2, 1.3, 0, 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.moveTo(ex + (ex < 80 ? -2 : 2), 29); c.lineTo(ex + (ex < 80 ? -4.5 : 4.5), 30.5); c.stroke();  // eyeliner
+    }
+    const open = sing ? 1.2 + Math.abs(Math.sin(lt * 8)) * 2.5 : 0.6;
+    ell(c, 80, 37, 3, open, 0, '#7a1418');
+    c.fillStyle = '#2f5fb5'; c.fillRect(78.5, 42, 3, 6); c.strokeRect(78.5, 42, 3, 6);   // beard
+    // the cobra on the forehead
+    ell(c, 80, 19, 1.6, 2.4, 0, '#e0b43a');
+    // arms: one holds the mic, one waves like walking in Egypt
+    c.lineWidth = 3; c.strokeStyle = '#c8913a';
+    c.beginPath(); c.moveTo(92, 52); c.lineTo(99, 44 + Math.sin(lt * 2) * 2); c.stroke();
+    c.beginPath(); c.moveTo(68, 52); c.lineTo(58, 52 + Math.sin(lt * 5) * 5); c.lineTo(54, 46 + Math.sin(lt * 5) * 5); c.stroke();
+    c.lineWidth = 1; c.strokeStyle = O;
+    c.fillStyle = '#2b2b33'; c.fillRect(97.5, 38 + Math.sin(lt * 2) * 2, 3, 7);
+    ell(c, 99, 37 + Math.sin(lt * 2) * 2, 2.6, 2.6, 0, '#8a93a6');
+  }
+
+  function maskedSinger(c, t) {
+    const M = MP.MASKED;
+    const { singer, lt } = MP.maskedNow(t);
+    // the studio: dark blue, glittering lights
+    const g = c.createLinearGradient(0, 0, 0, 100);
+    g.addColorStop(0, '#120b3a'); g.addColorStop(1, '#3a1f6a');
+    c.fillStyle = g; c.fillRect(0, 0, 160, 100);
+    for (let i = 0; i < 18; i++) {
+      c.fillStyle = ['#ff5fd0', '#ffe680', '#5fd4ff'][i % 3];
+      c.globalAlpha = 0.4 + 0.4 * Math.sin(t * 4 + i);
+      c.beginPath(); c.arc((i * 37) % 160, 8 + (i * 13) % 30, 1.2, 0, Math.PI * 2); c.fill();
+    }
+    c.globalAlpha = 1;
+    if (lt < M.TITLE) {
+      // title card
+      const k = MP.clamp(lt * 3, 0, 1);
+      MP.drawText(c, 'MASKED SINGER', 80, 22, { size: 1.4 * k + 0.01, color: '#ffe680', outline: O, align: 'center' });
+      MP.drawText(c, 'SUOMI', 80, 38, { size: 1.1, color: '#ffffff', outline: O, align: 'center' });
+      MP.drawText(c, 'Seuraavaksi: ' + singer.name + '!', 80, 60, { size: 0.9, color: '#ff9fe0', outline: O, align: 'center' });
+      return;
+    }
+    // spotlight
+    c.save();
+    c.globalAlpha = 0.22;
+    c.fillStyle = '#fff3c4';
+    c.beginPath(); c.moveTo(70, 0); c.lineTo(90, 0); c.lineTo(115, 86); c.lineTo(45, 86); c.closePath(); c.fill();
+    c.restore();
+    c.fillStyle = '#5a3a8a'; c.fillRect(0, 82, 160, 18);
+    c.fillStyle = 'rgba(255,255,255,0.25)';
+    c.beginPath(); c.ellipse(80, 84, 30, 4, 0, 0, Math.PI * 2); c.fill();
+    // the singer sways to the music
+    const sing = lt < M.LEN - 1.2;
+    c.save();
+    c.translate(80, 82);
+    c.rotate(Math.sin(lt * 3) * 0.06);
+    c.translate(-80, -82 - Math.abs(Math.sin(lt * 6)) * 1.5);
+    if (singer.id === 'popcorn') popcorn(c, lt, sing);
+    else pharaoh(c, lt, sing);
+    c.restore();
+    // notes flying out
+    if (sing) {
+      for (let i = 0; i < 3; i++) {
+        const p = (lt * 0.7 + i / 3) % 1;
+        c.save();
+        c.globalAlpha = 1 - p;
+        MP.drawText(c, '♪', 104 + p * 30, 40 - p * 30 + i * 4, { size: 0.9, color: ['#ff5fd0', '#ffe680', '#5fd4ff'][i], outline: O });
+        c.restore();
+      }
+    } else {
+      MP.drawText(c, 'Bravo!', 80, 8, { size: 1.2, color: '#ffe680', outline: O, align: 'center' });
+    }
+    // the name tag
+    c.fillStyle = 'rgba(255,255,255,0.9)';
+    MP.roundRect(c, 4, 86, 58, 11, 3); c.fill(); c.stroke();
+    MP.drawText(c, singer.name, 33, 87.5, { size: 0.65, color: '#b0208a', align: 'center' });
+  }
+
   // Draws the show into the rectangle (x, y, w, h). t = seconds the TV has been on.
   MP.drawTvShow = function (c, x, y, w, h, t) {
     c.save();
@@ -145,11 +295,17 @@ window.MP = window.MP || {};
     c.translate(x, y);
     c.scale(w / 160, h / 100);
     c.lineWidth = 1; c.lineJoin = 'round'; c.lineCap = 'round'; c.strokeStyle = O;
-    const gag = MP.tvGag(t), lt = MP.tvGagTime(t);
-    if (gag === 0) dog(c, lt);
-    else if (gag === 1) duck(c, lt);
-    else cat(c, lt);
-    MP.drawText(c, 'HAHA-TV', 156, 90, { size: 0.6, color: 'rgba(255,255,255,0.9)', outline: O, align: 'right' });
+    if (MP.state && MP.state.evening) {
+      // the evening show
+      maskedSinger(c, t);
+      MP.drawText(c, 'MASKED SINGER SUOMI', 156, 90, { size: 0.5, color: 'rgba(255,255,255,0.9)', outline: O, align: 'right' });
+    } else {
+      const gag = MP.tvGag(t), lt = MP.tvGagTime(t);
+      if (gag === 0) dog(c, lt);
+      else if (gag === 1) duck(c, lt);
+      else cat(c, lt);
+      MP.drawText(c, 'HAHA-TV', 156, 90, { size: 0.6, color: 'rgba(255,255,255,0.9)', outline: O, align: 'right' });
+    }
     c.restore();
   };
 })();

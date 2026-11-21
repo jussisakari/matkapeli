@@ -22,6 +22,7 @@
 //   #lemmikki     home in the morning with a pet (a kitten if none chosen yet)
 //   #albumi       the photo album
 //   #konsertti    the Turpapojat concert (a memory from the poster)
+//   #iltakatu     back on the home street in the evening (after a trip)
 //   #pyramidi     inside the pyramid
 //   #kirjat       the bookshelf
 //   #galleria     all drawings and outfits
@@ -64,6 +65,7 @@ window.MP = window.MP || {};
     hamahakki:   () => { ready(true); MP.state.outfit.costume = 'spider'; return [MP.scenes.street]; },
     lemmikki:    () => { ready(false); MP.state.pet = MP.state.pet || { kind: 'cat', name: 'Mirri' }; return [MP.scenes.home]; },
     albumi:      () => [MP.scenes.album],
+    iltakatu:    () => { ready(true); MP.state.dusk = true; return [MP.scenes.street, { from: 'taxi' }]; },
     konsertti:   () => { ready(false); return [MP.scenes.concert]; },
     pyramidi:    () => { ready(true); return [MP.scenes.pyramid]; },
     kirjat:      () => { ready(false); return [MP.scenes.books]; },

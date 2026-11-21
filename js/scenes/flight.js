@@ -206,11 +206,32 @@ window.MP = window.MP || {};
   // ---------------------------------------------------------------------------
   // The scene
   // ---------------------------------------------------------------------------
+  // Evening over the picture: darker, a little orange low in the sky, and the moon
+  function eveningLight(ctx, k) {
+    ctx.save();
+    const g = ctx.createLinearGradient(0, 0, 0, MP.H);
+    g.addColorStop(0, 'rgba(30,24,80,' + 0.6 * k + ')');
+    g.addColorStop(0.55, 'rgba(255,140,90,' + 0.3 * k + ')');
+    g.addColorStop(1, 'rgba(30,24,80,' + 0.45 * k + ')');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, MP.W, MP.H);
+    ctx.globalAlpha = k;
+    ctx.fillStyle = 'rgba(255,246,208,0.25)';
+    ctx.beginPath(); ctx.arc(60, 26, 12, 0, Math.PI * 2); ctx.fill();     // a soft glow
+    ctx.fillStyle = '#fff6d0';
+    ctx.beginPath(); ctx.arc(60, 26, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+  MP.eveningLight = eveningLight;
+
   MP.scenes.flight = {
     // params: { from: 'home', to: 'egypt' }
     enter(params) {
       this.from = MP.findDestination((params && params.from) || 'home');
       this.to = MP.findDestination((params && params.to) || 'egypt');
+      // Flying home takes all day: we land in the evening, and it stays evening outside
+      this.dusk = this.to.id === 'home';
+      MP.state.dusk = this.dusk;
       this.t = 0;
       this.done = false;
       this.landedSound = false;
@@ -266,10 +287,15 @@ window.MP = window.MP || {};
         // ===== Above the clouds =====
         const u = (t - TAKEOFF) / CRUISE;
         const g = ctx.createLinearGradient(0, 0, 0, MP.H);
-        g.addColorStop(0, '#3f8fdc'); g.addColorStop(1, '#bfe6ff');
+        if (this.dusk) {
+          // the sun goes down while flying home
+          g.addColorStop(0, MP.mixColor('#3f8fdc', '#3a3170', u)); g.addColorStop(1, MP.mixColor('#bfe6ff', '#ffa86b', u));
+        } else {
+          g.addColorStop(0, '#3f8fdc'); g.addColorStop(1, '#bfe6ff');
+        }
         ctx.fillStyle = g;
         ctx.fillRect(0, 0, MP.W, MP.H);
-        MP.draw('sun', ctx, 0, 0, { x: 270, y: 34, r: 12 });
+        MP.draw('sun', ctx, 0, 0, { x: 270, y: this.dusk ? 34 + u * 60 : 34, r: 12 });
         clouds(ctx, t, 40, 30, 4, 0.8);
         MP.drawPlane(ctx, 150, 92 + Math.sin(t * 2) * 3, 1.5, Math.sin(t * 1.3) * 0.03, false);
         clouds(ctx, t, 140, 120, 7, 1.6);
@@ -305,6 +331,7 @@ window.MP = window.MP || {};
           tilt = -0.08 * Math.max(0, 1 - v * 4);
         }
         MP.drawLandscape(ctx, this.to.land, full, 0);
+        if (this.dusk) eveningLight(ctx, 1);
         runway(ctx, u * 200);
         MP.drawPlane(ctx, x, y, 1.3, tilt, u > 0.2);
         if (u > TOUCH && u < TOUCH + 0.12) {

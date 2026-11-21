@@ -112,7 +112,8 @@ window.MP = window.MP || {};
   const PARENT_AFTER = 10;   // if the alarm rings this long, mom or dad comes to wake you
   const PARENT_SPEED = 65;
   const STAIR_SPEED = 95;
-  const TV_MAX = 30;         // seconds of TV before mom or dad switches it off
+  const TV_MAX = 30;         // seconds of TV before mom or dad switches it off (morning)
+  const TV_MAX_EVENING = 100;// in the evening you may watch longer (Masked Singer Suomi)
   const HALLWAY_X = 650;     // downstairs, the hallway starts here (shoes are OK only there)
 
   // The TV view (when watching): TV in the middle, remote control on the right
@@ -727,7 +728,7 @@ window.MP = window.MP || {};
       params = params || {};
       const waking = params.quest === 'wake';
       const evening = params.quest === 'evening';
-      if (waking) MP.state.evening = false;
+      if (waking) { MP.state.evening = false; MP.state.dusk = false; }
       if (evening) {
         // Back home from outside: the evening tasks start
         MP.state.evening = true;
@@ -1096,6 +1097,23 @@ window.MP = window.MP || {};
 
     // Plays the funny sounds of the cartoon
     tvSounds(prev, now) {
+      if (MP.state.evening) {
+        // Masked Singer Suomi: a fanfare, the singer's tune, then applause
+        const M = MP.MASKED;
+        const a = MP.maskedNow(prev), b = MP.maskedNow(now);
+        if (b.lt < a.lt) { MP.sfx.bling(); return; }
+        const s = b.singer;
+        const singEnd = M.LEN - 1.2;
+        if (b.lt >= M.TITLE && b.lt < singEnd) {
+          const ia = Math.floor((a.lt - M.TITLE) / s.step), ib = Math.floor((b.lt - M.TITLE) / s.step);
+          if (ib !== ia && ib >= 0) {
+            const m = s.tune[ib % s.tune.length];
+            MP.sfx.note(440 * Math.pow(2, (m - 69) / 12), s.step * 0.9, s.wave, 0.12);
+          }
+        }
+        if (a.lt < singEnd && b.lt >= singEnd) MP.sfx.applause(1.2);
+        return;
+      }
       if (MP.tvGag(prev) !== MP.tvGag(now)) MP.sfx.boing();
       const gag = MP.tvGag(now), a = MP.tvGagTime(prev), b = MP.tvGagTime(now);
       if (b < a) return;
@@ -1110,7 +1128,7 @@ window.MP = window.MP || {};
       this.tvView = false;
       this.callParent({
         floorY: FLOOR_DOWN, fromX: 345, standX: POS.tv + 36, talkFor: 2.8,
-        say: 'Nyt riittää telkkari! Laitetaan TV kiinni.',
+        say: MP.state.evening ? 'Nyt riittää telkkari! Kohta on nukkumaanmenoaika.' : 'Nyt riittää telkkari! Laitetaan TV kiinni.',
         onTalk: () => {
           this.tvOn = false;
           this.sitting = false;
@@ -1481,7 +1499,7 @@ window.MP = window.MP || {};
         this.showT += dt;
         this.tvSounds(prev, this.showT);
         MP.state.tv.time += dt;
-        if (MP.state.tv.time >= TV_MAX && !this.parent && !MP.state.tv.locked) this.tvTimeUp();
+        if (MP.state.tv.time >= (MP.state.evening ? TV_MAX_EVENING : TV_MAX) && !this.parent && !MP.state.tv.locked) this.tvTimeUp();
       }
 
       // --- Toilet visit or putting shoes on ---

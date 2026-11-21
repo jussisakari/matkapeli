@@ -47,10 +47,12 @@ window.MP = window.MP || {};
     S.scene.background = new T.Color(MP.OUTSIDE.sky);
     S.scene.fog = new T.Fog(MP.OUTSIDE.sky, 40, 110);
     S.camera = new T.PerspectiveCamera(55, 16 / 9, 0.1, 250);
-    S.scene.add(new T.HemisphereLight(0xffffff, 0x6a9a5a, 0.85));
+    S.hemi = new T.HemisphereLight(0xffffff, 0x6a9a5a, 0.85);
+    S.scene.add(S.hemi);
     const sun = new T.DirectionalLight(0xffffff, 0.55);
     sun.position.set(25, 40, 15);
     S.scene.add(sun);
+    S.sun = sun;
 
     const W = W3.kit(S.scene);
     S.W = W;
@@ -357,6 +359,22 @@ window.MP = window.MP || {};
   // ---------------------------------------------------------------------------
   // The scene
   // ---------------------------------------------------------------------------
+  // Day or evening: in the evening (back from a trip) the sky is darker and
+  // the street lamps and the windows glow
+  function setEvening(on) {
+    const T = S.T;
+    const sky = on ? '#6a5a9e' : MP.OUTSIDE.sky;
+    S.scene.background = new T.Color(sky);
+    S.scene.fog.color = new T.Color(sky);
+    S.hemi.intensity = on ? 0.5 : 0.85;
+    S.sun.intensity = on ? 0.35 : 0.55;
+    S.sun.color = new T.Color(on ? '#ffb27a' : '#ffffff');
+    for (const col of ['#bfe6ff', '#fff4c2']) {
+      S.W.mat(col).emissive = new T.Color(on ? '#ffd27a' : '#000000');
+      S.W.mat(col).emissiveIntensity = on ? 0.8 : 0;
+    }
+  }
+
   MP.scenes.street = {
     transparent: true,
 
@@ -378,6 +396,7 @@ window.MP = window.MP || {};
       this.seen = back ? { cross: true, taxi: true } : {};   // places already visited
       this.round = { speed: 0 };
       this.swingAt = -10;
+      setEvening(!!MP.state.dusk);
       S.castle.visible = false;
       S.taxi.position.set(TAXI_AT.x, 0, TAXI_AT.z);
       S.ch.setVisible(true);
@@ -386,6 +405,7 @@ window.MP = window.MP || {};
       else if (back) { S.pet.place(0, 9); S.pet.happyFrom = MP.time + 0.3; }
       else S.pet.place(this.p.x + 0.8, this.p.z + 1.2);
       if (swum) this.say('Olipa kivaa uida! Nyt kuivataan pyyhkeellä ja lähdetään seikkailemaan.', 4, 0.6);
+      else if (back && MP.state.dusk) this.say('Takaisin kotikadulla! On jo ilta – katulamput palavat. Kotiin pääsee napauttamalla kotitalon ovea.', 4.5, 0.6);
       else if (back) this.say('Takaisin kotikadulla! Leikkipuistoon vai kotiin? Kotiin pääsee napauttamalla kotitalon ovea.', 4.5, 0.6);
       else this.say('Ulkona! Kävellään risteykseen.', 4, 0.6);
     },
