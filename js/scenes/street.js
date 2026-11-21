@@ -375,9 +375,28 @@ window.MP = window.MP || {};
       sandbox: { x: 38.5, z: -55.2 },
       garden: { x: -5.6, z: 15.4 },
       busstop: { x: 4.4, z: -4.4 },
+      car: { x: -6.5, z: 1.6 },
       school: { x: -50, z: -47.4 },
       bus: { x: 3.6, z: -4.4 },
     };
+
+    // --- Our family car, parked by the street outside the fence (drive.js) ---
+    const car = new T.Group();
+    box(3.6, 0.9, 1.7, '#e04848', 0, 0.35, 0, car);
+    box(2, 0.75, 1.55, '#e04848', 0.1, 1.25, 0, car);
+    box(1.8, 0.6, 1.57, '#bfe6ff', 0.1, 1.3, 0, car);
+    for (const [wx, wz] of [[-1.15, 0.85], [1.15, 0.85], [-1.15, -0.85], [1.15, -0.85]]) {
+      const wheel = cyl(0.38, 0.3, '#2b2b33', wx, 0.38, wz, car);
+      wheel.rotation.x = Math.PI / 2;
+      wheel.position.y = 0.38;
+    }
+    box(0.1, 0.3, 0.4, '#fff3a0', -1.82, 0.7, 0.5, car);           // headlights
+    box(0.1, 0.3, 0.4, '#fff3a0', -1.82, 0.7, -0.5, car);
+    car.position.set(-6.5, 0, 3.4);
+    add(car);
+    block(-6.5, 3.4, 3.8, 1.9);
+    car.traverse((m) => { m.userData.spot = 'car'; });
+    S.clickables.push(car);
 
     // --- The bus stop for bus 67 to Helsinki city centre (helsinki.js) ---
     const stop = new T.Group();
@@ -449,11 +468,13 @@ window.MP = window.MP || {};
       const gardened = params && params.from === 'garden';
       const bussed = params && params.from === 'bus';
       const schooled = params && params.from === 'school';
+      const drove = params && params.from === 'car';
       this.p = back ? { x: -30, z: -44.3, heading: Math.PI / 2 }
         : swum ? { x: S.spots.pool.x, z: S.spots.pool.z, heading: 0 }
           : gardened ? { x: S.spots.garden.x, z: S.spots.garden.z, heading: Math.PI / 2 }
             : bussed ? { x: S.spots.busstop.x, z: S.spots.busstop.z, heading: Math.PI }
-              : schooled ? { x: S.spots.school.x, z: S.spots.school.z, heading: Math.PI } : { x: START.x, z: START.z, heading: 0 };
+              : schooled ? { x: S.spots.school.x, z: S.spots.school.z, heading: Math.PI }
+                : drove ? { x: S.spots.car.x, z: S.spots.car.z, heading: 0 } : { x: START.x, z: START.z, heading: 0 };
       this.bus = bussed ? { mode: 'leave', t: 0 } : null;     // the bus: coming / waiting / leaving
       S.bus.position.set(1.5, 0, bussed ? -4 : -70);
       S.garden.update();
@@ -475,7 +496,8 @@ window.MP = window.MP || {};
       if (swum) S.pet.place(this.p.x + 1.2, this.p.z + 0.6);
       else if (back) { S.pet.place(0, 9); S.pet.happyFrom = MP.time + 0.3; }
       else S.pet.place(this.p.x + 0.8, this.p.z + 1.2);
-      if (schooled) this.say('Koulupäivä on ohi! Kultainen tähti vihkoon. Mitä tehdään seuraavaksi?', 4, 0.4);
+      if (drove) this.say('Auto parkkiin! Olipa hauska ajelu – ja auto osasi uida!', 4, 0.4);
+      else if (schooled) this.say('Koulupäivä on ohi! Kultainen tähti vihkoon. Mitä tehdään seuraavaksi?', 4, 0.4);
       else if (bussed) this.say('Kotipysäkillä! Bussi 67 jatkaa matkaa. Olipa kiva reissu keskustaan!', 4, 0.4);
       else if (gardened) this.say('Kasvimaa on hoidettu! Huomenna kasvit ovat taas vähän isompia.', 3.5, 0.4);
       else if (swum) this.say('Olipa kivaa uida! Nyt kuivataan pyyhkeellä ja lähdetään seikkailemaan.', 4, 0.6);
@@ -503,6 +525,13 @@ window.MP = window.MP || {};
         MP.sfx.bling();
         this.ride = { t: 0, home: true };          // stops walking while the screen fades
         MP.goTo(MP.scenes.home, { quest: 'evening' });
+        return;
+      }
+      if (spot === 'car') {
+        this.say('Meidän auto! Lähdetään ajelulle.', 1.5);
+        MP.sfx.bling();
+        this.ride = { t: 0, home: true };          // stops walking while the screen fades
+        MP.goTo(MP.scenes.drive);
         return;
       }
       if (spot === 'school') {
