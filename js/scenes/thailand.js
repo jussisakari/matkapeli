@@ -398,6 +398,15 @@ window.MP = window.MP || {};
       S.taxi.position.set(TAXI_AT.x, 0, TAXI_AT.z);
       this.arrive = { t: 0 };
       S.ch.setVisible(false);
+      // back out of the temple (temple.js)
+      if (params && params.from === 'temple') {
+        this.p = { x: TEMPLE.x + 6.5, z: TEMPLE.z, heading: Math.PI / 2 };
+        this.camHeading = this.p.heading;
+        this.arrive = null;
+        this.seen.temple = true;
+        S.ch.setVisible(true);
+        this.say('Kengät takaisin jalkaan – hyppis! Mennään rannalle.', 3, 0.4);
+      }
       // waking up in the hotel: out of the door, back to the trip
       if (params && params.from === 'hotel') {
         const d = S.hotel.door;
@@ -455,8 +464,10 @@ window.MP = window.MP || {};
         this.say('Norsu suihkuttaa vettä kärsällään! Pärsk!', 3);
         MP.sfx.flush();
       } else if (spot === 'temple') {
-        this.say('Thaimaalainen temppeli! Katot ovat punaiset ja vihreät, ja kultainen torni kimaltaa auringossa.', 5);
+        this.say('Kultainen temppeli! Mennään sisään.', 2);
         MP.sfx.tune();
+        this.leaving = { t: 0, temple: true };
+        MP.goTo(MP.scenes.temple);
       } else if (spot === 'castle') {
         if (this.castleStep < CASTLE_STEPS) {
           this.castleStep++;
@@ -514,7 +525,7 @@ window.MP = window.MP || {};
           this.say('Thaimaa! Aurinko paistaa ja meri on lämmin. Mennään rannalle!' + poster, 4.5);
         }
       }
-      if (this.leaving) {
+      if (this.leaving && !this.leaving.temple) {
         this.leaving.t += dt;
         const t = Math.max(0, this.leaving.t - 0.8);
         S.taxi.position.x = TAXI_AT.x - t * t * 6;
@@ -575,7 +586,7 @@ window.MP = window.MP || {};
           if (!this.seen[id] && Math.hypot(p.x - pl.x, p.z - pl.z) < pl.r) {
             this.seen[id] = true;
             if (id === 'elephant') this.say('Norsu! Napauta sitä.', 3);
-            if (id === 'temple') this.say('Kultainen temppeli! Napauta sitä.', 3);
+            if (id === 'temple') this.say('Kultainen temppeli! Napauta sitä, niin mennään sisään.', 3);
             if (id === 'castle') this.say('Hiekkaa! Napauta, niin rakennetaan hiekkalinna.', 3.5);
             if (id === 'stand') this.say('Kookoskoju! Napauta sitä.', 3);
           }
