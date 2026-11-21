@@ -23,6 +23,7 @@
 //   #mummi        visiting Mummi and Ukki in the New York skyscraper
 //   #australia    Australia, the jeep just arrived
 //   #japani       Japan, the bullet train just arrived
+//   #belgia       Belgium, the taxi just arrived
 //   #ilta         home in the evening (evening tasks, then bed)
 //   #hotelli      a hotel room in Thailand (sleep one night)
 //   #uima         swimming in the pool (swimsuit on)
@@ -79,6 +80,7 @@ window.MP = window.MP || {};
     mummi:       () => { ready(true); return [MP.scenes.grandparents]; },
     australia:   () => { ready(true); return [MP.scenes.australia]; },
     japani:      () => { ready(true); return [MP.scenes.japan]; },
+    belgia:      () => { ready(true); return [MP.scenes.belgium]; },
     ilta:        () => { ready(true); return [MP.scenes.home, { quest: 'evening' }]; },
     hotelli:     () => { ready(true); return [MP.scenes.hotel, { country: 'thailand' }]; },
     uima:        () => { ready(true); MP.state.outfit.costume = 'swimsuit'; return [MP.scenes.swim]; },

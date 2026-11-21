@@ -746,6 +746,13 @@ MP.findItem = function (slot, id) {
     } else {
       c.beginPath(); c.arc(0, -28, 1.9, 0.2 * Math.PI, 0.8 * Math.PI); c.stroke();
     }
+    // a moustache (e.g. a chocolate moustache in Belgium): opts.mustache = color
+    const must = opts.mustache || (opts.hero && MP.state && MP.state.mustacheUntil > MP.time ? '#5a3418' : null);
+    if (must) {
+      c.save(); c.fillStyle = must; c.lineWidth = 0.4;
+      c.beginPath(); c.ellipse(-1.5, -29, 1.8, 0.8, 0.25, 0, Math.PI * 2); c.ellipse(1.5, -29, 1.8, 0.8, -0.25, 0, Math.PI * 2); c.fill();
+      c.restore();
+    }
     if (opts.glasses) {
       c.beginPath();
       c.arc(-2.7, -30, 2, 0, Math.PI * 2);

@@ -54,6 +54,7 @@ const FILES = [
     './js/country3d.js',
     './js/scenes/australia.js',
     './js/scenes/japan.js',
+    './js/scenes/belgium.js',
 ];
 
 self.addEventListener('install', (e) => {
