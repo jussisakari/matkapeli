@@ -8,6 +8,7 @@
 //   #hiukset      hair brushing (girl)
 //   #vaatekaappi  the wardrobe
 //   #aamupala     breakfast
+//   #leivonta     baking pulla or a cake
 //   #lentokentta  the airport (choose where to fly)
 //   #lento        the flight animation to Egypt
 //   #egypti       Egypt, the taxi just arrived
@@ -54,6 +55,7 @@ window.MP = window.MP || {};
     hiukset:     () => { MP.state.character = 'girl'; MP.state.hairMessy = true; return [MP.scenes.hairbrush]; },
     vaatekaappi: () => { ready(false); return [MP.scenes.wardrobe]; },
     aamupala:    () => { ready(false); return [MP.scenes.breakfast]; },
+    leivonta:    () => { ready(false); return [MP.scenes.baking]; },
     lentokentta: () => { ready(true); return [MP.scenes.airport, { country: 'home' }]; },
     lento:       () => { ready(true); return [MP.scenes.flight, { from: 'home', to: 'egypt' }]; },
     egypti:      () => { ready(true); return [MP.scenes.egypt]; },

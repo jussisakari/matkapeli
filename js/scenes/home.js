@@ -67,6 +67,7 @@ window.MP = window.MP || {};
     album:      { x: 177, y: 290, w: 24, h: 40, standX: 189 },
     passport:   { x: 16,  y: 134, w: 28, h: 17, standX: 46 },     // the nightstand drawer
     bowl:       { x: 464, y: 306, w: 28, h: 24, standX: 498 },
+    recipe:     { x: 338, y: 268, w: 22, h: 24, standX: 374 },    // the recipe card on the fridge
   };
   const floorOf = (spot) => (spot.y >= DOWN_Y ? 1 : 0);
 
@@ -266,6 +267,9 @@ window.MP = window.MP || {};
       ctx.beginPath(); ctx.moveTo(x - 3, 125); ctx.lineTo(x - 1, 121); ctx.lineTo(x + 1, 125); ctx.stroke();
       ctx.restore();
       ctx.fillStyle = '#e04848'; ctx.beginPath(); ctx.arc(x - 10, 116.5, 1.1, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      // the baking recipe card (tap it to bake)
+      box(ctx, x - 12, 91, 16, 16, 0.8, '#fff7e0');
+      ctx.fillStyle = '#e0559a'; ctx.beginPath(); ctx.arc(x - 4, 92, 1.1, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
       ctx.fillStyle = '#4a78c8'; ctx.beginPath(); ctx.arc(x + 1, 116.5, 1.1, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     });
   }
@@ -312,7 +316,18 @@ window.MP = window.MP || {};
       box(ctx, x - 31, 123, 62, 5, 2, '#c98a55');            // table top
     });
     MP.draw('porridge', ctx, x - 10, 119, { scale: 0.7 });
-    MP.draw('milk', ctx, x + 10, 118, { scale: 0.55 });
+    const baked = MP.state.baked;
+    if (baked && MP.scenes.baking) {
+      // what we baked today is on the table
+      const B = MP.scenes.baking;
+      if (baked.kind === 'cake') B.cakeShape(ctx, x + 12, 122, 20, 9, baked.frost || '#ff9ec4');
+      else {
+        withLine(ctx, () => { ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.ellipse(x + 12, 122.5, 11, 2, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); });
+        for (const [bx, by] of [[6, 122], [12, 122], [18, 122], [9, 119], [15, 119]]) B.bun(ctx, x + bx, by, 0.55, 1, true);
+      }
+    } else {
+      MP.draw('milk', ctx, x + 10, 118, { scale: 0.55 });
+    }
   }
 
   // Little music note (for the poster tune)
@@ -749,7 +764,7 @@ window.MP = window.MP || {};
       params = params || {};
       const waking = params.quest === 'wake';
       const evening = params.quest === 'evening';
-      if (waking) { MP.state.evening = false; MP.state.dusk = false; }
+      if (waking) { MP.state.evening = false; MP.state.dusk = false; MP.state.baked = null; }
       if (evening) {
         // Back home from outside: the evening tasks start
         MP.state.evening = true;
@@ -1206,6 +1221,11 @@ window.MP = window.MP || {};
         this.leave(MP.scenes.album);
         return;
       }
+      if (id === 'recipe') {
+        this.say('Leivotaanko? Mennään!', 1.5);
+        this.leave(MP.scenes.baking);
+        return;
+      }
       if (id === 'passport') {
         this.player.facing = -1;
         this.leave(MP.scenes.passport);
@@ -1413,7 +1433,7 @@ window.MP = window.MP || {};
       }
 
       // Things on this floor: walk there, then use it
-      for (const id of ['toilet', 'sink', 'mirror', 'wardrobe', 'bed', 'stairsUp', 'books', 'album', 'passport', 'tv', 'sofa', 'table', 'bowl', 'shoes', 'stairsDown', 'door']) {
+      for (const id of ['toilet', 'sink', 'mirror', 'wardrobe', 'bed', 'stairsUp', 'books', 'album', 'passport', 'recipe', 'tv', 'sofa', 'table', 'bowl', 'shoes', 'stairsDown', 'door']) {
         const spot = SPOTS[id];
         if (floorOf(spot) === this.floor && MP.hit(spot, wx, wy)) {
           MP.sfx.tap();
