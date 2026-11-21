@@ -67,6 +67,8 @@ MP.CLOTHES = {
     { id: 'tshirt',    name: 'T-paita',        color: '#ff8fc0', sleeves: 'short' },
     { id: 'kpop',      name: 'K-pop-paita',    color: '#2b2340', sleeves: 'short', print: 'kpop' },
     { id: 'spiderTee', name: 'Spiderman-paita', color: '#d62828', sleeves: 'short', print: 'spider' },
+    // birthday presents (gift: in the wardrobe only after you got it)
+    { id: 'party',     name: 'Juhlapaita',     gift: true, color: '#b388ff', stripe: '#ffd23f' },
   ],
   bottom: [
     { id: 'pyjama',      name: 'Pyjama',        hidden: true, type: 'pants', color: '#9fc8ff' },
@@ -83,6 +85,8 @@ MP.CLOTHES = {
     { id: 'beanie', name: 'Pipo',         color: '#4a78c8', shade: '#2f4a8a' },
     { id: 'sunhat', name: 'Aurinkohattu', color: '#ffe08a', shade: '#e04848' },
     { id: 'ponytail', name: 'Poninhäntä', color: '#ff8fc0' },   // color = the hair tie
+    { id: 'crown',    name: 'Kruunu',       gift: true, color: '#f2c230', shade: '#c8913a' },
+    { id: 'partyHat', name: 'Juhlahattu',   gift: true, color: '#4cc9f0', shade: '#ff5d8f' },
   ],
   costume: [
     { id: 'none',   name: 'Ei asua' },
@@ -802,6 +806,22 @@ MP.findItem = function (slot, id) {
       ellipse(c, 0, -34.2, 12.5, 2.4); fs(c, hat.color);
       c.beginPath(); c.arc(0, -34.6, 6.8, Math.PI, 2 * Math.PI); c.closePath(); fs(c, hat.color);
       rr(c, -6.8, -36.6, 13.6, 2, 1); fs(c, hat.shade);
+    } else if (hat.id === 'crown') {
+      // a golden crown with jewels
+      c.beginPath();
+      c.moveTo(-7, -35); c.lineTo(-7.5, -42); c.lineTo(-4, -38.5); c.lineTo(0, -44); c.lineTo(4, -38.5); c.lineTo(7.5, -42); c.lineTo(7, -35);
+      c.closePath(); fs(c, hat.color);
+      rr(c, -7.4, -36.6, 14.8, 2.4, 1); fs(c, hat.shade);
+      circle(c, 0, -39.5, 1.1); fs(c, '#e0303a');
+      circle(c, -4.6, -38.6, 0.8); fs(c, '#4a78c8');
+      circle(c, 4.6, -38.6, 0.8); fs(c, '#3cb371');
+    } else if (hat.id === 'partyHat') {
+      // a pointy party hat with stripes and a pompom
+      c.beginPath(); c.moveTo(-5.5, -35.5); c.lineTo(0, -49); c.lineTo(5.5, -35.5); c.closePath(); fs(c, hat.color);
+      c.save(); c.strokeStyle = hat.shade; c.lineWidth = 1.2;
+      c.beginPath(); c.moveTo(-3.8, -39.6); c.lineTo(2.5, -42.5); c.moveTo(-1.8, -44.4); c.lineTo(1.2, -45.8); c.moveTo(-5, -36.5); c.lineTo(4.4, -38.5); c.stroke();
+      c.restore();
+      circle(c, 0, -49.5, 1.7); fs(c, '#ffd23f');
     } else if (hat.id === 'ponytail') {
       // the hair tie is drawn with the ponytail
     } else if (isGirl && !opts.noBow) {

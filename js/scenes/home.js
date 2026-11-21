@@ -111,6 +111,10 @@ window.MP = window.MP || {};
   const START_X = 102;       // where the character lands next to the bed
   const IN_BED_SCALE = 0.9;  // a bit smaller while in bed
   const ALARM_EVERY = 1.4;   // seconds between "rrring!" sounds
+  // Every morning a birthday cake button shows for a short time: tap it, and
+  // today is your birthday (party.js)!
+  const CAKE_BTN = { x: 270, y: 48, r: 15 };
+  const CAKE_SHOW = 8;       // seconds
   const PARENT_AFTER = 10;   // if the alarm rings this long, mom or dad comes to wake you
   const PARENT_SPEED = 65;
   const STAIR_SPEED = 95;
@@ -779,6 +783,7 @@ window.MP = window.MP || {};
       }
 
       this.player = this.player || new MP.Player(START_X);
+      this.cakeBtn = null;
       this.floor = this.floor || 0;
       if (evening) {
         // in the hallway by the front door; shoes off right away
@@ -954,6 +959,12 @@ window.MP = window.MP || {};
       this.tiredUntil = MP.time + (skipped ? 1.5 : 3.2);
       if (!skipped) MP.sfx.tap();
       this.sayProgress(skipped ? 0.2 : 0.9);
+      if (!MP.state.evening) this.cakeBtn = { from: MP.time + 1 };
+    },
+
+    cakeShown() {
+      const b = this.cakeBtn;
+      return !!b && !this.petPick && MP.time > b.from && MP.time - b.from < CAKE_SHOW;
     },
 
     // Draws the character in bed: sleeping, sitting up, yawning, hopping out.
@@ -1338,6 +1349,13 @@ window.MP = window.MP || {};
       // Watching TV: only the remote control's red button works
       if (this.tvView) {
         if (Math.hypot(x - POWER.x, y - POWER.y) < POWER.r + 5) this.closeTv();
+        return;
+      }
+      // The birthday cake button
+      if (this.cakeShown() && Math.hypot(x - CAKE_BTN.x, y - CAKE_BTN.y) < CAKE_BTN.r + 5) {
+        this.cakeBtn = null;
+        MP.sfx.bling();
+        this.leave(MP.scenes.party);
         return;
       }
       // Mom or dad is switching the TV off: wait
@@ -2004,6 +2022,33 @@ window.MP = window.MP || {};
           ctx.restore();
           MP.drawText(ctx, toy.name, r.x + r.w / 2, r.y + 60, { size: 0.9, color: MP.COLORS.outline, align: 'center' });
         });
+        ctx.restore();
+      }
+
+      // ===== The birthday cake button (a few seconds every morning) =====
+      if (this.cakeShown()) {
+        const age = MP.time - this.cakeBtn.from;
+        const a = Math.min(1, age * 3, (CAKE_SHOW - age) * 1.5);
+        const { x, y, r } = CAKE_BTN;
+        const s = 1 + Math.sin(MP.time * 5) * 0.06;
+        ctx.save();
+        ctx.globalAlpha = a;
+        ctx.translate(x, y);
+        ctx.scale(s, s);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = MP.COLORS.outline;
+        ctx.fillStyle = '#fff7e0';
+        ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        // a little cake with a candle
+        ctx.fillStyle = '#e8c48a'; ctx.fillRect(-8, -2, 16, 9); ctx.strokeRect(-8, -2, 16, 9);
+        ctx.fillStyle = '#ff9ec4'; ctx.fillRect(-8.5, -4, 17, 4); ctx.strokeRect(-8.5, -4, 17, 4);
+        ctx.fillStyle = '#8fd3ff'; ctx.fillRect(-1, -10, 2, 6);
+        ctx.fillStyle = '#ffb02e';
+        ctx.beginPath(); ctx.ellipse(Math.sin(MP.time * 9) * 0.4, -12, 1.4, 2.3, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+        ctx.save();
+        ctx.globalAlpha = a;
+        MP.drawText(ctx, 'Synttärit?', x, y + r + 2, { size: 0.65, color: '#ffffff', outline: MP.COLORS.outline, align: 'center' });
         ctx.restore();
       }
 

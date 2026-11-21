@@ -26,7 +26,8 @@ window.MP = window.MP || {};
   // The items in a tab (pyjamas are hidden – they are taken off here)
   // In the evening the pyjamas are in the wardrobe too
   function items(tab) {
-    return MP.CLOTHES[tab].filter((it) => !it.hidden || MP.state.evening);
+    const gifts = (MP.state.treasures && MP.state.treasures.gifts) || {};
+    return MP.CLOTHES[tab].filter((it) => (!it.hidden || MP.state.evening) && (!it.gift || gifts[it.id]));
   }
 
   function itemName(tab, it) {

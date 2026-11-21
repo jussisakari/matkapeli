@@ -9,6 +9,7 @@
 //   #vaatekaappi  the wardrobe
 //   #aamupala     breakfast
 //   #leivonta     baking pulla or a cake
+//   #synttarit    the birthday party
 //   #lentokentta  the airport (choose where to fly)
 //   #lento        the flight animation to Egypt
 //   #egypti       Egypt, the taxi just arrived
@@ -56,6 +57,7 @@ window.MP = window.MP || {};
     vaatekaappi: () => { ready(false); return [MP.scenes.wardrobe]; },
     aamupala:    () => { ready(false); return [MP.scenes.breakfast]; },
     leivonta:    () => { ready(false); return [MP.scenes.baking]; },
+    synttarit:   () => { ready(false); return [MP.scenes.party]; },
     lentokentta: () => { ready(true); return [MP.scenes.airport, { country: 'home' }]; },
     lento:       () => { ready(true); return [MP.scenes.flight, { from: 'home', to: 'egypt' }]; },
     egypti:      () => { ready(true); return [MP.scenes.egypt]; },
