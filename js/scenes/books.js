@@ -284,8 +284,8 @@ window.MP = window.MP || {};
           },
         },
         {
-          title: 'Pantterisankari',
-          text: 'Pantterisankari hiipii hiljaa kuin kissa. Hänellä on kissan korvat ja hopeinen kaulakoru. Miau!',
+          title: 'Black Panther',
+          text: 'Black Panther hiipii hiljaa kuin kissa. Hänellä on kissan korvat ja hopeinen kaulakoru. Miau!',
           art(c, r, t) {
             sky(c, r, '#3a2f6b', '#7a5fb0');
             MP.draw('moon', c, 0, 0, { x: r.x + 22, y: r.y + 20, r: 9 });

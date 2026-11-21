@@ -501,8 +501,9 @@ window.MP = window.MP || {};
     { id: 'teddy', name: 'Nalle' },
     { id: 'panda', name: 'Panda' },
     { id: 'elephantToy', name: 'Norsu' },
+    { id: null, name: 'Ei ketään' },
   ];
-  const toyCard = (i) => ({ x: 64 + i * 66, y: 52, w: 60, h: 76 });
+  const toyCard = (i) => ({ x: 42 + i * 60, y: 52, w: 56, h: 76 });
 
   // A little wall shelf with Tutankhamun's golden mask (found in the pyramid)
   function treasureShelf(ctx, x, t) {
@@ -809,7 +810,7 @@ window.MP = window.MP || {};
         this.say((hadShoes ? 'Kengät pois eteisessä! ' : '') + (pet ? pet.name + ' on iloinen, kun tulin kotiin! ' : '') + 'Kotona taas! Nyt on ilta. Iltatoimet: iltaruoka, pyjama, hampaat ja vessa. Sitten nukkumaan!', 6, 0.5);
         if (pet) this.petHello = MP.time + 0.5;
       } else if (!this.intro) this.sayProgress(0.5);
-      if (!this.intro && !MP.myPet()) this.petPick = MP.petPicker.open();
+      if (!this.intro && !MP.state.pet) this.petPick = MP.petPicker.open();
     },
 
     setFloor(f) {
@@ -914,7 +915,7 @@ window.MP = window.MP || {};
       this.intro = null;
       this.player.place(START_X, 1);
       if (this.pet && MP.myPet()) Object.assign(this.pet, { mode: 'follow', happyFrom: MP.time + 0.5 });
-      if (!MP.myPet()) this.petPick = MP.petPicker.open();
+      if (!MP.state.pet) this.petPick = MP.petPicker.open();
       this.tiredUntil = MP.time + (skipped ? 1.5 : 3.2);
       if (!skipped) MP.sfx.tap();
       this.sayProgress(skipped ? 0.2 : 0.9);
@@ -1283,6 +1284,7 @@ window.MP = window.MP || {};
           this.petPick = null;
           const pet = MP.myPet();
           Object.assign(this.pet, { x: this.player.x - 18, floor: this.floor, mode: 'follow', happyFrom: MP.time });
+          if (!pet) { this.sayProgress(0.1, 'Selvä, ei lemmikkiä.'); return; }
           this.say('Ihana! ' + pet.name + ' on nyt minun lemmikkini! Muistan antaa sille ruokaa keittiössä.', 5);
         }
         return;
@@ -1779,36 +1781,6 @@ window.MP = window.MP || {};
         }
       }
 
-      // ===== Which cuddly toy comes to bed? =====
-      if (this.toyPick) {
-        const a = MP.clamp((t - this.toyPick.from) * 4, 0, 1);
-        ctx.save();
-        ctx.globalAlpha = a;
-        ctx.fillStyle = 'rgba(13,20,51,0.55)';
-        ctx.fillRect(0, 0, MP.W, MP.H);
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = MP.COLORS.outline;
-        ctx.fillStyle = '#fff7e0';
-        MP.roundRect(ctx, 50, 20, 220, 120, 10);
-        ctx.fill(); ctx.stroke();
-        MP.drawText(ctx, 'Kuka unikaveri tulee mukaan?', MP.W / 2, 30, { size: 1.15, color: '#6b4fb5', align: 'center' });
-        TOY_CHOICES.forEach((toy, i) => {
-          const r = toyCard(i);
-          ctx.lineWidth = 0.9;
-          ctx.strokeStyle = MP.COLORS.outline;
-          ctx.fillStyle = '#ffffff';
-          MP.roundRect(ctx, r.x, r.y, r.w, r.h, 6); ctx.fill(); ctx.stroke();
-          const hop = Math.max(0, Math.sin(t * 3 + i * 1.3)) * 3;
-          ctx.save();
-          ctx.translate(r.x + r.w / 2, r.y + 54 - hop);
-          ctx.scale(2.2, 2.2);
-          MP.draw(toy.id, ctx, 0, 0);
-          ctx.restore();
-          MP.drawText(ctx, toy.name, r.x + r.w / 2, r.y + 60, { size: 0.9, color: MP.COLORS.outline, align: 'center' });
-        });
-        ctx.restore();
-      }
-
       // ===== Night: dark until tapped =====
       if (this.intro && this.intro.night) {
         const k = this.intro.night.from == null ? 0 : MP.clamp((t - this.intro.night.from) / 1.2, 0, 1);
@@ -1951,6 +1923,37 @@ window.MP = window.MP || {};
         MP.drawText(ctx, 'Jatkuu pian…', MP.W / 2, 60, { size: 2.2, color: '#e0559a', outline: '#2b2340', align: 'center' });
         MP.drawText(ctx, 'Seuraavaksi: katu ja risteys', MP.W / 2, 92, { size: 1, color: '#2b2340', align: 'center' });
         MP.drawText(ctx, '(napauta)', MP.W / 2, 112, { size: 0.8, color: '#6e4226', align: 'center' });
+        ctx.restore();
+      }
+
+      // ===== Which cuddly toy comes to bed? =====
+      if (this.toyPick) {
+        const a = MP.clamp((t - this.toyPick.from) * 4, 0, 1);
+        ctx.save();
+        ctx.globalAlpha = a;
+        ctx.fillStyle = 'rgba(13,20,51,0.55)';
+        ctx.fillRect(0, 0, MP.W, MP.H);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = MP.COLORS.outline;
+        ctx.fillStyle = '#fff7e0';
+        MP.roundRect(ctx, 32, 20, 256, 120, 10);
+        ctx.fill(); ctx.stroke();
+        MP.drawText(ctx, 'Kuka unikaveri tulee mukaan?', MP.W / 2, 30, { size: 1.15, color: '#6b4fb5', align: 'center' });
+        TOY_CHOICES.forEach((toy, i) => {
+          const r = toyCard(i);
+          ctx.lineWidth = 0.9;
+          ctx.strokeStyle = MP.COLORS.outline;
+          ctx.fillStyle = '#ffffff';
+          MP.roundRect(ctx, r.x, r.y, r.w, r.h, 6); ctx.fill(); ctx.stroke();
+          const hop = Math.max(0, Math.sin(t * 3 + i * 1.3)) * 3;
+          ctx.save();
+          ctx.translate(r.x + r.w / 2, r.y + 54 - hop);
+          ctx.scale(2.2, 2.2);
+          if (toy.id) MP.draw(toy.id, ctx, 0, 0);
+          else MP.drawText(ctx, 'z z', 0, -12, { size: 1, color: '#4a78c8', align: 'center' });   // just sleep
+          ctx.restore();
+          MP.drawText(ctx, toy.name, r.x + r.w / 2, r.y + 60, { size: 0.9, color: MP.COLORS.outline, align: 'center' });
+        });
         ctx.restore();
       }
 

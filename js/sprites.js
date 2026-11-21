@@ -93,7 +93,7 @@ MP.CLOTHES = {
       gloves: '#2ec4c4', web: '#c9b8e8', hood: '#ffffff', hoodInner: '#ff8fc0' },
     { id: 'iron',    name: 'Ironman', type: 'iron', top: '#c62828', legs: '#c62828', boots: '#f2c230',
       gold: '#f2c230', glow: '#bff3ff' },
-    { id: 'panther', name: 'Pantterisankari', type: 'panther', top: '#1c1c24', legs: '#1c1c24', boots: '#1c1c24',
+    { id: 'panther', name: 'Black Panther', type: 'panther', top: '#1c1c24', legs: '#1c1c24', boots: '#1c1c24',
       accent: '#b8a2e0', silver: '#d8dde6' },
     { id: 'pharaoh', name: 'Faarao',       top: '#f4efe1', kilt: '#f4efe1', boots: '#c8913a',
       gold: '#f2c230', blue: '#2f5fb5', red: '#d33a3a' },

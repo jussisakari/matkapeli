@@ -32,7 +32,7 @@ window.MP = window.MP || {};
   // ---------------------------------------------------------------------------
   const SONGS = [
     {
-      title: 'Mä löin sua turpaan', beat: 0.62, end: 72, endBass: 48,
+      title: 'Mä löin sua turpaan', lang: 'fi', beat: 0.62, end: 72, endBass: 48,
       lines: [
         [[0, 'Mä ', 60, 1, 1], [1, 'löin ', 64, 1], [2, 'su', 67, 0.5, 1], [2.5, 'a ', 67, 0.5], [3, 'tur', 69, 1], [4, 'paan,', 67, 2, 1]],
         [[8, 'sä ', 65, 1, 1], [9, 'len', 64, 1], [10, 'sit ', 62, 1, 1], [11, 'o', 64, 1], [12, 'jaan!', 60, 2, 1]],
@@ -41,7 +41,7 @@ window.MP = window.MP || {};
       bass: [[0, 48], [2, 48], [4, 53], [6, 48], [8, 53], [10, 55], [12, 48], [14, 55]],
     },
     {
-      title: "Hello, it's me", beat: 0.7, end: 69, endBass: 45,
+      title: "Hello, it's me", lang: 'en', beat: 0.7, end: 69, endBass: 45,
       lines: [
         [[0, 'Hel', 64, 1, 1], [1, 'lo, ', 67, 1], [2, "it's ", 69, 1, 1], [3, 'me', 67, 3]],
         [[8, 'I ', 65, 1, 1], [9, 'am ', 64, 1], [10, 'loo', 62, 1, 1], [11, 'ser', 60, 3]],
@@ -62,6 +62,34 @@ window.MP = window.MP || {};
 
   const MOVES = ['jump', 'spin', 'wave', 'jump', 'clap', 'spin'];
 
+  // ---------- Singing: the device's own speaking voice sings the words ----------
+  const canSing = () => typeof window.speechSynthesis !== 'undefined' && typeof window.SpeechSynthesisUtterance !== 'undefined';
+  function voiceFor(lang) {
+    try {
+      const all = window.speechSynthesis.getVoices();
+      return all.find((v) => v.lang && v.lang.toLowerCase().startsWith(lang) && /male|mies|boy/i.test(v.name) && !/female/i.test(v.name))
+        || all.find((v) => v.lang && v.lang.toLowerCase().startsWith(lang)) || null;
+    } catch (_) { return null; }
+  }
+  // Sings one line: as fast as needed to fit the music, a bit high like a boy's voice
+  function singLine(text, seconds, lang, pitch) {
+    if (!canSing()) return;
+    try {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = lang === 'fi' ? 'fi-FI' : 'en-US';
+      const v = voiceFor(lang);
+      if (v) u.voice = v;
+      u.rate = MP.clamp(text.length / (seconds * 12), 0.75, 1.5);
+      u.pitch = pitch;
+      u.volume = 1;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    } catch (_) { /* no voice, the words are still on the screen */ }
+  }
+  function stopSinging() {
+    try { if (canSing()) window.speechSynthesis.cancel(); } catch (_) {}
+  }
+
   // The two boys of the band, Sasu and Daniel (our own drawings)
   const BAND = [
     { name: 'Sasu', x: 40, hair: '#e8c25a', outfit: { shirt: 'kpop', bottom: 'jeans', hat: 'none', costume: 'none', shoes: true }, guitar: true },
@@ -70,6 +98,7 @@ window.MP = window.MP || {};
 
   MP.scenes.concert = {
     enter() {
+      try { if (canSing()) window.speechSynthesis.getVoices(); } catch (_) {}   // wakes up the voices
       this.t = 0;
       this.song = null;            // chosen after the dream bubble opens
       this.notes = [];
@@ -107,11 +136,17 @@ window.MP = window.MP || {};
         song.lines.forEach((line) => {
           const pieces = line.map(([b, text, m, len, star]) => {
             const time = timeOf(o + b);
-            ev(time, () => MP.sfx.note(hz(m), len * BEAT * 0.9, 'triangle', 0.2));
+            ev(time, () => MP.sfx.note(hz(m), len * BEAT * 0.9, 'triangle', canSing() ? 0.11 : 0.2));
             if (star) this.notes.push({ time, lane: laneOf(m), state: 'fall', at: 0 });
             return { text, time, len: len * BEAT };
           });
           this.lines.push(pieces);
+          // the band sings the whole line (started a moment early: voices start slowly)
+          const first = pieces[0], last = pieces[pieces.length - 1];
+          const text = pieces.map((p) => p.text).join('').replace(/\s+/g, ' ').trim();
+          const dur = last.time + last.len - first.time;
+          const pitch = song.lang === 'fi' ? (this.lines.length % 2 ? 1.5 : 1.3) : (this.lines.length % 2 ? 1.2 : 1.0);
+          ev(first.time - 0.15, () => singLine(text, dur, song.lang, pitch));
         });
         for (const [b, m, len] of song.fill) ev(timeOf(o + b), () => MP.sfx.note(hz(m), len * BEAT * 0.8, 'square', 0.07));
         for (const [b, m] of song.bass) ev(timeOf(o + b), () => MP.sfx.note(hz(m), BEAT * 1.8, 'sine', 0.22));
@@ -132,6 +167,10 @@ window.MP = window.MP || {};
         for (const p of line) if (this.t >= p.time && this.t < p.time + Math.min(p.len, 0.5)) return true;
       }
       return false;
+    },
+
+    exit() {
+      stopSinging();
     },
 
     onTap(x, y) {

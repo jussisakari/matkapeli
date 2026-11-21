@@ -203,7 +203,7 @@ window.MP = window.MP || {};
   // ---------------------------------------------------------------------------
   // The choosing panel: kitten or puppy, then a name. Used in the home.
   // ---------------------------------------------------------------------------
-  const kindCard = (i) => ({ x: 70 + i * 96, y: 46, w: 84, h: 84 });
+  const kindCard = (i) => ({ x: 44 + i * 80, y: 46, w: 72, h: 84 });   // kitten, puppy, no pet
   const nameBtn = (i) => ({ x: 46 + i * 58, y: 104, w: 52, h: 24 });
 
   MP.petPicker = {
@@ -212,6 +212,13 @@ window.MP = window.MP || {};
     tap(p, x, y) {
       if (MP.time - p.from < 0.3) return false;
       if (p.step === 'kind') {
+        if (MP.hit(kindCard(2), x, y)) {
+          // no pet, thank you (it won't be asked again)
+          MP.state.pet = { kind: 'none' };
+          MP.save();
+          MP.sfx.tap();
+          return true;
+        }
         MP.PET_KINDS.forEach((k, i) => {
           if (MP.hit(kindCard(i), x, y)) {
             p.kind = k.id;
@@ -254,6 +261,11 @@ window.MP = window.MP || {};
           MP.drawPet(c, r.x + r.w / 2 - 2, r.y + 62, { kind: k.id, scale: 3, happy: (Math.sin(t * 2 + i * 2) + 1) / 4 });
           MP.drawText(c, k.name, r.x + r.w / 2, r.y + 68, { size: 0.85, color: O, align: 'center' });
         });
+        const r = kindCard(2);
+        c.lineWidth = 0.9; c.strokeStyle = O; c.fillStyle = '#f1edf7';
+        MP.roundRect(c, r.x, r.y, r.w, r.h, 6); c.fill(); c.stroke();
+        MP.drawText(c, '–', r.x + r.w / 2, r.y + 18, { size: 3, color: '#9a8fb0', align: 'center' });
+        MP.drawText(c, 'Ei lemmikkiä', r.x + r.w / 2, r.y + 68, { size: 0.85, color: O, align: 'center' });
       } else {
         MP.drawText(c, 'Mikä nimi lemmikille?', MP.W / 2, 22, { size: 1.2, color: '#e0559a', align: 'center' });
         MP.drawPet(c, MP.W / 2, 96, { kind: p.kind, scale: 3.2, happy: 0.4 });
