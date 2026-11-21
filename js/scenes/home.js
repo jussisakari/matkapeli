@@ -69,6 +69,7 @@ window.MP = window.MP || {};
     bowl:       { x: 464, y: 306, w: 28, h: 24, standX: 498 },
     recipe:     { x: 338, y: 268, w: 22, h: 24, standX: 374 },    // the recipe card on the fridge
     games:      { x: 277, y: 232, w: 32, h: 16, standX: 286 },    // the memory game box on the bookshelf
+    drums:      { x: 644, y: 116, w: 42, h: 36, standX: 638 },    // the drum kit on the landing
   };
   const floorOf = (spot) => (spot.y >= DOWN_Y ? 1 : 0);
 
@@ -629,6 +630,26 @@ window.MP = window.MP || {};
 
   // Bookshelf: rows of colorful books. The Egypt book (gold) and the
   // spider-hero book (red) stick out a little – those can be read.
+  // The drum kit on the landing upstairs (drums.js). x = the middle, y = the floor.
+  function drumKit(ctx, x, y) {
+    withLine(ctx, () => {
+      ctx.strokeStyle = '#8a93a6';
+      ctx.beginPath(); ctx.moveTo(x - 15, y); ctx.lineTo(x - 15, y - 24); ctx.moveTo(x + 16, y); ctx.lineTo(x + 16, y - 28); ctx.stroke();
+      ctx.strokeStyle = MP.COLORS.outline;
+      ctx.fillStyle = '#e8c45a';
+      ctx.beginPath(); ctx.ellipse(x - 15, y - 25, 7, 1.8, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(x + 16, y - 29, 8, 2, -0.2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#e04848';
+      box(ctx, x - 8, y - 22, 9, 6, 1, '#e04848');
+      box(ctx, x + 2, y - 22, 9, 6, 1, '#e04848');
+      ctx.fillStyle = '#e04848';
+      ctx.beginPath(); ctx.arc(x, y - 9, 9, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.arc(x, y - 9, 6, 0, Math.PI * 2); ctx.fill();
+      box(ctx, x - 16, y - 14, 9, 5, 1, '#f4f4f8');
+    });
+  }
+
   // The memory game box on top of the bookshelf (memory.js)
   function gameBox(ctx, x) {
     withLine(ctx, () => {
@@ -1265,6 +1286,11 @@ window.MP = window.MP || {};
         this.leave(MP.scenes.album);
         return;
       }
+      if (id === 'drums') {
+        this.say('Rummut! Soitetaan!', 1.5);
+        this.leave(MP.scenes.drums);
+        return;
+      }
       if (id === 'games') {
         this.say('Muistipeli! Pelataan!', 1.5);
         this.leave(MP.scenes.memory);
@@ -1504,7 +1530,7 @@ window.MP = window.MP || {};
       }
 
       // Things on this floor: walk there, then use it
-      for (const id of ['toilet', 'sink', 'mirror', 'wardrobe', 'bed', 'stairsUp', 'games', 'books', 'album', 'passport', 'recipe', 'tv', 'sofa', 'table', 'bowl', 'shoes', 'stairsDown', 'door']) {
+      for (const id of ['toilet', 'sink', 'mirror', 'wardrobe', 'bed', 'drums', 'stairsUp', 'games', 'books', 'album', 'passport', 'recipe', 'tv', 'sofa', 'table', 'bowl', 'shoes', 'stairsDown', 'door']) {
         const spot = SPOTS[id];
         if (floorOf(spot) === this.floor && MP.hit(spot, wx, wy)) {
           MP.sfx.tap();
@@ -1787,6 +1813,7 @@ window.MP = window.MP || {};
       // ===== Stairs and walls between rooms =====
       staircase(ctx);
       landingRailing(ctx);
+      drumKit(ctx, 664, FLOOR_UP);
       stairSign(ctx, 800, 66, 'Alakertaan', 1);
       stairSign(ctx, 670, DOWN_Y + 52, 'Yläkertaan', -1);
       for (const x of [320, 640]) {

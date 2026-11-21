@@ -27,6 +27,7 @@ const FILES = [
     './js/scenes/baking.js',
     './js/scenes/party.js',
     './js/scenes/memory.js',
+    './js/scenes/drums.js',
     './js/scenes/brush.js',
     './js/scenes/egypt.js',
     './js/scenes/flight.js',

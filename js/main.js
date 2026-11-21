@@ -11,6 +11,7 @@
 //   #leivonta     baking pulla or a cake
 //   #synttarit    the birthday party
 //   #muistipeli   the memory card game
+//   #rummut       the drum kit upstairs
 //   #lentokentta  the airport (choose where to fly)
 //   #lento        the flight animation to Egypt
 //   #egypti       Egypt, the taxi just arrived
@@ -73,6 +74,7 @@ window.MP = window.MP || {};
     aamupala:    () => { ready(false); return [MP.scenes.breakfast]; },
     leivonta:    () => { ready(false); return [MP.scenes.baking]; },
     synttarit:   () => { ready(false); return [MP.scenes.party]; },
+    rummut:      () => { ready(false); return [MP.scenes.drums]; },
     muistipeli:  () => { ready(false); return [MP.scenes.memory]; },
     lentokentta: () => { ready(true); return [MP.scenes.airport, { country: 'home' }]; },
     lento:       () => { ready(true); return [MP.scenes.flight, { from: 'home', to: 'egypt' }]; },
