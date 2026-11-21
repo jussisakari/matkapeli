@@ -71,6 +71,7 @@ window.MP = window.MP || {};
     games:      { x: 277, y: 232, w: 32, h: 16, standX: 286 },    // the memory game box on the bookshelf
     drums:      { x: 644, y: 116, w: 42, h: 36, standX: 638 },    // the drum kit on the landing
     treats:     { x: 398, y: 277, w: 18, h: 17, standX: 410 },    // the pet's treat jar on the counter
+    postcards:  { x: 339, y: 308, w: 26, h: 22, standX: 374 },    // postcards on the fridge door (postcard.js)
     booth:      { x: 648, y: 258, w: 46, h: 74, standX: 672 },    // the photo booth in the hallway
     calendar:   { x: 554, y: 212, w: 26, h: 28, standX: 566 },    // the season calendar (seasons.js)
     xmasTree:   { x: 4,   y: 252, w: 48, h: 80, standX: 56 },     // the Christmas tree (in December)
@@ -283,6 +284,14 @@ window.MP = window.MP || {};
       box(ctx, x - 12, 91, 16, 16, 0.8, '#fff7e0');
       ctx.fillStyle = '#e0559a'; ctx.beginPath(); ctx.arc(x - 4, 92, 1.1, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
       ctx.fillStyle = '#4a78c8'; ctx.beginPath(); ctx.arc(x + 1, 116.5, 1.1, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    });
+    // postcards from the trips, held by magnets (the newest three)
+    const cards = MP.postcards ? MP.postcards().slice(-3) : [];
+    cards.forEach((card, i) => {
+      const [cx, cy] = [[x - 14, 131], [x - 3, 133], [x - 10, 140]][i];
+      MP.drawPostcard(ctx, card, cx, cy, 11, 7.5);
+      ctx.fillStyle = ['#e04848', '#ffd23f', '#4cc9f0'][i];
+      ctx.beginPath(); ctx.arc(cx + 5.5, cy, 0.9, 0, Math.PI * 2); ctx.fill();
     });
   }
 
@@ -1356,6 +1365,12 @@ window.MP = window.MP || {};
         this.leave(MP.scenes.album);
         return;
       }
+      if (id === 'postcards') {
+        if (!MP.postcards().length) return;
+        this.say('Postikortit matkoilta!', 1.5);
+        this.leave(MP.scenes.postcard, { view: true });
+        return;
+      }
       if (id === 'booth') {
         this.say('Valokuvakoppi! Hassuja kuvia!', 1.5);
         this.leave(MP.scenes.photobooth);
@@ -1516,11 +1531,11 @@ window.MP = window.MP || {};
       this.say(['Ei täällä…', 'Ei ole ' + p.where + '.', 'Hmm, ei täälläkään.'][l.wrong % 3] + ' Etsitään muualta!', 2.5);
     },
 
-    leave(scene) {
+    leave(scene, params) {
       if (this.busy) return;
       this.busy = true;
       this.player.stop();
-      MP.goTo(scene);
+      MP.goTo(scene, params);
     },
 
     onTap(x, y) {
@@ -1674,9 +1689,10 @@ window.MP = window.MP || {};
       }
 
       // Things on this floor: walk there, then use it
-      for (const id of ['toilet', 'sink', 'mirror', 'wardrobe', 'bed', 'drums', 'stairsUp', 'games', 'books', 'album', 'passport', 'recipe', 'treats', 'calendar', 'xmasTree', 'booth', 'tv', 'sofa', 'table', 'bowl', 'shoes', 'stairsDown', 'door']) {
+      for (const id of ['toilet', 'sink', 'mirror', 'wardrobe', 'bed', 'drums', 'stairsUp', 'games', 'books', 'album', 'passport', 'recipe', 'treats', 'calendar', 'xmasTree', 'booth', 'postcards', 'tv', 'sofa', 'table', 'bowl', 'shoes', 'stairsDown', 'door']) {
         const spot = SPOTS[id];
         if (id === 'xmasTree' && MP.seasonNow() !== 'christmas') continue;
+        if (id === 'postcards' && !MP.postcards().length) continue;
         if (floorOf(spot) === this.floor && MP.hit(spot, wx, wy)) {
           MP.sfx.tap();
           this.player.walkTo(spot.standX, () => this.use(id));

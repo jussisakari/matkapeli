@@ -233,6 +233,11 @@ window.MP = window.MP || {};
     const st = MP.state;
     const tr = st.treasures || {};
     const out = [];
+    // the newest postcard first (postcard.js)
+    const cards = tr.postcards || [];
+    const last = cards[cards.length - 1];
+    const from = last && MP.findDestination && MP.findDestination(last.country);
+    if (from) out.push({ text: 'Postikortti (' + from.name + '): "' + last.greeting + '"', card: last });
     const posters = tr.posters ? Object.keys(tr.posters) : [];
     for (const id of posters) {
       const d = MP.findDestination && MP.findDestination(id);
@@ -274,7 +279,9 @@ window.MP = window.MP || {};
       c.fillStyle = '#2f4a8a'; c.fillRect(10, 70, 70, 30); c.strokeRect(10, 70, 70, 30);
       // the picture for the news
       c.fillStyle = '#ffffff'; c.fillRect(92, 22, 60, 42); c.strokeRect(92, 22, 60, 42);
-      if (h.flag) {
+      if (h.card && MP.drawPostcard) {
+        MP.drawPostcard(c, h.card, 93, 23, 58, 40);
+      } else if (h.flag) {
         MP.drawLandscape(c, h.flag.land, { x: 93, y: 23, w: 58, h: 40 }, t * 4);
         h.flag.flag(c, 96, 26, 14, 9); c.strokeRect(96, 26, 14, 9);
       } else if (h.pet && MP.drawPet) {

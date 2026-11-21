@@ -331,6 +331,10 @@ window.MP = window.MP || {};
       ctx.strokeRect(WIN.x, WIN.y, WIN.w, WIN.h);
       ctx.beginPath(); ctx.moveTo(WIN.x + WIN.w / 2, WIN.y); ctx.lineTo(WIN.x + WIN.w / 2, WIN.y + WIN.h); ctx.stroke();
       MP.drawText(ctx, '77', WIN.x + WIN.w - 12, WIN.y + 3, { size: 0.55, color: '#ffffff', outline: O(), align: 'center' });
+      // our postcards on the wall (postcard.js)
+      if (MP.postcards) MP.postcards().slice(-4).forEach((card, i) => {
+        MP.drawPostcard(ctx, card, 94 + (i % 2) * 34, 26 + Math.floor(i / 2) * 24, 30, 20);
+      });
       // the cuckoo clock
       const cu = t - this.cuckooAt;
       ctx.save();

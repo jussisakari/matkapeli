@@ -88,6 +88,7 @@ window.MP = window.MP || {};
     board: { x: 104, y: 28, w: 92, h: 58, standX: 150 },
     desk:  { x: 112, y: 112, w: 76, h: 38, standX: 150 },
     gate:  { x: 268, y: 74, w: 46, h: 76, standX: 286 },
+    cards: { x: 76, y: 96, w: 24, h: 56, standX: 92 },     // the postcard stand (abroad only)
   };
   const PANEL = { x: 30, y: 18, w: 260, h: 146 };
   const CLOSE = { x: 268, y: 22, r: 8 };
@@ -174,6 +175,25 @@ window.MP = window.MP || {};
     c.fillStyle = '#2f6fb8';
     MP.roundRect(c, 8, 54, 42, 10, 2); c.fill(); c.stroke();
     MP.drawText(c, 'Taksi', 29, 55.5, { size: 0.75, color: '#ffffff', align: 'center' });
+  }
+
+  // A turning postcard stand (postcard.js)
+  function cardStand(c, x, t, land) {
+    c.save();
+    c.lineWidth = 0.8; c.strokeStyle = O();
+    c.fillStyle = '#8a93a6'; c.fillRect(x - 1, 100, 2, 50);
+    c.fillRect(x - 7, 149, 14, 2);
+    const turn = Math.sin(t * 0.8);
+    for (let row = 0; row < 3; row++) {
+      for (let k = -1; k <= 1; k++) {
+        const w = 7 * (1 - Math.abs(k) * 0.25), cx = x + k * 7 * (0.8 + turn * 0.15);
+        c.fillStyle = ['#9fdcff', '#ffe08a', '#ff9ec4', '#9be08f'][(row + k + 4) % 4];
+        c.fillRect(cx - w / 2, 102 + row * 13, w, 10); c.strokeRect(cx - w / 2, 102 + row * 13, w, 10);
+      }
+    }
+    c.restore();
+    MP.drawText(c, 'KORTIT', x, 92, { size: 0.45, color: '#e0559a', outline: '#ffffff', align: 'center' });
+    void land;
   }
 
   function seats(c, x) {
@@ -385,6 +405,11 @@ window.MP = window.MP || {};
         this.player.walkTo(SPOTS.board.standX, () => { this.panel = { from: MP.time }; MP.sfx.tap(); });
         return;
       }
+      if (this.country !== 'home' && MP.hit(SPOTS.cards, x, y)) {
+        MP.sfx.tap();
+        this.player.walkTo(SPOTS.cards.standX, () => { this.busy = true; MP.goTo(MP.scenes.postcard, { country: this.country }); });
+        return;
+      }
       if (MP.hit(SPOTS.gate, x, y)) {
         MP.sfx.tap();
         this.player.walkTo(SPOTS.gate.standX, () => {
@@ -493,6 +518,7 @@ window.MP = window.MP || {};
       desk(ctx);
       seats(ctx, 212);
       plant(ctx, 66, look.plant);
+      if (this.country !== 'home') cardStand(ctx, 88, t, look.land);
       plant(ctx, 258, look.plant);
       gate(ctx, MP.clamp((t - this.gateAt) / 0.5, 0, 1));
 
