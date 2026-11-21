@@ -18,6 +18,7 @@
 //   #iglu         inside the igloo in Talvimaa (and the penguin game)
 //   #thaimaa      Thailand's beach, the tuk-tuk just arrived
 //   #temppeli     inside the golden temple in Thailand
+//   #huvipuisto   the theme park in Thailand
 //   #newyork      New York, the taxi just arrived
 //   #mummi        visiting Mummi and Ukki in the New York skyscraper
 //   #australia    Australia, the jeep just arrived
@@ -72,6 +73,7 @@ window.MP = window.MP || {};
     talvimaa:    () => { ready(true); return [MP.scenes.winter]; },
     iglu:        () => { ready(true); return [MP.scenes.igloo]; },
     thaimaa:     () => { ready(true); return [MP.scenes.thailand]; },
+    huvipuisto:  () => { ready(true); MP.state.outfit.hat = 'cap'; return [MP.scenes.themepark]; },
     temppeli:    () => { ready(true); MP.state.outfit.hat = 'sunhat'; return [MP.scenes.temple]; },
     newyork:     () => { ready(true); return [MP.scenes.newyork]; },
     mummi:       () => { ready(true); return [MP.scenes.grandparents]; },

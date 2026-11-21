@@ -36,11 +36,13 @@ window.MP = window.MP || {};
   const CASTLE = { x: 3, z: -20 };
   const STAND = { x: -9, z: -2 };       // the coconut stand
   const BOAT = { x: 12, z: -33 };
+  const PARK = { x: -30, z: 5 };        // the theme park gate (themepark.js)
   const PLACES = {
     elephant: { x: ELEPHANT.x - 3, z: ELEPHANT.z + 3, r: 5 },
     temple: { x: TEMPLE.x + 9, z: TEMPLE.z, r: 6 },
     castle: { x: CASTLE.x, z: CASTLE.z + 2, r: 4 },
     stand: { x: STAND.x, z: STAND.z + 2.5, r: 3.5 },
+    park: { x: PARK.x + 4, z: PARK.z, r: 5 },
   };
   const CASTLE_STEPS = 3;
 
@@ -368,6 +370,34 @@ window.MP = window.MP || {};
     block(-3, 1, 0.4, 0.4);
 
     S.hotel = W.hotel(22, 1, -Math.PI / 2, { wall: '#fffaf0', trim: '#2e8b57', awning: '#ff8fc0', sign: 'HOTELLI' });
+
+    // --- The theme park: a colorful gate and a big wheel behind it ---
+    const park = new T.Group();
+    for (const sz of [-2.2, 2.2]) {
+      cyl(0.25, 4, '#ff5f8f', 0, 0, sz, park);
+      ball(0.45, '#ffd23f', 0, 4.3, sz, park);
+    }
+    box(0.4, 0.6, 5, '#3cb371', 0, 3.6, 0, park);
+    const wheel = new T.Group();
+    for (let i = 0; i < 16; i++) {
+      const a = i / 16 * Math.PI * 2;
+      ball(0.18, '#ffffff', 0, Math.sin(a) * 5, Math.cos(a) * 5, wheel);
+      if (i % 2 === 0) box(0.6, 0.6, 0.6, ['#ff5f8f', '#ffd23f', '#3cb371', '#2b6fd6'][i / 2 % 4], 0, Math.sin(a) * 5 - 0.6, Math.cos(a) * 5, wheel);
+    }
+    for (let i = 0; i < 4; i++) {
+      const sp = box(0.12, 10, 0.12, '#d8dde6', 0, -5, 0, wheel);
+      sp.rotation.x = i * Math.PI / 4;
+      sp.position.y = 0;
+    }
+    wheel.position.set(-5, 6.5, 0);
+    park.add(wheel);
+    for (const sz of [-1.6, 1.6]) { const leg = box(0.2, 7, 0.2, '#8a93a6', -5, 0, sz, park); leg.rotation.x = sz > 0 ? -0.2 : 0.2; }
+    park.position.set(PARK.x, 0, PARK.z);
+    W.add(park);
+    block(PARK.x - 5, PARK.z, 2, 4);
+    W.clickable(park, 'park');
+    S.parkWheel = wheel;
+    W.sign('HUVIPUISTO', PARK.x + 0.3, 4.6, PARK.z, Math.PI / 2, '#ffd23f', '#2b2340', null, 3.4);
     S.ch = W3.character(S.scene);
     S.built = true;
   }
@@ -398,6 +428,15 @@ window.MP = window.MP || {};
       S.taxi.position.set(TAXI_AT.x, 0, TAXI_AT.z);
       this.arrive = { t: 0 };
       S.ch.setVisible(false);
+      // back from the theme park (themepark.js)
+      if (params && params.from === 'park') {
+        this.p = { x: PARK.x + 3, z: PARK.z, heading: Math.PI / 2 };
+        this.camHeading = this.p.heading;
+        this.arrive = null;
+        this.seen.park = true;
+        S.ch.setVisible(true);
+        this.say('Olipa hauskaa huvipuistossa! Vieläkin vähän huimaa.', 3, 0.4);
+      }
       // back out of the temple (temple.js)
       if (params && params.from === 'temple') {
         this.p = { x: TEMPLE.x + 6.5, z: TEMPLE.z, heading: Math.PI / 2 };
@@ -436,6 +475,7 @@ window.MP = window.MP || {};
 
     stand(spot) {
       if (spot === 'hotel') return S.hotel.door;
+      if (spot === 'park') return { x: PARK.x + 3, z: PARK.z };
       if (spot === 'taxi') return { x: TAXI_AT.x - 1, z: TAXI_AT.z - 1.9 };
       if (spot === 'elephant') return { x: ELEPHANT.x - 4.2, z: ELEPHANT.z + 2.4 };
       if (spot === 'temple') return { x: TEMPLE.x + 6.5, z: TEMPLE.z };
@@ -447,6 +487,13 @@ window.MP = window.MP || {};
     },
 
     use(spot) {
+      if (spot === 'park') {
+        this.say('Huvipuisto! Vuoristorata, maailmanpyörä… jee!', 2);
+        MP.sfx.bling();
+        this.leaving = { t: 0, temple: true };       // (stay here, the screen fades)
+        MP.goTo(MP.scenes.themepark);
+        return;
+      }
       if (spot === 'hotel') {
         // the hotel: sleep one night here
         this.say('Hotelli! Mennään sisään.', 1.5);
@@ -542,6 +589,7 @@ window.MP = window.MP || {};
       S.foam.position.z = SHORE_Z + Math.sin(now * 0.9) * 0.8;
       S.foam.material.opacity = 0.5 + Math.sin(now * 0.9) * 0.3;
       S.boat.position.y = Math.sin(now * 1.4) * 0.08;
+      S.parkWheel.rotation.x = now * 0.3;
       S.boat.rotation.z = Math.sin(now * 1.1) * 0.05;
       for (const cr of S.crabs) {
         cr.g.position.x = cr.x0 + Math.sin(now * 0.5 + cr.phase) * 2.5;
@@ -589,6 +637,7 @@ window.MP = window.MP || {};
             if (id === 'temple') this.say('Kultainen temppeli! Napauta sitä, niin mennään sisään.', 3);
             if (id === 'castle') this.say('Hiekkaa! Napauta, niin rakennetaan hiekkalinna.', 3.5);
             if (id === 'stand') this.say('Kookoskoju! Napauta sitä.', 3);
+            if (id === 'park') this.say('Huvipuisto! Napauta porttia.', 3);
           }
         }
       }
