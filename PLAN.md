@@ -79,7 +79,7 @@ matkapeli/
 - **Speech bubbles stay until the next tap**, so there is time to read (a tap closes them and still does its normal job).
 - Later: more countries at the airport.
 - `hotel.js` (**built**): a **hotel** in Egypt, Thailand and New York. Tap it → a 2D hotel room (window shows the country). Tap the bed → the evening things happen by themselves (snack, pyjamas, teeth, toilet), then night falls and stays until tapped; the morning rises and the door takes you back outside, in front of the hotel.
-- **Restart button** (top-right corner, like the browser's refresh button): asks "Aloitetaanko alusta?" (Kyllä / Ei). Yes reloads the game to the start screen; the character, clothes and souvenirs are saved.
+- **Restart button** (top-right corner, like the browser's refresh button): asks "Aloitetaanko alusta?" (Kyllä / Ei). Yes clears everything the game saved (all `matkapeli*` localStorage keys: character, clothes, souvenirs, pet, photos) and reloads the game to the start screen, so it starts from the very beginning. The question warns: "Kaikki tavarat ja kuvat häviävät."
 - **Hero tricks**: tap the middle of your costume. Ironman: flies (rocket boots, faster) ⇄ walks. Spider suits: hand in the web-shooting pose → shoots a web all around → back to normal.
 - `swim.js` (**built**): a **swimming pool** in our own yard. Only with the swimsuit on. The minigame: a side view of the pool; tap the water to swim there; collect three rubber ducks on the surface and dive for three rings on the bottom. "Pois" goes back to the yard.
 - Shortcuts: `#hotelli`, `#uima`, `#rauta`, `#hamahakki`.

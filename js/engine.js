@@ -107,8 +107,17 @@ window.MP = window.MP || {};
   const onRestart = (x, y) => restartShown() && Math.hypot(x - RESTART.x, y - RESTART.y) < RESTART.r + 4;
 
   MP.restartGame = function () {
-    // Load the page again without a #shortcut: the game starts from the start screen.
-    // (The character, clothes and the souvenirs are saved and stay.)
+    // Forget everything the game has saved (character, clothes, souvenirs,
+    // pet, photos…) and load the page again without a #shortcut:
+    // the game starts from the very beginning, like the first time.
+    try {
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.indexOf('matkapeli') === 0) keys.push(k);
+      }
+      keys.forEach((k) => localStorage.removeItem(k));
+    } catch (_) { /* no saving allowed: nothing to clear */ }
     try {
       location.replace(location.href.split('#')[0]);
     } catch (_) {
@@ -160,7 +169,7 @@ window.MP = window.MP || {};
       c.fillStyle = '#fff7e0';
       MP.roundRect(c, ASK.x, ASK.y, ASK.w, ASK.h, 8); c.fill(); c.stroke();
       MP.drawText(c, 'Aloitetaanko alusta?', W / 2, ASK.y + 12, { size: 1.15, color: '#2b2340', align: 'center' });
-      MP.drawText(c, 'Peli alkaa ihan alusta.', W / 2, ASK.y + 28, { size: 0.75, color: '#6b5f80', align: 'center' });
+      MP.drawText(c, 'Kaikki tavarat ja kuvat häviävät.', W / 2, ASK.y + 28, { size: 0.75, color: '#6b5f80', align: 'center' });
       MP.drawButton(c, 'Kyllä', ASK_YES, { size: 1 });
       MP.drawButton(c, 'Ei', ASK_NO, { size: 1, color: '#e0559a', shade: '#a8326c' });
     }
