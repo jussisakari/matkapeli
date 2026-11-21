@@ -19,6 +19,7 @@
 //   #thaimaa      Thailand's beach, the tuk-tuk just arrived
 //   #temppeli     inside the golden temple in Thailand
 //   #newyork      New York, the taxi just arrived
+//   #mummi        visiting Mummi and Ukki in the New York skyscraper
 //   #australia    Australia, the jeep just arrived
 //   #japani       Japan, the bullet train just arrived
 //   #ilta         home in the evening (evening tasks, then bed)
@@ -73,6 +74,7 @@ window.MP = window.MP || {};
     thaimaa:     () => { ready(true); return [MP.scenes.thailand]; },
     temppeli:    () => { ready(true); MP.state.outfit.hat = 'sunhat'; return [MP.scenes.temple]; },
     newyork:     () => { ready(true); return [MP.scenes.newyork]; },
+    mummi:       () => { ready(true); return [MP.scenes.grandparents]; },
     australia:   () => { ready(true); return [MP.scenes.australia]; },
     japani:      () => { ready(true); return [MP.scenes.japan]; },
     ilta:        () => { ready(true); return [MP.scenes.home, { quest: 'evening' }]; },

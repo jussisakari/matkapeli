@@ -35,6 +35,7 @@ const FILES = [
     './js/scenes/home.js',
     './js/scenes/hotel.js',
     './js/scenes/newyork.js',
+    './js/scenes/grandparents.js',
     './js/scenes/pyramid.js',
     './js/scenes/labyrinth.js',
     './js/scenes/start.js',

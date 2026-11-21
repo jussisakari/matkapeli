@@ -31,6 +31,7 @@ window.MP = window.MP || {};
     pizza: { x: PIZZA.x + 3, z: PIZZA.z, r: 5 },
     hero: { x: 0, z: HERO.z + 8, r: 7 },
     water: { x: 0, z: -62, r: 6 },
+    grandma: { x: -7, z: -40, r: 4.5 },
   };
   const BITES = 4;
 
@@ -283,6 +284,9 @@ window.MP = window.MP || {};
 
     // the hotel's entrance on the side of a skyscraper
     S.hotel = W.hotel(10, -5, -Math.PI / 2, { facadeOnly: true, d: 0, h: 0, awning: '#b22234', sign: 'HOTELLI' });
+    // Mummi and Ukki live high up in the skyscraper on the left (grandparents.js)
+    S.grandma = W.hotel(-10, -40, Math.PI / 2, { facadeOnly: true, d: 0, h: 0, awning: '#3c3b6e', glass: '#ffe9a0', sign: 'MUMMI & UKKI' });
+    W.clickable(S.grandma.group, 'grandma');
     S.ch = W3.character(S.scene);
     S.built = true;
   }
@@ -312,6 +316,15 @@ window.MP = window.MP || {};
       S.taxi.position.set(TAXI_AT.x, 0, TAXI_AT.z);
       this.arrive = { t: 0 };
       S.ch.setVisible(false);
+      // back from Mummi and Ukki
+      if (params && params.from === 'grandma') {
+        const d = S.grandma.door;
+        this.p = { x: d.x, z: d.z, heading: d.heading + Math.PI };
+        this.camHeading = this.p.heading;
+        this.arrive = null;
+        S.ch.setVisible(true);
+        this.say('Hei hei, Mummi ja Ukki! Olipa kiva kyläillä.', 3, 0.5);
+      }
       // waking up in the hotel: out of the door, back to the trip
       if (params && params.from === 'hotel') {
         const d = S.hotel.door;
@@ -337,6 +350,7 @@ window.MP = window.MP || {};
 
     stand(spot) {
       if (spot === 'hotel') return S.hotel.door;
+      if (spot === 'grandma') return S.grandma.door;
       if (spot === 'taxi') return { x: TAXI_AT.x - 1, z: TAXI_AT.z - 1.9 };
       if (spot === 'pizza') return { x: PIZZA.x + 1.6, z: PIZZA.z };
       if (spot === 'liberty') return { x: 0, z: BOUNDS.minZ + 0.5 };
@@ -344,6 +358,13 @@ window.MP = window.MP || {};
     },
 
     use(spot) {
+      if (spot === 'grandma') {
+        this.say('Täällä asuvat Mummi ja Ukki! Mennään kylään.', 2);
+        MP.sfx.bling();
+        this.leaving = { t: 0, visit: true };
+        MP.goTo(MP.scenes.grandparents);
+        return;
+      }
       if (spot === 'hotel') {
         // the hotel: sleep one night here
         this.say('Hotelli! Mennään sisään.', 1.5);
@@ -419,7 +440,7 @@ window.MP = window.MP || {};
           this.say('New York! Valtavia pilvenpiirtäjiä ja keltaisia takseja! Katso ylös – joku heilahtaa talojen välissä!' + poster, 5);
         }
       }
-      if (this.leaving) {
+      if (this.leaving && !this.leaving.visit) {
         this.leaving.t += dt;
         const t = Math.max(0, this.leaving.t - 0.8);
         S.taxi.position.x = TAXI_AT.x - t * t * 6;
@@ -461,6 +482,7 @@ window.MP = window.MP || {};
             if (id === 'pizza') this.say('Pizzeria! New Yorkissa syödään isoja pizzapaloja. Napauta pizzeriaa!', 4);
             if (id === 'hero') this.say('Spiderman heilahtaa seitillä! Napauta häntä!', 3.5);
             if (id === 'water') this.say('Tuolla on Vapaudenpatsas! Napauta sitä.', 3.5);
+            if (id === 'grandma') this.say('Tässä pilvenpiirtäjässä asuvat Mummi ja Ukki! Napauta ovea.', 3.5);
           }
         }
       }
