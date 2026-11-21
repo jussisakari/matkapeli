@@ -421,7 +421,9 @@ window.MP = window.MP || {};
       if (!S.built) build();
       W3.show();
       const out = params && params.from === 'pyramid';
+      const fromTemple = params && params.from === 'temple';
       this.p = out ? { x: 0, z: DOOR_Z + 2.4, heading: Math.PI } : { x: 2.2, z: 4.2, heading: 0 };
+      if (fromTemple) this.p = { x: TEMPLE.x + 8.5, z: TEMPLE.z, heading: Math.PI / 2 };
       this.camHeading = this.p.heading;
       this.camDist = this.camHeight = null;
       this.target = null;
@@ -430,16 +432,17 @@ window.MP = window.MP || {};
       this.walkTime = 0;
       this.seen = out ? { door: true } : {};
       this.ride = null;             // riding the camel
+      this.away = false;
       this.leaving = null;          // taxi to the airport
       this.camelAngle = 0;
       this.nodAt = -10;
       this.bubble = null;
       S.taxi.position.set(TAXI_AT.x, 0, TAXI_AT.z);
       this.placeCamel();
-      if (out) {
+      if (out || fromTemple) {
         this.arrive = null;
         S.ch.setVisible(true);
-        this.say('Ulkona taas! Onpa aurinkoista.', 3, 0.5);
+        this.say(fromTemple ? 'Ulos labyrintista! Aurinko häikäisee.' : 'Ulkona taas! Onpa aurinkoista.', 3, 0.5);
       } else {
         // The taxi from the airport drives in, then we hop out
         this.arrive = { t: 0 };
@@ -512,8 +515,11 @@ window.MP = window.MP || {};
         this.say('Suuri sfinksi! Sillä on leijonan vartalo ja faaraon pää. Sen nenä on lohjennut joskus kauan sitten.', 5);
         MP.sfx.tune();
       } else if (spot === 'temple') {
-        this.say('Ramses II:n temppeli! Ramses II oli Egyptin mahtavimpia faaraoita. Kaikki neljä jättipatsasta ovat hän itse. Yhdeltä putosi pää maanjäristyksessä!', 6);
+        this.say('Ramses II:n temppeli! Kaikki neljä jättipatsasta ovat faarao itse. Sisällä on labyrintti – mennään!', 3);
         MP.sfx.tune();
+        this.target = null;
+        this.away = true;                            // no more taps while the screen fades
+        MP.goTo(MP.scenes.labyrinth);
       } else if (spot === 'camel') {
         this.ride = { t: 0 };
         this.nodAt = MP.time;
@@ -523,7 +529,7 @@ window.MP = window.MP || {};
     },
 
     onTap(x, y) {
-      if (this.arrive || this.leaving || this.ride || MP.isFading()) return;
+      if (this.arrive || this.leaving || this.ride || this.away || MP.isFading()) return;
       if (W3.hitTurn(x, y)) {
         this.target = null;
         this.p.heading += Math.PI;

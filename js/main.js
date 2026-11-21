@@ -33,6 +33,7 @@
 //   #konsertti    the Turpapojat concert (a memory from the poster)
 //   #iltakatu     back on the home street in the evening (after a trip)
 //   #pyramidi     inside the pyramid
+//   #labyrintti   the labyrinth under Ramses II's temple
 //   #kirjat       the bookshelf
 //   #galleria     all drawings and outfits
 window.MP = window.MP || {};
@@ -86,6 +87,7 @@ window.MP = window.MP || {};
     iltakatu:    () => { ready(true); MP.state.dusk = true; return [MP.scenes.street, { from: 'taxi' }]; },
     konsertti:   () => { ready(false); return [MP.scenes.concert]; },
     pyramidi:    () => { ready(true); return [MP.scenes.pyramid]; },
+    labyrintti:  () => { ready(true); return [MP.scenes.labyrinth]; },
     kirjat:      () => { ready(false); return [MP.scenes.books]; },
     galleria:    () => [MP.scenes.gallery],
   };
