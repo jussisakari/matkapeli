@@ -29,7 +29,7 @@ window.MP = window.MP || {};
     const gifts = (MP.state.treasures && MP.state.treasures.gifts) || {};
     return MP.CLOTHES[tab].filter((it) => (!it.hidden || MP.state.evening) && (!it.gift || gifts[it.id])
       && (!it.season || (MP.isSnowy && MP.isSnowy()))            // the snowsuit only in winter
-      && (!it.weather || (MP.isRainy && MP.isRainy())));          // the raincoat only on rainy days
+      && (!it.weather || (MP.isRainDay && MP.isRainDay())));          // the raincoat only on rainy days
   }
 
   function itemName(tab, it) {

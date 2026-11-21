@@ -37,6 +37,22 @@ window.MP = window.MP || {};
   MP.isSnowy = () => ['winter', 'christmas'].includes(MP.seasonNow());
   MP.seasonName = (id) => (MP.SEASONS.find((s) => s.id === (id || MP.seasonNow())) || {}).name;
 
+  // ---------------------------------------------------------------------------
+  // RAINY DAYS (one morning in four, not in winter): a raincoat and rubber boots,
+  // puddles to jump in on the home street, worms on the path, and a rainbow when
+  // the rain stops. The garden gets its water from the rain.
+  // ---------------------------------------------------------------------------
+  MP.pickWeather = function () {
+    const rain = !MP.isSnowy() && Math.random() < 0.25;
+    MP.state.weather = { rain, stopped: false };
+    if (rain && Array.isArray(MP.state.garden)) {
+      for (const b of MP.state.garden) if (b && b.seed) b.watered = true;     // the rain waters the garden
+      MP.save();
+    }
+  };
+  MP.isRainDay = () => !!(MP.state.weather && MP.state.weather.rain);
+  MP.isRainy = () => MP.isRainDay() && !MP.state.weather.stopped && !MP.state.dusk;
+
   // The calendar on the kitchen wall: each tap goes to the next season
   MP.nextSeason = function () {
     const ids = MP.SEASONS.map((s) => s.id);
@@ -92,7 +108,13 @@ window.MP = window.MP || {};
       c.fillRect(wx - 2, wy + 24, 34, 1.6);       // and on the window sill
       c.restore();
     }
-    if (rain) MP.drawFalling(c, MP.isSnowy() ? 'snow' : 'rain', wx + 3, wy + 3, 24, 20, t, 10);
+    if (rain) {
+      c.save();
+      c.fillStyle = 'rgba(90,100,120,0.45)';          // grey rain clouds
+      c.fillRect(wx + 3, wy + 3, 24, 20);
+      c.restore();
+      MP.drawFalling(c, 'rain', wx + 3, wy + 3, 24, 20, t, 10);
+    }
     else if (MP.isSnowy()) MP.drawFalling(c, 'snow', wx + 3, wy + 3, 24, 20, t, 8);
     else if (s === 'autumn') MP.drawFalling(c, 'leaves', wx + 3, wy + 3, 24, 20, t, 4);
   };
@@ -234,6 +256,25 @@ window.MP = window.MP || {};
       R.lights.push(l);
     }
 
+    // puddles and worms (rainy days)
+    R.puddles = [[0, 3.5], [-3.6, -6], [3.6, -14], [-1.2, -22], [3.6, -30], [-14, -40]].map(([x, z], i) => {
+      const m = new T.Mesh(new T.CircleGeometry(0.95, 20), new T.MeshLambertMaterial({ color: '#7d8fa8' }));
+      m.rotation.x = -Math.PI / 2;
+      m.position.set(x, 0.03 + i * 0.001, z);
+      m.scale.set(1.3, 0.8, 1);
+      add(m);
+      return m;
+    });
+    R.worms = [[-3.4, -2], [3.8, -9], [-3.8, -18]].map(([x, z]) => {
+      const g = new T.Group();
+      for (let k = 0; k < 4; k++) ball(0.07, '#e88aa0', k * 0.11, 0.06, 0, g);
+      g.position.set(x, 0, z);
+      add(g);
+      g.traverse((m) => { m.userData.spot = 'worm'; });
+      S.clickables.push(g);
+      return g;
+    });
+
     // footprints in the snow (a few dark marks that move along with us)
     R.steps = [];
     for (let i = 0; i < 30; i++) {
@@ -265,6 +306,9 @@ window.MP = window.MP || {};
       R.piles.forEach((g) => { g.visible = s === 'autumn'; g.scale.set(1, 1, 1); });
       R.lights.forEach((l) => { l.visible = s === 'christmas'; });
       R.steps.forEach((f) => { f.visible = false; });
+      const wet = MP.isRainDay() && !MP.state.dusk;
+      R.puddles.forEach((m) => { m.visible = wet; });
+      R.worms.forEach((g) => { g.visible = wet; });
       R.lastStep = null;
       R.showSnowman();
       R.sled.position.set(-13.4, 0, 5.4);
@@ -323,6 +367,8 @@ window.MP = window.MP || {};
           R.lastStep = { x: p.x, z: p.z };
         }
       }
+      // the worms wriggle
+      R.worms.forEach((g, i) => { if (g.visible) g.children.forEach((b, k) => { b.position.z = Math.sin(t * 4 + k + i) * 0.04; }); });
       // the leaf piles grow back slowly
       R.piles.forEach((g) => { if (g.scale.y < 1) g.scale.y = Math.min(1, g.scale.y + dt * 0.25); });
     };
@@ -354,6 +400,8 @@ window.MP = window.MP || {};
       return null;
     };
     R.playLength = (play) => (play.type === 'sled' ? 2.8 : play.type === 'leaves' ? 1.3 : 0);
+    // Which puddle we are standing in (or -1)
+    R.puddleAt = (x, z) => R.puddles.findIndex((m) => m.visible && Math.hypot((x - m.position.x) / 1.2, (z - m.position.z) / 0.75) < 1);
     R.hillY = (x) => Math.max(0, -2.2 + Math.sqrt(Math.max(0, 16 - (x + 18) * (x + 18))));
     R.afterPlay = (play) => (play.type === 'sled' ? { x: -11.5, z: 4.2 } : { x: play.pile.position.x, z: play.pile.position.z - 1.4 });
 

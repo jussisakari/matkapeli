@@ -109,6 +109,9 @@ MP.CLOTHES = {
     // in the wardrobe only in winter (seasons.js)
     { id: 'snowsuit', name: 'Toppahaalari', season: 'winter', top: '#e04848', legs: '#e04848', boots: '#2b2340',
       mittens: '#ffd23f', zip: '#ffffff' },
+    // in the wardrobe only on rainy days (seasons.js)
+    { id: 'raincoat', name: 'Sadetakki', weather: 'rain', top: '#ffd23f', legs: '#3f6fb5', boots: '#2e8b57',
+      zip: '#2b2340', collar: '#ffe680' },
     { id: 'mermaid', name: 'Merenneito',   top: '#b46be0', legs: '#2bb3a3', scales: '#1d7f74',
       fin: '#7fe0c8', shell: '#ffc6e0', starfish: '#ffb347' },
   ],

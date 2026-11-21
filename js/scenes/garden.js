@@ -215,6 +215,7 @@ window.MP = window.MP || {};
       this.player.place(30, 1);
       const anyReady = MP.state.garden.some((b) => b.seed && b.stage >= READY && b.seed !== 'sunflower');
       const thirsty = MP.state.garden.some((b) => b.seed && !b.watered && b.stage < READY);
+      if (MP.isRainDay && MP.isRainDay() && MP.state.garden.some((b) => b.seed)) { this.say('Sade kasteli kasvit! Tänään ei tarvitse kastella. Kasvit ovat iloisia.'); return; }
       if (MP.isSnowy && MP.isSnowy()) { this.say('Talvi! Kasvit nukkuvat lumen alla. Ne kasvavat taas, kun tulee kesä.'); return; }
       this.say(anyReady ? 'Jotain on valmista! Napauta, niin poimitaan.'
         : thirsty ? 'Kasvit ovat janoisia. Pidä sormea laatikon päällä, niin kastellaan.'

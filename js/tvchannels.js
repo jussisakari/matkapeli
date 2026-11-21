@@ -253,7 +253,7 @@ window.MP = window.MP || {};
     if (st.baked) out.push({ text: 'Kotona leivottiin ' + (st.baked.kind === 'cake' ? 'kakku' : 'pullaa') + '. Mmm!', icon: '🍰' });
     out.push({ text: 'Kenguru hyppäsi ennätyksen: kolme metriä!', icon: '🦘' });
     out.push({ text: 'Pingviinit opettelivat liukumaan mahallaan.', icon: '🐧' });
-    out.push({ weather: true, text: 'Sää: aurinkoista ja lämmintä. Hymyile!' });
+    out.push({ weather: true, text: MP.isRainDay && MP.isRainDay() ? 'Sää: sadetta! Muista sadetakki ja kumpparit.' : 'Sää: aurinkoista ja lämmintä. Hymyile!' });
     return out;
   }
   function news(c, t) {

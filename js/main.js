@@ -46,6 +46,7 @@
 //   #labyrintti   the labyrinth under Ramses II's temple
 //   #kirjat       the bookshelf
 //   #galleria     all drawings and outfits
+//   #sadepaiva    a rainy day on the home street (raincoat, puddles, rainbow)
 //   #postikortti  a postcard from Egypt (the airport's card stand)
 //   #jaatelo      the ice cream truck (build an ice cream)
 //   #turpavierailu Turpapojat visit our living room
@@ -81,6 +82,7 @@ window.MP = window.MP || {};
     leivonta:    () => { ready(false); return [MP.scenes.baking]; },
     synttarit:   () => { ready(false); return [MP.scenes.party]; },
     rummut:      () => { ready(false); return [MP.scenes.drums]; },
+    sadepaiva:   () => { ready(true); MP.state.weather = { rain: true, stopped: false }; MP.state.outfit.costume = 'raincoat'; return [MP.scenes.street]; },
     postikortti: () => { ready(true); return [MP.scenes.postcard, { country: 'egypt' }]; },
     jaatelo:     () => { ready(true); return [MP.scenes.icecream]; },
     turpavierailu: () => { ready(false); return [MP.scenes.bandvisit]; },

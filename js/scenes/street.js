@@ -490,6 +490,16 @@ window.MP = window.MP || {};
     }
   }
 
+  // A rainy day: grey sky and dimmer light (seasons.js decides the weather)
+  function setRain(on) {
+    if (!on) return;
+    const T = S.T;
+    S.scene.background = new T.Color('#9aa6b8');
+    S.scene.fog.color = new T.Color('#9aa6b8');
+    S.hemi.intensity = 0.65;
+    S.sun.intensity = 0.25;
+  }
+
   MP.scenes.street = {
     transparent: true,
 
@@ -531,6 +541,14 @@ window.MP = window.MP || {};
       this.swingAt = -10;
       setEvening(!!MP.state.dusk);
       S.season.apply();
+      setRain(MP.isRainy());
+      this.splashes = 0;
+      this.splash = null;
+      this.inPuddle = -1;
+      this.rainFrom = MP.time;
+      this.rainbowAt = MP.isRainDay() && !MP.isRainy() && !MP.state.dusk ? MP.time - 9 : null;
+      this.petHiding = MP.isRainy() && !!MP.myPet() && !swum && !gardened;
+      if (this.petHiding) S.pet.setVisible(false);
       const season = MP.seasonNow();
       S.castle.visible = false;
       S.taxi.position.set(TAXI_AT.x, 0, TAXI_AT.z);
@@ -547,6 +565,7 @@ window.MP = window.MP || {};
       else if (swum) this.say('Olipa kivaa uida! Nyt kuivataan pyyhkeellä ja lähdetään seikkailemaan.', 4, 0.6);
       else if (back && MP.state.dusk) this.say('Takaisin kotikadulla! On jo ilta – katulamput palavat. Kotiin pääsee napauttamalla kotitalon ovea.', 4.5, 0.6);
       else if (back) this.say('Takaisin kotikadulla! Leikkipuistoon vai kotiin? Kotiin pääsee napauttamalla kotitalon ovea.', 4.5, 0.6);
+      else if (MP.isRainy()) this.say('Sataa! Plits plats. Hyppää lätäköihin!' + (this.petHiding ? ' ' + MP.myPet().name + ' ei halua ulos sateeseen – se jäi piiloon pöydän alle.' : ''), 5, 0.6);
       else if (season === 'christmas') this.say('Ulkona! Lunta ja jouluvalot kotitalossa! Tee lumiukko tai mene pulkkamäkeen – tai kävele risteykseen.', 4.5, 0.6);
       else if (season === 'winter') this.say('Ulkona! Kaikkialla on lunta! Tee lumiukko talon viereen tai mene pulkkamäkeen.', 4.5, 0.6);
       else if (season === 'autumn') this.say('Ulkona! On syksy – puut ovat keltaisia ja punaisia. Hyppää lehtikasaan!', 4.5, 0.6);
@@ -678,6 +697,11 @@ window.MP = window.MP || {};
           S.pet.pat();
           return true;
         }
+        if (spot === 'worm') {
+          MP.sfx.boing();
+          this.say(['Mato! Se kiemurtelee märällä polulla.', 'Hei mato! Sade toi sinut ulos.', 'Toinen mato! Ne tykkäävät sateesta.'][Math.floor(Math.random() * 3)], 3);
+          return true;
+        }
         let stand = S.spots[spot];
         if (spot === 'leaves' && obj && obj.userData.pile) stand = { x: obj.userData.pile.position.x, z: obj.userData.pile.position.z - 1.4 };
         if (!stand) return false;
@@ -785,7 +809,31 @@ window.MP = window.MP || {};
 
       W3.follow(S.camera, this, dt);
       S.season.update(dt, this);
-      S.pet.update(dt, this, !!this.ride || !!this.play);
+      // --- Rain: jumping in puddles, and the rain stops after a while (a rainbow!) ---
+      if (MP.isRainDay() && !MP.state.dusk) {
+        const k = S.season.puddleAt(p.x, p.z);
+        if (k >= 0 && k !== this.inPuddle && !this.play && !this.ride) {
+          this.splashes++;
+          this.splash = { at: MP.time, size: Math.min(4, this.splashes) };
+          MP.sfx.flush();
+          this.say(['PLÄTS!', 'PLÄTSIS!', 'SUPER-PLÄTSIS!', 'MEGA-PLÄTSIS! Kaikki on märkää!'][Math.min(3, this.splashes - 1)], 1.5);
+        }
+        this.inPuddle = k;
+        if (MP.isRainy() && (this.splashes >= 4 || MP.time - this.rainFrom > 40)) {
+          MP.state.weather.stopped = true;
+          this.rainbowAt = MP.time;
+          setEvening(false);
+          MP.sfx.tune();
+          if (this.petHiding) {
+            this.petHiding = false;
+            S.pet.place(0, 9);
+            S.pet.happyFrom = MP.time;
+          }
+          this.say('Sade loppui! Katso, taivaalla on sateenkaari!' + (MP.myPet() ? ' ' + MP.myPet().name + ' uskaltaa nyt ulos.' : ''), 4);
+        }
+      }
+      if (this.petHiding) S.pet.setVisible(false);
+      else S.pet.update(dt, this, !!this.ride || !!this.play);
       this.drawCharacter();
       W3.render(S.scene, S.camera);
     },
@@ -825,8 +873,21 @@ window.MP = window.MP || {};
     },
 
     draw(ctx) {
-      // falling snow or autumn leaves
-      if (MP.isSnowy()) MP.drawFalling(ctx, 'snow', 0, 0, MP.W, MP.H, MP.time, 45);
+      // the rainbow after the rain
+      if (this.rainbowAt != null) {
+        const a = MP.clamp((MP.time - this.rainbowAt) / 2.5, 0, 1) * 0.6;
+        ctx.save();
+        ctx.globalAlpha = a;
+        ctx.lineWidth = 3.2;
+        ['#e04848', '#ff9a2a', '#ffd23f', '#4caf50', '#4a78c8', '#8a5ad8'].forEach((col, i) => {
+          ctx.strokeStyle = col;
+          ctx.beginPath(); ctx.arc(200, 92, 110 - i * 3.2, Math.PI * 1.08, Math.PI * 1.92); ctx.stroke();
+        });
+        ctx.restore();
+      }
+      // falling rain, snow or autumn leaves
+      if (MP.isRainy()) MP.drawFalling(ctx, 'rain', 0, 0, MP.W, MP.H, MP.time, 70);
+      else if (MP.isSnowy()) MP.drawFalling(ctx, 'snow', 0, 0, MP.W, MP.H, MP.time, 45);
       else if (MP.seasonNow() === 'autumn') MP.drawFalling(ctx, 'leaves', 0, 0, MP.W, MP.H, MP.time, 10);
       // leaves flying out of the pile we jumped into
       if (this.play && this.play.type === 'leaves' && this.play.t > 0.5) {
@@ -838,7 +899,35 @@ window.MP = window.MP || {};
           ctx.beginPath(); ctx.ellipse(s.x + Math.cos(a) * u * 50, s.y - Math.abs(Math.sin(a)) * u * 40 + u * u * 30, 2.4, 1.3, a + u * 5, 0, Math.PI * 2); ctx.fill();
         }
       }
-      S.pet.draw2d(ctx, S.camera);
+      if (!this.petHiding) S.pet.draw2d(ctx, S.camera);
+      // an umbrella over our head in the rain, and splashes from the puddles
+      const sp = this.splash;
+      if (this.headPos && (MP.isRainy() || (sp && MP.time - sp.at < 0.8))) {
+        const hp = W3.toScreen(this.headPos, S.camera);
+        if (MP.isRainy() && !this.ride) {
+          ctx.save();
+          ctx.lineWidth = 0.8; ctx.strokeStyle = MP.COLORS.outline;
+          ctx.beginPath(); ctx.moveTo(hp.x + 4, hp.y + 2); ctx.lineTo(hp.x + 4, hp.y - 24); ctx.stroke();
+          ctx.fillStyle = '#e0559a';
+          ctx.beginPath(); ctx.moveTo(hp.x - 16, hp.y - 18); ctx.quadraticCurveTo(hp.x + 4, hp.y - 40, hp.x + 24, hp.y - 18);
+          for (let i = 0; i < 4; i++) ctx.quadraticCurveTo(hp.x + 19 - i * 10, hp.y - 22, hp.x + 14 - i * 10, hp.y - 18);
+          ctx.closePath(); ctx.fill(); ctx.stroke();
+          ctx.restore();
+        }
+        if (sp && MP.time - sp.at < 0.8) {
+          const u = (MP.time - sp.at) / 0.8;
+          const fx = hp.x, fy = hp.y + 46;
+          ctx.save();
+          ctx.fillStyle = '#8fc8ff';
+          const n = 6 + sp.size * 3;
+          for (let i = 0; i < n; i++) {
+            const a = Math.PI + (i / (n - 1)) * Math.PI;
+            const r = u * (14 + sp.size * 9);
+            ctx.beginPath(); ctx.arc(fx + Math.cos(a) * r, fy + Math.sin(a) * r * 0.8 + u * u * 18, 1.6 + sp.size * 0.3, 0, Math.PI * 2); ctx.fill();
+          }
+          ctx.restore();
+        }
+      }
       W3.drawBubble(ctx, this.bubble, this.headPos, S.camera);
       if (!this.ride) W3.drawTurnButton(ctx);
       // the way home: an arrow over our own door once we have been somewhere

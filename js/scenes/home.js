@@ -869,6 +869,7 @@ window.MP = window.MP || {};
       if (waking) {
         MP.state.evening = false; MP.state.dusk = false; MP.state.baked = null;
         if (MP.gardenMorning) MP.gardenMorning();   // the garden grows during the night
+        MP.pickWeather();                            // sun or rain today (seasons.js)
       }
       if (evening) {
         // Back home from outside: the evening tasks start
@@ -1068,7 +1069,10 @@ window.MP = window.MP || {};
       this.tiredUntil = MP.time + (skipped ? 1.5 : 3.2);
       if (!skipped) MP.sfx.tap();
       const lost = MP.lostNow();
-      this.sayProgress(skipped ? 0.2 : 0.9, lost ? 'Voi ei, missä on minun ' + MP.lostItem(lost.item).name + '? Pitää etsiä!' : undefined);
+      const intro = [];
+      if (MP.isRainy()) intro.push('Tänään sataa! Sadetakki ja kumpparit ovat vaatekaapissa.');
+      if (lost) intro.push('Voi ei, missä on minun ' + MP.lostItem(lost.item).name + '? Pitää etsiä!');
+      this.sayProgress(skipped ? 0.2 : 0.9, intro.length ? intro.join(' ') : undefined);
       if (lost) lost.from = MP.time;
       if (!MP.state.evening) this.cakeBtn = { from: MP.time + 1 };
     },
@@ -1464,6 +1468,10 @@ window.MP = window.MP || {};
         return;
       }
       if (id === 'door') {
+        if (this.allDone() && MP.isRainy() && MP.state.outfit.costume !== 'raincoat') {
+          this.say('Ulkona sataa kaatamalla! Ensin sadetakki ja kumpparit päälle – ne ovat vaatekaapissa (Asut).', 4);
+          return;
+        }
         if (this.allDone()) {
           // Everything done: out we go!
           this.doorOpen = true;
