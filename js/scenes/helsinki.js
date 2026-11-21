@@ -115,6 +115,8 @@ window.MP = window.MP || {};
     c.restore();
   }
 
+  MP.drawJanneSmall = janneSmall;     // Janne is on Masked Singer too (tvshow.js)
+
   function janneBig(c, t, laughAt) {
     const laugh = t - laughAt < 1.4;
     const bob = laugh ? Math.abs(Math.sin((t - laughAt) * 12)) * 3 : Math.sin(t * 2) * 0.8;

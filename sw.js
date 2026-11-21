@@ -52,6 +52,7 @@ const FILES = [
     './js/scenes/igloo.js',
     './js/sprites.js',
     './js/tvshow.js',
+    './js/maskedsinger.js',
     './js/world3d.js',
     './js/country3d.js',
     './js/scenes/australia.js',

@@ -789,6 +789,7 @@ window.MP = window.MP || {};
         MP.state.evening = true;
         MP.state.tasks = { dinner: false, pyjama: false, brush: false, toilet: false };
         MP.state.tv = { time: 0, locked: false, lockedBy: null };
+        MP.state.maskedLineup = null;     // new Masked Singer singers tonight
       }
       if (waking || !MP.state.tasks) {
         MP.state.tasks = { toilet: false, brush: false, hair: false, dress: false, breakfast: false, pet: false, shoes: false };
@@ -1165,7 +1166,7 @@ window.MP = window.MP || {};
         const a = MP.maskedNow(prev), b = MP.maskedNow(now);
         if (b.lt < a.lt) { MP.sfx.bling(); return; }
         const s = b.singer;
-        const singEnd = M.LEN - 1.2;
+        const singEnd = M.SING_END;
         if (b.lt >= M.TITLE && b.lt < singEnd) {
           const ia = Math.floor((a.lt - M.TITLE) / s.step), ib = Math.floor((b.lt - M.TITLE) / s.step);
           if (ib !== ia && ib >= 0) {
@@ -1174,6 +1175,8 @@ window.MP = window.MP || {};
           }
         }
         if (a.lt < singEnd && b.lt >= singEnd) MP.sfx.applause(1.2);
+        // Janne laughs at his own joke
+        if (a.lt < singEnd + 0.6 && b.lt >= singEnd + 0.6) [523, 659, 523, 784].forEach((f, i) => setTimeout(() => MP.sfx.note(f, 0.09, 'square', 0.06), i * 110));
         return;
       }
       if (MP.tvGag(prev) !== MP.tvGag(now)) MP.sfx.boing();
@@ -1369,6 +1372,12 @@ window.MP = window.MP || {};
       // Watching TV: only the remote control's red button works
       if (this.tvView) {
         if (Math.hypot(x - POWER.x, y - POWER.y) < POWER.r + 5) this.closeTv();
+        else if (MP.state.evening && MP.hit(TV_SCREEN, x, y)) {
+          // Masked Singer: tap the picture for the next singer
+          const L = MP.MASKED.LEN;
+          this.showT = (Math.floor(this.showT / L) + 1) * L;
+          MP.sfx.bling();
+        }
         return;
       }
       // The birthday cake button

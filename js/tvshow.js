@@ -142,20 +142,41 @@ window.MP = window.MP || {};
   // In the evening: "Masked Singer Suomi" – singers in big masks take turns.
   // Each one: a title card ("Seuraavaksi: POPCORN!"), then singing with lights.
   // ---------------------------------------------------------------------------
+  // Each singer: name, tune (MIDI notes), step (seconds per note), wave,
+  // jokes (what Janne Kataja says after the song). More singers come from
+  // maskedsinger.js; MP.MASKED_DRAW[id](c, lt, sing) draws each one.
   MP.MASKED = {
-    LEN: 12,          // seconds per singer
+    LEN: 15,          // seconds per singer
     TITLE: 1.8,       // the title card at the start
+    SING_END: 9.8,    // the song ends: "Bravo!" and then Janne's joke
+    PER_EVENING: 3,   // how many different singers in one evening
     singers: [
       { id: 'popcorn', name: 'POPCORN', step: 0.28, wave: 'triangle',
-        tune: [67, 69, 71, 72, 74, 72, 71, 69, 67, 64, 67, 72] },
+        tune: [67, 69, 71, 72, 74, 72, 71, 69, 67, 64, 67, 72],
+        jokes: ['Tuo on niin poksahtava esitys, että mulla meni popcornit väärään kurkkuun!', 'Popcorn! Minä otan ison kupin – ja sinut kaupan päälle!'] },
       { id: 'pharaoh', name: 'FAARAO', step: 0.36, wave: 'square',
-        tune: [64, 65, 68, 69, 71, 69, 68, 65, 64, 68, 65, 64] },
+        tune: [64, 65, 68, 69, 71, 69, 68, 65, 64, 68, 65, 64],
+        jokes: ['Niin kultainen, että mun silmälasit meni huuruun!', 'Faarao! Onko sulla pyramidissa tilaa yhdelle kimaltavalle takille?'] },
     ],
+  };
+  MP.MASKED_DRAW = {};
+  // tonight's singers (a new random set every evening)
+  MP.maskedLineup = function () {
+    const M = MP.MASKED;
+    const st = MP.state || {};
+    if (!st.maskedLineup || !st.maskedLineup.every((id) => M.singers.some((s) => s.id === id))) {
+      const ids = M.singers.map((s) => s.id).sort(() => Math.random() - 0.5);
+      st.maskedLineup = ids.slice(0, Math.min(M.PER_EVENING, ids.length));
+    }
+    return st.maskedLineup.map((id) => M.singers.find((s) => s.id === id));
   };
   MP.maskedNow = function (t) {
     const M = MP.MASKED;
-    const i = Math.floor(t / M.LEN) % M.singers.length;
-    return { singer: M.singers[i], lt: t % M.LEN };
+    const list = MP.maskedLineup();
+    const n = Math.floor(t / M.LEN);
+    const singer = list[n % list.length];
+    const jokes = singer.jokes || ['Upea esitys!'];
+    return { singer, lt: t % M.LEN, joke: jokes[Math.floor(n / list.length) % jokes.length] };
   };
 
   // Popcorn: a striped popcorn box with a fluffy popcorn head and big eyes
@@ -231,9 +252,12 @@ window.MP = window.MP || {};
     ell(c, 99, 37 + Math.sin(lt * 2) * 2, 2.6, 2.6, 0, '#8a93a6');
   }
 
+  MP.MASKED_DRAW.popcorn = popcorn;
+  MP.MASKED_DRAW.pharaoh = pharaoh;
+
   function maskedSinger(c, t) {
     const M = MP.MASKED;
-    const { singer, lt } = MP.maskedNow(t);
+    const { singer, lt, joke } = MP.maskedNow(t);
     // the studio: dark blue, glittering lights
     const g = c.createLinearGradient(0, 0, 0, 100);
     g.addColorStop(0, '#120b3a'); g.addColorStop(1, '#3a1f6a');
@@ -262,16 +286,29 @@ window.MP = window.MP || {};
     c.fillStyle = 'rgba(255,255,255,0.25)';
     c.beginPath(); c.ellipse(80, 84, 30, 4, 0, 0, Math.PI * 2); c.fill();
     // the singer sways to the music
-    const sing = lt < M.LEN - 1.2;
+    const sing = lt < M.SING_END;
+    const janne = lt > M.SING_END + 0.4;
     c.save();
+    if (janne) { c.translate(-30, 0); }
     c.translate(80, 82);
     c.rotate(Math.sin(lt * 3) * 0.06);
     c.translate(-80, -82 - Math.abs(Math.sin(lt * 6)) * 1.5);
-    if (singer.id === 'popcorn') popcorn(c, lt, sing);
-    else pharaoh(c, lt, sing);
+    (MP.MASKED_DRAW[singer.id] || popcorn)(c, lt, sing);
     c.restore();
+    // after the song Janne Kataja (in the panel) says something funny
+    if (janne) {
+      const jt = lt - M.SING_END - 0.4;
+      const pop = MP.clamp(jt * 4, 0, 1);
+      c.save();
+      c.translate(132, 98 + (1 - pop) * 30);
+      c.scale(0.95, 0.95);
+      if (MP.drawJanneSmall) MP.drawJanneSmall(c, 0, 0, t, jt < 1.2);
+      c.restore();
+      if (pop >= 1) MP.drawBubble(c, joke, 92, 40, { maxWidth: 116, size: 0.55 });
+      MP.drawText(c, 'JANNE', 132, 2, { size: 0.5, color: '#ffe680', outline: O, align: 'center' });
+    }
     // notes flying out
-    if (sing) {
+    if (sing && lt > M.TITLE) {
       for (let i = 0; i < 3; i++) {
         const p = (lt * 0.7 + i / 3) % 1;
         c.save();
@@ -279,13 +316,13 @@ window.MP = window.MP || {};
         MP.drawText(c, '♪', 104 + p * 30, 40 - p * 30 + i * 4, { size: 0.9, color: ['#ff5fd0', '#ffe680', '#5fd4ff'][i], outline: O });
         c.restore();
       }
-    } else {
+    } else if (!janne) {
       MP.drawText(c, 'Bravo!', 80, 8, { size: 1.2, color: '#ffe680', outline: O, align: 'center' });
     }
     // the name tag
     c.fillStyle = 'rgba(255,255,255,0.9)';
     MP.roundRect(c, 4, 86, 58, 11, 3); c.fill(); c.stroke();
-    MP.drawText(c, singer.name, 33, 87.5, { size: 0.65, color: '#b0208a', align: 'center' });
+    MP.drawText(c, singer.name, 33, 87.5, { size: singer.name.length > 10 ? 0.45 : 0.65, color: '#b0208a', align: 'center' });
   }
 
   // Draws the show into the rectangle (x, y, w, h). t = seconds the TV has been on.
