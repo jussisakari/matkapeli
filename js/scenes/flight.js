@@ -27,6 +27,8 @@ window.MP = window.MP || {};
       g.addColorStop(0, '#a9d2f0'); g.addColorStop(1, '#eef7ff');
     } else if (land === 'beach') {
       g.addColorStop(0, '#5fc2f2'); g.addColorStop(1, '#d8f4ff');
+    } else if (land === 'city') {
+      g.addColorStop(0, '#8fc4ec'); g.addColorStop(1, '#e8f1f8');
     } else {
       g.addColorStop(0, '#8fd0f6'); g.addColorStop(1, '#e6f6ff');
     }
@@ -64,6 +66,29 @@ window.MP = window.MP || {};
           c.beginPath(); c.ellipse(x + 2 * k + Math.cos(a) * 7 * k, base - 26 * k + Math.sin(a) * 3 * k + 3 * k, 8 * k, 2 * k, a, 0, Math.PI * 2); c.fill();
         }
       }
+    } else if (land === 'city') {
+      MP.draw('sun', c, 0, 0, { x: r.x + r.w * 0.85, y: r.y + r.h * 0.15, r: 9 * k + 2 });
+      // a skyline full of skyscrapers
+      for (let i = 0; i < 22; i++) {
+        const bx = wrap(r.x + i * 17 + sx(0.4)), bh = (24 + (i * 29) % 46) * k, bw = 13 * k;
+        c.fillStyle = ['#6d7a8c', '#8c8f99', '#4d5566', '#b5835a'][i % 4];
+        c.fillRect(bx, horizon - bh, bw, bh);
+        if (i % 7 === 3) { c.fillRect(bx + bw * 0.3, horizon - bh - 8 * k, bw * 0.4, 8 * k); c.fillRect(bx + bw * 0.47, horizon - bh - 16 * k, bw * 0.06, 8 * k); }
+        c.fillStyle = '#ffe9a0';
+        for (let wy = horizon - bh + 3 * k; wy < horizon - 2 * k; wy += 6 * k) {
+          c.fillRect(bx + 2 * k, wy, 2 * k, 2 * k); c.fillRect(bx + 8 * k, wy, 2 * k, 2 * k);
+        }
+      }
+      // the Statue of Liberty
+      const lx = wrap(r.x + r.w * 0.15 + sx(0.4));
+      c.fillStyle = '#7fbfa6';
+      c.fillRect(lx - 2 * k, horizon - 22 * k, 4 * k, 16 * k);
+      c.beginPath(); c.arc(lx, horizon - 24 * k, 2.2 * k, 0, Math.PI * 2); c.fill();
+      c.fillRect(lx + 1.5 * k, horizon - 32 * k, 1.2 * k, 9 * k);
+      c.fillStyle = '#ffcc33'; c.beginPath(); c.arc(lx + 2.1 * k, horizon - 33 * k, 1.4 * k, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#c9b99a'; c.fillRect(lx - 4 * k, horizon - 6 * k, 8 * k, 6 * k);
+      c.fillStyle = '#9aa0aa';
+      c.fillRect(r.x, horizon, r.w, r.y + r.h - horizon);
     } else if (land === 'beach') {
       MP.draw('sun', c, 0, 0, { x: r.x + r.w * 0.8, y: r.y + r.h * 0.18, r: 10 * k + 2 });
       // turquoise sea with tall rocky islands

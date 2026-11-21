@@ -439,6 +439,9 @@ window.MP = window.MP || {};
           MP.sfx.boing();
         } else {
           this.opening = t;
+          // the golden mask goes home to the child's room
+          MP.state.treasures = Object.assign({}, MP.state.treasures, { tutMask: true });
+          MP.save();
           MP.sfx.tune();
           setTimeout(() => MP.sfx.bling(), 350);
           this.say('Löysin faaraon aarteen!', 4, 0.5);
@@ -668,7 +671,7 @@ window.MP = window.MP || {};
           MP.draw('sparkle', ctx, 160 + Math.cos(ph) * 70, 92 + Math.sin(ph * 1.3) * 50, { r: 2 + Math.sin(ph * 3) * 1.2 + 1.3 });
         }
         MP.drawText(ctx, 'Tutankhamonin kultainen naamio!', MP.W / 2, 6, { size: 1.3, color: '#ffd23f', outline: O(), align: 'center' });
-        MP.drawText(ctx, 'Se on yli 3000 vuotta vanha.', MP.W / 2, 158, { size: 0.9, color: '#ffffff', outline: O(), align: 'center' });
+        MP.drawText(ctx, 'Se on yli 3000 vuotta vanha. Viedään se kotiin omaan huoneeseen!', MP.W / 2, 158, { size: 0.9, color: '#ffffff', outline: O(), align: 'center' });
         MP.drawText(ctx, '(napauta)', MP.W / 2, 170, { size: 0.6, color: '#e6c98f', align: 'center' });
         ctx.restore();
       }

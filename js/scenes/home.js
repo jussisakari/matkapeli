@@ -26,7 +26,7 @@ window.MP = window.MP || {};
   // Where things are (x = middle)
   const POS = {
     // upstairs: child's room 0–320
-    nightstand: 30, window: 52, bed: 70, teddy: 126, panda: 140, ball: 172, poster: 196, rug: 150, wardrobe: 274, standMirror: 302,
+    nightstand: 30, window: 52, bed: 70, teddy: 126, panda: 140, elephantToy: 156, ball: 180, poster: 196, rug: 150, wardrobe: 274, standMirror: 302,
     // upstairs: bathroom 320–640
     toilet: 385, sink: 480, mirror: 480, towel: 560,
     // upstairs: landing 640–960
@@ -45,9 +45,12 @@ window.MP = window.MP || {};
     alarm:      { x: 16,  y: 104, w: 30, h: 30 },
     teddy:      { x: 118, y: 132, w: 15, h: 20 },
     panda:      { x: 133, y: 131, w: 15, h: 21 },
+    elephantToy: { x: 148, y: 131, w: 17, h: 21 },
     poster:     { x: 196, y: 38,  w: 36, h: 46 },
     wardrobe:   { x: 254, y: 92,  w: 40, h: 62, standX: 248 },
     mirror:     { x: 291, y: 74,  w: 22, h: 78, standX: 298 },
+    bed:        { x: 44,  y: 112, w: 56, h: 40, standX: 104 },
+    mask:       { x: 146, y: 46,  w: 30, h: 32 },
     toilet:     { x: 370, y: 112, w: 30, h: 42, standX: 404 },
     sink:       { x: 464, y: 84,  w: 34, h: 70, standX: 461 },
     // Big areas for the stairs: upstairs the whole landing, downstairs the whole staircase
@@ -72,8 +75,17 @@ window.MP = window.MP || {};
     { id: 'breakfast', spot: 'table',    name: 'aamupala' },
     { id: 'shoes',     spot: 'shoes',    name: 'kengät' },
   ];
+  // The evening tasks (after coming home), then off to bed
+  const EVENING_TASKS = [
+    { id: 'dinner', spot: 'table',    name: 'iltaruoka' },
+    { id: 'pyjama', spot: 'wardrobe', name: 'pyjama päälle' },
+    { id: 'brush',  spot: 'sink',     name: 'hampaiden pesu' },
+    { id: 'toilet', spot: 'toilet',   name: 'vessa' },
+  ];
+
   // The tasks for this character: long hair is brushed, short hair doesn't need it
-  const myTasks = () => TASKS.filter((k) => !k.girlOnly || MP.state.character === 'girl');
+  const myTasks = () => (MP.state.evening ? EVENING_TASKS
+    : TASKS.filter((k) => !k.girlOnly || MP.state.character === 'girl'));
 
   // Said when you try something that is already done
   const ALREADY = {
@@ -81,7 +93,7 @@ window.MP = window.MP || {};
     sink: 'Hampaat on jo puhtaat!',
     wardrobe: 'Vaatteet on jo päällä!',
     mirror: 'Hiukset on jo harjattu!',
-    table: 'Aamupala on jo syöty!',
+    table: 'Ruoka on jo syöty!',
     shoes: 'Kengät on jo jalassa!',
   };
 
@@ -326,6 +338,22 @@ window.MP = window.MP || {};
         ctx.closePath();
         ctx.fillStyle = '#e04848'; ctx.fill(); ctx.stroke();
       });
+    } else if (id === 'dinner') {
+      MP.draw('meatballs', ctx, cx, cy + 1, { scale: 0.62 });
+    } else if (id === 'pyjama') {
+      withLine(ctx, () => {
+        ctx.lineWidth = 0.6;
+        ctx.beginPath();
+        ctx.moveTo(cx - 2.5, cy - 5); ctx.lineTo(cx - 6, cy - 2.5); ctx.lineTo(cx - 4.5, cy);
+        ctx.lineTo(cx - 3, cy - 1); ctx.lineTo(cx - 3, cy + 5); ctx.lineTo(cx + 3, cy + 5);
+        ctx.lineTo(cx + 3, cy - 1); ctx.lineTo(cx + 4.5, cy); ctx.lineTo(cx + 6, cy - 2.5);
+        ctx.lineTo(cx + 2.5, cy - 5); ctx.quadraticCurveTo(cx, cy - 3.5, cx - 2.5, cy - 5);
+        ctx.closePath();
+        ctx.fillStyle = '#9fc8ff'; ctx.fill();
+        ctx.fillStyle = '#e6f2ff';
+        ctx.fillRect(cx - 3, cy - 1.5, 6, 1); ctx.fillRect(cx - 3, cy + 1.5, 6, 1);
+        ctx.stroke();
+      });
     } else if (id === 'hair') {
       MP.drawHairbrush(ctx, cx, cy, 0.5, -0.7);
     } else if (id === 'breakfast') {
@@ -339,6 +367,62 @@ window.MP = window.MP || {};
         ctx.fillStyle = MP.COLORS.shoes; ctx.fill(); ctx.stroke();
       });
     }
+  }
+
+  // Posters from the countries you have visited (x = middle of the poster)
+  const POSTERS = [
+    { id: 'egypt',    x: 88,  land: 'desert', say: 'Juliste Egyptistä! Pyramidit ja palmut.' },
+    { id: 'thailand', x: 118, land: 'beach',  say: 'Juliste Thaimaasta! Ranta ja kalliosaaret.' },
+    { id: 'newyork',  x: 247, land: 'city',   say: 'Juliste New Yorkista! Pilvenpiirtäjät ja Vapaudenpatsas.' },
+    { id: 'winter',   x: 276, land: 'snow',   say: 'Juliste Talvimaasta! Lunta ja jäävuoria.' },
+  ];
+  const hasPoster = (id) => !!(MP.state.treasures && MP.state.treasures.posters && MP.state.treasures.posters[id]);
+
+  function countryPoster(ctx, ps) {
+    const d = MP.findDestination(ps.id);
+    const r = { x: ps.x - 12, y: 42, w: 24, h: 34 };
+    withLine(ctx, () => {
+      box(ctx, r.x, r.y, r.w, r.h, 1.5, '#fffaf0');
+    });
+    const pic = { x: r.x + 2, y: r.y + 2, w: r.w - 4, h: 20 };
+    ctx.save();
+    ctx.beginPath(); ctx.rect(pic.x, pic.y, pic.w, pic.h); ctx.clip();
+    MP.drawLandscape(ctx, ps.land, pic, 0);
+    ctx.restore();
+    if (d) {
+      d.flag(ctx, ps.x - 4, r.y + 23.5, 8, 5.5);
+      MP.drawText(ctx, d.name, ps.x, r.y + 29.5, { size: 0.42, color: MP.COLORS.outline, align: 'center' });
+    }
+    // a pin at the top
+    ctx.save();
+    ctx.fillStyle = '#e04848';
+    ctx.beginPath(); ctx.arc(ps.x, r.y + 1, 1.2, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  // Cuddly toys to take to bed
+  const TOY_CHOICES = [
+    { id: 'teddy', name: 'Nalle' },
+    { id: 'panda', name: 'Panda' },
+    { id: 'elephantToy', name: 'Norsu' },
+  ];
+  const toyCard = (i) => ({ x: 64 + i * 66, y: 52, w: 60, h: 76 });
+
+  // A little wall shelf with Tutankhamun's golden mask (found in the pyramid)
+  function treasureShelf(ctx, x, t) {
+    withLine(ctx, () => {
+      box(ctx, x - 15, 76, 30, 3, 1, '#a0643c');
+      ctx.beginPath(); ctx.moveTo(x - 10, 79); ctx.lineTo(x - 7, 84); ctx.moveTo(x + 10, 79); ctx.lineTo(x + 7, 84); ctx.stroke();
+    });
+    ctx.save();
+    ctx.globalAlpha = 0.35 + Math.sin(t * 2) * 0.1;
+    const g = ctx.createRadialGradient(x, 64, 1, x, 64, 16);
+    g.addColorStop(0, 'rgba(255,215,90,1)');
+    g.addColorStop(1, 'rgba(255,215,90,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(x - 18, 46, 36, 34);
+    ctx.restore();
+    MP.pyramidArt.tutMask(ctx, x, 76, 0.85);
   }
 
   // A tall standing mirror in the child's room (for brushing hair)
@@ -547,6 +631,14 @@ window.MP = window.MP || {};
     enter(params) {
       params = params || {};
       const waking = params.quest === 'wake';
+      const evening = params.quest === 'evening';
+      if (waking) MP.state.evening = false;
+      if (evening) {
+        // Back home from outside: the evening tasks start
+        MP.state.evening = true;
+        MP.state.tasks = { dinner: false, pyjama: false, brush: false, toilet: false };
+        MP.state.tv = { time: 0, locked: false, lockedBy: null };
+      }
       if (waking || !MP.state.tasks) {
         MP.state.tasks = { toilet: false, brush: false, hair: false, dress: false, breakfast: false, shoes: false };
         // long hair is all tangled in the morning
@@ -556,13 +648,17 @@ window.MP = window.MP || {};
 
       this.player = this.player || new MP.Player(START_X);
       this.floor = this.floor || 0;
-      if (waking) {
+      if (evening) {
+        // in the hallway by the front door; shoes off right away
+        this.setFloor(1);
+        this.player.place(SPOTS.door.standX - 14, -1);
+      } else if (waking) {
         this.setFloor(0);
         this.player.place(START_X, 1);
       } else if (params.done) {
         // Back from brushing / the wardrobe / breakfast: that task is done
         MP.state.tasks[params.done] = true;
-        const task = TASKS.find((k) => k.id === params.done);
+        const task = myTasks().find((k) => k.id === params.done);
         if (task) {
           const spot = SPOTS[task.spot];
           this.setFloor(floorOf(spot));
@@ -594,9 +690,14 @@ window.MP = window.MP || {};
       this.visit = null;          // toilet visit or putting shoes on: { id, t }
       this.doorOpen = false;
       this.busy = false;          // true while leaving for another scene
-      this.toys = { teddy: 0, panda: 0 };
+      this.toys = { teddy: 0, panda: 0, elephantToy: 0 };
+      this.toyPick = null;        // choosing a cuddly toy for the night
       this.notes = [];
-      if (!this.intro) this.sayProgress(0.5);
+      if (evening) {
+        const hadShoes = MP.state.outfit.shoes;
+        MP.state.outfit.shoes = false;
+        this.say((hadShoes ? 'Kengät pois eteisessä! ' : '') + 'Kotona taas! Nyt on ilta. Iltatoimet: iltaruoka, pyjama, hampaat ja vessa. Sitten nukkumaan!', 6, 0.5);
+      } else if (!this.intro) this.sayProgress(0.5);
     },
 
     setFloor(f) {
@@ -618,8 +719,29 @@ window.MP = window.MP || {};
       this.bubble = { text, from: MP.time + (delay || 0), until: Infinity };   // stays until the next tap
     },
 
+    // All evening tasks done: into bed, the night comes and stays until a tap
+    goToSleep() {
+      this.bubble = null;
+      this.toyPick = { from: MP.time };
+      MP.sfx.tap();
+    },
+
+    // Into bed with the chosen toy; the night comes and stays until a tap
+    sleepWith(toy) {
+      this.toyPick = null;
+      MP.sfx.yawn();
+      this.player.place(START_X, 1);
+      this.intro = { awake: false, t: 0, sleepT: -1e9, yawned: false, dawn: 1, nextRing: Infinity, night: { from: MP.time, toy } };
+    },
+
     // The sky in the child's window: night → sunrise → day while waking up
     skyNow() {
+      if (this.intro && this.intro.night) {
+        return { skyTop: '#0d1433', skyBottom: '#25336b', stars: true, moon: true };
+      }
+      if (MP.state.evening) {
+        return { skyTop: '#3a3a7a', skyBottom: '#ff9a6a', stars: true, moon: true };
+      }
       const d = this.intro ? this.intro.dawn : 1;
       if (d >= 1) return {};
       const night = ['#14204a', '#2c3c78'], dawn = ['#ff9a6a', '#ffd9a0'], day = ['#6cc0ff', '#cdeeff'];
@@ -644,7 +766,8 @@ window.MP = window.MP || {};
     sayProgress(delay, before) {
       const done = myTasks().length - this.missing().length;
       let text;
-      if (this.allDone()) text = 'Kaikki aamutoimet tehty! Nyt lähdetään ulos!';
+      if (this.allDone() && MP.state.evening) text = 'Kaikki iltatoimet tehty! Nyt nukkumaan omaan sänkyyn.';
+      else if (this.allDone()) text = 'Kaikki aamutoimet tehty! Nyt lähdetään ulos!';
       else if (done === 0) text = 'Huomenta! Mitä tehdään ensin?';
       else text = 'Hienoa! Mitä seuraavaksi?';
       this.say((before ? before + ' ' : '') + text, 4.5, delay);
@@ -704,6 +827,14 @@ window.MP = window.MP || {};
         ctx.rotate(angle);
         MP.drawPerson(ctx, 0, 12 * S, { scale: S, eyes, mouth, armUp });
         ctx.restore();
+        if (intro.night && intro.night.toy) {
+          ctx.save();
+          ctx.translate(POS.bed - 1, 130);
+          ctx.rotate(-0.25);
+          ctx.scale(0.85, 0.85);
+          MP.draw(intro.night.toy, ctx, 0, 0);
+          ctx.restore();
+        }
         blanket();
 
         const d = 29 * S; // from the hips to just above the head
@@ -894,6 +1025,21 @@ window.MP = window.MP || {};
         this.leave(MP.scenes.books);
         return;
       }
+      if (id === 'bed') {
+        if (!MP.state.evening) {
+          this.say('Nyt on aamu! Ei vielä nukuta.', 2.5);
+        } else if (this.allDone()) {
+          this.goToSleep();
+        } else {
+          const left = this.missing().map((k) => k.name).join(', ');
+          this.say('Ensin iltatoimet! Vielä: ' + left + '.', 4);
+        }
+        return;
+      }
+      if (id === 'door' && MP.state.evening) {
+        this.say('Nyt on ilta. Ei mennä enää ulos – huomenna uudestaan!', 3.5);
+        return;
+      }
       if (id === 'door') {
         if (this.allDone()) {
           // Everything done: out we go!
@@ -910,11 +1056,16 @@ window.MP = window.MP || {};
         this.say('Peilistä katsoo komea poika! Lyhyttä tukkaa ei tarvitse harjata.', 3);
         return;
       }
-      const task = TASKS.find((k) => k.spot === id);
+      const task = myTasks().find((k) => k.spot === id);
+      if (!task) return;
       // The toilet and the wardrobe can be used again any time
       const again = id === 'toilet' || id === 'wardrobe';
       if (MP.state.tasks[task.id] && !again) {
         this.say(ALREADY[id], 2.5);
+        return;
+      }
+      if (task.id === 'pyjama' && MP.state.tasks.pyjama) {
+        this.say('Pyjama on jo päällä!', 2.5);
         return;
       }
       if (task.id === 'shoes' && !MP.state.tasks.dress) {
@@ -960,6 +1111,19 @@ window.MP = window.MP || {};
       const wy = y + this.camY;
 
       // Waking up: tap the alarm clock. Tapping during the wake-up skips it.
+      if (this.toyPick) {
+        TOY_CHOICES.forEach((toy, i) => {
+          if (MP.hit(toyCard(i), x, y)) this.sleepWith(toy.id);
+        });
+        return;
+      }
+      if (this.intro && this.intro.night) {
+        if (MP.time - this.intro.night.from > 1.2) {
+          MP.sfx.rooster();
+          MP.goTo(MP.scenes.home, { quest: 'wake' });
+        }
+        return;
+      }
       if (this.intro) {
         if (this.intro.dawn < 1) {
           // tapping during the sunrise skips it
@@ -984,12 +1148,26 @@ window.MP = window.MP || {};
 
       if (this.floor === 0) {
         // Toys: jump and say boing (no walking)
-        for (const toy of ['teddy', 'panda']) {
+        for (const toy of ['teddy', 'panda', 'elephantToy']) {
           if (MP.hit(SPOTS[toy], wx, wy)) {
             this.toys[toy] = MP.time;
             MP.sfx.boing();
             return;
           }
+        }
+        // Posters from the countries visited
+        for (const ps of POSTERS) {
+          if (hasPoster(ps.id) && MP.hit({ x: ps.x - 13, y: 40, w: 26, h: 36 }, wx, wy)) {
+            this.say(ps.say, 3);
+            MP.sfx.tune();
+            return;
+          }
+        }
+        // The golden mask from the pyramid, on its own shelf
+        if (MP.state.treasures && MP.state.treasures.tutMask && MP.hit(SPOTS.mask, wx, wy)) {
+          this.say('Tutankhamonin kultainen naamio! Löysin sen Egyptin pyramidista.', 4);
+          MP.sfx.bling();
+          return;
         }
         // Band poster: plays a tune
         if (MP.hit(SPOTS.poster, wx, wy)) {
@@ -1002,7 +1180,7 @@ window.MP = window.MP || {};
       }
 
       // Things on this floor: walk there, then use it
-      for (const id of ['toilet', 'sink', 'mirror', 'wardrobe', 'stairsUp', 'books', 'tv', 'sofa', 'table', 'shoes', 'stairsDown', 'door']) {
+      for (const id of ['toilet', 'sink', 'mirror', 'wardrobe', 'bed', 'stairsUp', 'books', 'tv', 'sofa', 'table', 'shoes', 'stairsDown', 'door']) {
         const spot = SPOTS[id];
         if (floorOf(spot) === this.floor && MP.hit(spot, wx, wy)) {
           MP.sfx.tap();
@@ -1025,6 +1203,7 @@ window.MP = window.MP || {};
           if (intro.dawn >= 1) intro.nextRing = MP.time + 0.3;
           return;
         }
+        if (intro.night) return;
         if (!intro.awake) {
           intro.sleepT += dt;
           if (intro.sleepT >= PARENT_AFTER && !this.parent) {
@@ -1153,14 +1332,17 @@ window.MP = window.MP || {};
       MP.draw('window', ctx, POS.window - 15, 34, Object.assign({ t }, this.skyNow()));
       MP.draw('poster', ctx, POS.poster, 38);
       standMirror(ctx, POS.standMirror, t);
+      if (MP.state.treasures && MP.state.treasures.tutMask) treasureShelf(ctx, 161, t);
+      for (const ps of POSTERS) if (hasPoster(ps.id)) countryPoster(ctx, ps);
       MP.draw('wardrobe', ctx, POS.wardrobe, FLOOR);
       MP.draw('nightstand', ctx, POS.nightstand, FLOOR);
       MP.draw('alarmClock', ctx, POS.nightstand, FLOOR - 19.5, {
-        ringing: !!(this.intro && !this.intro.awake && this.intro.dawn >= 1), t,
+        ringing: !!(this.intro && !this.intro.awake && this.intro.dawn >= 1 && !this.intro.night), t,
       });
       MP.draw('bed', ctx, POS.bed, FLOOR);
       if (this.intro) this.drawIntro(ctx);
-      for (const toy of ['teddy', 'panda']) {
+      for (const toy of ['teddy', 'panda', 'elephantToy']) {
+        if (this.intro && this.intro.night && this.intro.night.toy === toy) continue;   // it's in bed
         const u = (t - this.toys[toy]) / 0.45;
         const hop = u >= 0 && u < 1 ? -Math.sin(u * Math.PI) * 7 : 0;
         MP.draw(toy, ctx, POS[toy], FLOOR + hop);
@@ -1246,9 +1428,9 @@ window.MP = window.MP || {};
       // or over the stairs when everything left is on the other floor
       let spots = [];
       if (this.intro) {
-        if (!this.intro.awake && this.intro.dawn >= 1) spots = [SPOTS.alarm];
+        if (!this.intro.awake && this.intro.dawn >= 1 && !this.intro.night) spots = [SPOTS.alarm];
       } else if (!this.panel && !this.visit && !this.stairs && !this.tvView && !this.parent) {
-        const wanted = this.allDone() ? [SPOTS.door] : this.missing().map((k) => SPOTS[k.spot]);
+        const wanted = this.allDone() ? [MP.state.evening ? SPOTS.bed : SPOTS.door] : this.missing().map((k) => SPOTS[k.spot]);
         spots = wanted.filter((s) => floorOf(s) === this.floor);
         if (!spots.length && wanted.length) spots = [this.floor === 0 ? SPOTS.stairsUp : SPOTS.stairsDown];
       }
@@ -1293,6 +1475,58 @@ window.MP = window.MP || {};
             walking: this.player.walking, walkTime: this.player.walkTime, flip: this.player.facing < 0,
           }, extra));
         }
+      }
+
+      // ===== Which cuddly toy comes to bed? =====
+      if (this.toyPick) {
+        const a = MP.clamp((t - this.toyPick.from) * 4, 0, 1);
+        ctx.save();
+        ctx.globalAlpha = a;
+        ctx.fillStyle = 'rgba(13,20,51,0.55)';
+        ctx.fillRect(0, 0, MP.W, MP.H);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = MP.COLORS.outline;
+        ctx.fillStyle = '#fff7e0';
+        MP.roundRect(ctx, 50, 20, 220, 120, 10);
+        ctx.fill(); ctx.stroke();
+        MP.drawText(ctx, 'Kuka unikaveri tulee mukaan?', MP.W / 2, 30, { size: 1.15, color: '#6b4fb5', align: 'center' });
+        TOY_CHOICES.forEach((toy, i) => {
+          const r = toyCard(i);
+          ctx.lineWidth = 0.9;
+          ctx.strokeStyle = MP.COLORS.outline;
+          ctx.fillStyle = '#ffffff';
+          MP.roundRect(ctx, r.x, r.y, r.w, r.h, 6); ctx.fill(); ctx.stroke();
+          const hop = Math.max(0, Math.sin(t * 3 + i * 1.3)) * 3;
+          ctx.save();
+          ctx.translate(r.x + r.w / 2, r.y + 54 - hop);
+          ctx.scale(2.2, 2.2);
+          MP.draw(toy.id, ctx, 0, 0);
+          ctx.restore();
+          MP.drawText(ctx, toy.name, r.x + r.w / 2, r.y + 60, { size: 0.9, color: MP.COLORS.outline, align: 'center' });
+        });
+        ctx.restore();
+      }
+
+      // ===== Night: dark until tapped =====
+      if (this.intro && this.intro.night) {
+        const k = MP.clamp((t - this.intro.night.from) / 2.5, 0, 1);
+        ctx.save();
+        ctx.fillStyle = '#0d1433';
+        ctx.globalAlpha = 0.72 * k;
+        ctx.fillRect(0, 0, MP.W, MP.H);
+        ctx.restore();
+        if (k > 0.6) {
+          MP.drawText(ctx, 'Hyvää yötä!', MP.W / 2, 132, { size: 1.6, color: '#ffe680', outline: MP.COLORS.outline, align: 'center' });
+          MP.drawText(ctx, '(napauta, niin tulee aamu)', MP.W / 2, 152, { size: 0.8, color: '#ffffff', outline: MP.COLORS.outline, align: 'center' });
+        }
+      }
+      // evening light in the house
+      if (MP.state.evening && !(this.intro && this.intro.night) && !this.tvView) {
+        ctx.save();
+        ctx.fillStyle = '#ff9a5a';
+        ctx.globalAlpha = 0.12;
+        ctx.fillRect(0, 0, MP.W, MP.H);
+        ctx.restore();
       }
 
       // ===== Night turning into morning: the room is dark, then it gets light =====

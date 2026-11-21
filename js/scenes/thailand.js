@@ -492,7 +492,8 @@ window.MP = window.MP || {};
           this.arrive = null;
           S.ch.setVisible(true);
           MP.sfx.bling();
-          this.say('Thaimaa! Aurinko paistaa ja meri on lämmin. Mennään rannalle!', 4.5);
+          const poster = MP.collectPoster('thailand') ? ' Sain julisteen omaan huoneeseeni!' : '';
+          this.say('Thaimaa! Aurinko paistaa ja meri on lämmin. Mennään rannalle!' + poster, 4.5);
         }
       }
       if (this.leaving) {

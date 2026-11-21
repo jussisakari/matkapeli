@@ -147,6 +147,17 @@ MP.FOODS = [
   { id: 'milk',     name: 'Maito',         type: 'drink' },
 ];
 
+// EVENING MEAL: the same way as breakfast
+MP.EVENING_FOODS = [
+  { id: 'meatballs', name: 'Lihapullat',      type: 'food' },
+  { id: 'macaroni',  name: 'Makaronilaatikko', type: 'food' },
+  { id: 'soup',      name: 'Lohikeitto',      type: 'food' },
+  { id: 'salad',     name: 'Salaatti',        type: 'food' },
+  { id: 'bread',     name: 'Ruisleipä',       type: 'food' },
+  { id: 'water',     name: 'Vesi',            type: 'drink' },
+  { id: 'milk',      name: 'Maito',           type: 'drink' },
+];
+
 // Finds a clothing item by id. Unknown ids give the first item (pyjamas / none).
 MP.findItem = function (slot, id) {
   const list = MP.CLOTHES[slot];
@@ -782,6 +793,30 @@ MP.findItem = function (slot, id) {
     circle(c, 0, -9.4, 0.5); c.fill();
   };
 
+  // Cuddly elephant toy: big ears, a curly trunk and a heart on the tummy
+  D.elephantToy = function (c) {
+    const E = '#a9b8d6', In = '#ffc6e0';
+    for (const sd of [-1, 1]) { ellipse(c, sd * 6.2, -11.5, 3.6, 4.4, sd * 0.3); fs(c, E); ellipse(c, sd * 6.2, -11.5, 2.2, 2.9, sd * 0.3); fs(c, In); }
+    ellipse(c, 0, -3.8, 5.2, 4.4); fs(c, E);                                 // body
+    ellipse(c, -2.6, -0.4, 1.8, 1.4); fs(c, E);                              // feet
+    ellipse(c, 2.6, -0.4, 1.8, 1.4); fs(c, E);
+    c.fillStyle = '#ff8fc0';                                                 // heart
+    c.beginPath(); c.arc(-0.7, -4.4, 0.8, 0, Math.PI * 2); c.arc(0.7, -4.4, 0.8, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.moveTo(-1.5, -4.1); c.lineTo(0, -2.4); c.lineTo(1.5, -4.1); c.fill();
+    circle(c, 0, -11.5, 5); fs(c, E);                                       // head
+    c.beginPath(); c.moveTo(-1.2, -9.6);                                     // trunk curling up
+    c.quadraticCurveTo(-1.6, -6, 0.8, -5.6);
+    c.quadraticCurveTo(2.6, -5.6, 2.2, -7.2);
+    c.quadraticCurveTo(1.2, -7, 1.1, -9.6);
+    c.closePath(); fs(c, E);
+    c.fillStyle = C.outline;
+    circle(c, -2, -12.6, 0.75); c.fill(); circle(c, 2, -12.6, 0.75); c.fill();
+    c.fillStyle = '#ffffff';
+    circle(c, -1.8, -12.9, 0.25); c.fill(); circle(c, 2.2, -12.9, 0.25); c.fill();
+    c.fillStyle = '#ff9fb8';
+    circle(c, -3.4, -10.6, 0.9); c.fill(); circle(c, 3.4, -10.6, 0.9); c.fill();
+  };
+
   D.panda = function (c) {
     const B = C.pandaBlack, Wt = C.pandaWhite;
     circle(c, -3.2, -12.6, 1.7); fs(c, B);
@@ -1263,6 +1298,48 @@ MP.findItem = function (slot, id) {
     c.fillStyle = '#ffd23f'; ellipse(c, 0.5, -1.8, 1.8, 0.8); c.fill();
   });
 
+  // ---- Evening meal foods ----
+  D.meatballs = (c, o) => food(c, o, () => {
+    ellipse(c, 0, 1, 8.5, 3.6); fs(c, '#ffffff');                // plate
+    ellipse(c, -3.4, -0.4, 3, 2); fs(c, '#f2d98a');              // potatoes
+    ellipse(c, -1.5, 1, 2.6, 1.8); fs(c, '#f2d98a');
+    for (const [mx, my] of [[2.2, -1], [4.6, 0], [2.8, 1.4], [5.2, -2]]) { circle(c, mx, my, 1.5); fs(c, '#8b4a2b'); }
+    c.fillStyle = '#e04848'; ellipse(c, -4.8, 2, 1.2, 0.6); c.fill();   // lingonberries
+  });
+  D.macaroni = (c, o) => food(c, o, () => {
+    rr(c, -8, -3, 16, 8, 2); fs(c, '#e2e6ee');                    // oven dish
+    rr(c, -7, -2.5, 14, 6, 1.5); fs(c, '#f2c45a');
+    c.fillStyle = '#c98a2a';
+    for (const [mx, my] of [[-4, -1], [-1, 1], [2, -1.5], [5, 0.5], [-5.5, 1.5], [0.5, 2.4]]) { ellipse(c, mx, my, 1, 0.5, 0.5); c.fill(); }
+  });
+  D.soup = (c, o) => food(c, o, () => {
+    ellipse(c, 0, -1.5, 8, 2.6); fs(c, '#fff2d0');
+    c.fillStyle = '#ff9a6a';
+    for (const [sx, sy] of [[-3, -1.6], [1, -1.2], [3.6, -2]]) { rr(c, sx - 1, sy - 0.6, 2, 1.2, 0.4); c.fill(); }   // salmon
+    c.fillStyle = '#f2d98a'; rr(c, -0.8, -2.4, 1.6, 1.2, 0.4); c.fill();                                              // potato
+    c.fillStyle = '#4caf50'; circle(c, -1, -1.2, 0.4); c.fill(); circle(c, 2.4, -2.2, 0.4); c.fill();                // dill
+    c.beginPath(); c.moveTo(-8, -1.5);
+    c.quadraticCurveTo(-7.5, 6, 0, 6);
+    c.quadraticCurveTo(7.5, 6, 8, -1.5);
+    c.quadraticCurveTo(0, 1.5, -8, -1.5);
+    c.closePath(); fs(c, '#e04848');
+  });
+  D.salad = (c, o) => food(c, o, () => {
+    c.beginPath(); c.moveTo(-8, -1.5);
+    c.quadraticCurveTo(-7.5, 6, 0, 6);
+    c.quadraticCurveTo(7.5, 6, 8, -1.5);
+    c.closePath(); fs(c, '#ffffff');
+    for (const [lx, ly, col] of [[-4, -2, '#7cc56b'], [0, -3, '#4caf50'], [4, -2, '#7cc56b'], [-1.5, -1, '#e04848'], [2.5, -1, '#ffd23f'], [-5, -0.5, '#e04848']]) {
+      circle(c, lx, ly, 2); fs(c, col);
+    }
+  });
+  D.bread = (c, o) => food(c, o, () => {
+    rr(c, -6, -4, 12, 8, 2.5); fs(c, '#6e4226');                  // rye bread
+    rr(c, -5, -3, 10, 6, 2); fs(c, '#8b5a2b');
+    c.fillStyle = '#ffe38a'; rr(c, -3.5, -2, 7, 3.6, 1.2); c.fill();   // butter
+    c.fillStyle = '#e04848'; circle(c, 0, -0.3, 1.2); c.fill();         // tomato slice
+  });
+
   function glass(c, o, liquid) {
     food(c, o, () => {
       const lvl = o.level == null ? 1 : MP.clamp(o.level, 0, 1);
@@ -1375,7 +1452,7 @@ MP.findItem = function (slot, id) {
   // Furniture: (x, y) = middle of the bottom. window: top-left. mirror: middle.
   // Small things (sun, moon, star, sparkle, arrow, rooster, hand, toothbrush,
   // ball) take everything in opts: MP.draw('sun', ctx, 0, 0, { x, y, r }).
-  const POSITIONED = { bed: 1, teddy: 1, panda: 1, window: 1, mirror: 1, sink: 1, toilet: 1, wardrobe: 1, door: 1, poster: 1, house: 1, nightstand: 1, shoeRack: 1 };
+  const POSITIONED = { bed: 1, teddy: 1, panda: 1, elephantToy: 1, window: 1, mirror: 1, sink: 1, toilet: 1, wardrobe: 1, door: 1, poster: 1, house: 1, nightstand: 1, shoeRack: 1 };
   MP.draw = function (name, c, x, y, opts) {
     const fn = D[name];
     if (!fn) throw new Error('No drawing called "' + name + '"');

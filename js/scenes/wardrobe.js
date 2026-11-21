@@ -24,8 +24,9 @@ window.MP = window.MP || {};
   const PRAISE = ['Hieno!', 'Tosi siisti!', 'Upea!', 'Näyttää hyvältä!', 'Jee!'];
 
   // The items in a tab (pyjamas are hidden – they are taken off here)
+  // In the evening the pyjamas are in the wardrobe too
   function items(tab) {
-    return MP.CLOTHES[tab].filter((it) => !it.hidden);
+    return MP.CLOTHES[tab].filter((it) => !it.hidden || MP.state.evening);
   }
 
   function itemName(tab, it) {
@@ -42,7 +43,12 @@ window.MP = window.MP || {};
       this.hopAt = -10;
       this.sparkles = [];
       this.leaving = false;
-      this.say('Valitse vaatteet!', 3);
+      if (MP.state.evening) {
+        this.tab = 'shirt';
+        this.say('Iltapyjama päälle! Valitse pyjamapaita ja pyjamahousut.', 3);
+      } else {
+        this.say('Valitse vaatteet!', 3);
+      }
     },
 
     say(text, seconds) {
@@ -95,7 +101,14 @@ window.MP = window.MP || {};
       if (MP.hit(doneButton, x, y)) {
         const o = MP.state.outfit;
         const pyjamas = o.costume === 'none' && (o.shirt === 'pyjama' || !o.shirt || o.bottom === 'pyjama' || !o.bottom);
-        if (pyjamas) {
+        const inPyjamas = o.costume === 'none' && o.shirt === 'pyjama' && o.bottom === 'pyjama';
+        if (MP.state.evening) {
+          if (!inPyjamas) {
+            this.say('Illalla puetaan pyjama! Valitse pyjamapaita ja pyjamahousut.', 3);
+            MP.sfx.boing();
+            return;
+          }
+        } else if (pyjamas) {
           this.say('Pyjama on vielä päällä! Valitse paita ja housut.', 3);
           MP.sfx.boing();
           return;
@@ -112,7 +125,7 @@ window.MP = window.MP || {};
       this.sparkles = this.sparkles.filter((s) => MP.time - s.born < 0.9);
       if (this.leaving && MP.time >= this.leaveAt && !this.left) {
         this.left = true;
-        MP.goTo(MP.scenes.home, { done: 'dress' });
+        MP.goTo(MP.scenes.home, { done: MP.state.evening ? 'pyjama' : 'dress' });
       }
     },
 

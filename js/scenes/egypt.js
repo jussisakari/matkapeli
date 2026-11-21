@@ -540,7 +540,8 @@ window.MP = window.MP || {};
           this.arrive = null;
           S.ch.setVisible(true);
           MP.sfx.bling();
-          this.say('Egypti! Tuolla ovat Gizan pyramidit. Mennään suurimpaan pyramidiin!', 4.5);
+          const poster = MP.collectPoster('egypt') ? ' Sain julisteen omaan huoneeseeni!' : '';
+          this.say('Egypti! Tuolla ovat Gizan pyramidit. Mennään suurimpaan pyramidiin!' + poster, 4.5);
         }
       }
 

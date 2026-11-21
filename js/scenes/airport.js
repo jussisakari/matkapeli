@@ -50,6 +50,16 @@ window.MP = window.MP || {};
       },
     },
     {
+      id: 'newyork', name: 'New York', city: 'USA', to: 'New Yorkiin', time: '17:20',
+      scene: 'newyork', land: 'city',
+      flag(c, x, y, w, h) {
+        for (let i = 0; i < 7; i++) { c.fillStyle = i % 2 ? '#ffffff' : '#b22234'; c.fillRect(x, y + i * h / 7, w, h / 7 + 0.2); }
+        c.fillStyle = '#3c3b6e'; c.fillRect(x, y, w * 0.42, h * 0.55);
+        c.fillStyle = '#ffffff';
+        for (let r = 0; r < 3; r++) for (let k = 0; k < 3; k++) c.fillRect(x + w * (0.06 + k * 0.13), y + h * (0.08 + r * 0.16), Math.max(0.4, w * 0.04), Math.max(0.4, w * 0.04));
+      },
+    },
+    {
       id: 'home', name: 'Suomi', city: 'Koti', to: 'kotiin Suomeen', time: '15:45',
       scene: 'street', params: { from: 'taxi' }, land: 'forest',
       flag(c, x, y, w, h) {
@@ -67,6 +77,7 @@ window.MP = window.MP || {};
     home:   { title: 'LENTOKENTTÄ', hall: '#eef1f5', floor: '#d7dbe3', land: 'forest', plant: 'leafy' },
     egypt:  { title: 'KAIRON LENTOKENTTÄ', hall: '#f1e2c4', floor: '#d9c39a', land: 'desert', plant: 'palm' },
     thailand: { title: 'PHUKETIN LENTOKENTTÄ', hall: '#fff3e0', floor: '#e8d2b0', land: 'beach', plant: 'palm' },
+    newyork: { title: 'NEW YORKIN LENTOKENTTÄ', hall: '#eceff4', floor: '#c9ced8', land: 'city', plant: 'leafy' },
     winter: { title: 'TALVIMAAN LENTOKENTTÄ', hall: '#e8f3fb', floor: '#cfe0ee', land: 'snow', plant: 'spruce' },
   };
 
@@ -80,12 +91,13 @@ window.MP = window.MP || {};
   };
   const PANEL = { x: 30, y: 18, w: 260, h: 146 };
   const CLOSE = { x: 268, y: 22, r: 8 };
-  const card = (i) => ({ x: 40 + i * 62, y: 50, w: 56, h: 92 });
+  const card = (i) => ({ x: 38 + i * 50, y: 50, w: 46, h: 92 });
 
   // The places to show: not the country you are in, and two "coming soon" cards
   function choices(country) {
     const list = MP.DESTINATIONS.filter((d) => d.id !== country);
-    while (list.length < 4) list.push(null);
+    while (list.length < 5) list.push(null);
+    // room for at most 5 cards
     return list;
   }
 
@@ -271,7 +283,7 @@ window.MP = window.MP || {};
       this.bubble = null;
       this.doorsAt = MP.time;     // the doors were just opened
       this.gateAt = -10;
-      const here = { home: 'Lentokenttä!', egypt: 'Kairon lentokenttä!', winter: 'Talvimaan lentokenttä!', thailand: 'Phuketin lentokenttä!' }[this.country] || 'Lentokenttä!';
+      const here = { home: 'Lentokenttä!', egypt: 'Kairon lentokenttä!', winter: 'Talvimaan lentokenttä!', thailand: 'Phuketin lentokenttä!', newyork: 'New Yorkin lentokenttä!' }[this.country] || 'Lentokenttä!';
       this.say(here + ' Napauta lähtötaulua ja valitse, minne lennetään.', 5, 0.6);
     },
 
@@ -349,9 +361,17 @@ window.MP = window.MP || {};
       ctx.beginPath(); ctx.rect(60, 12, 260, 88); ctx.clip();
       ctx.fillStyle = '#9fdcff';
       ctx.fillRect(60, 12, 260, 88);
-      ctx.fillStyle = { desert: '#e2c28b', forest: '#7cc56b', snow: '#f4f8ff', beach: '#f3e0b0' }[look.land];
+      ctx.fillStyle = { desert: '#e2c28b', forest: '#7cc56b', snow: '#f4f8ff', beach: '#f3e0b0', city: '#9aa0aa' }[look.land];
       ctx.fillRect(60, 80, 260, 20);
-      if (look.land === 'beach') {
+      if (look.land === 'city') {
+        for (let k = 0; k < 14; k++) {
+          const bx = 62 + k * 19, bh = 18 + (k * 23) % 34;
+          ctx.fillStyle = ['#6d7a8c', '#8c8f99', '#4d5566'][k % 3];
+          ctx.fillRect(bx, 80 - bh, 15, bh);
+          ctx.fillStyle = '#ffe9a0';
+          for (let wy = 80 - bh + 3; wy < 78; wy += 5) ctx.fillRect(bx + 3, wy, 2, 2), ctx.fillRect(bx + 9, wy, 2, 2);
+        }
+      } else if (look.land === 'beach') {
         ctx.fillStyle = '#1f9fc4';
         ctx.fillRect(60, 74, 260, 6);
         ctx.fillStyle = '#9a9283';
@@ -447,7 +467,7 @@ window.MP = window.MP || {};
           } else {
             MP.drawText(ctx, '?', r.x + r.w / 2, r.y + 18, { size: 3, color: '#a9a9b8', align: 'center' });
             const wob = this.panel.soon && t - this.panel.soon < 0.4 ? Math.sin((t - this.panel.soon) * 40) * 2 : 0;
-            MP.drawText(ctx, 'Tulossa pian', r.x + r.w / 2 + wob, r.y + 66, { size: 0.62, color: '#77778a', align: 'center' });
+            MP.drawText(ctx, 'Tulossa pian', r.x + r.w / 2 + wob, r.y + 66, { size: 0.52, color: '#77778a', align: 'center' });
           }
         });
         // close button

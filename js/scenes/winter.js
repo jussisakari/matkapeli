@@ -465,7 +465,8 @@ window.MP = window.MP || {};
           this.arrive = null;
           S.ch.setVisible(true);
           MP.sfx.bling();
-          this.say('Talvimaa! Brrr, onpa kylmä! Lunta sataa. Tehdäänkö lumiukko?', 4.5);
+          const poster = MP.collectPoster('winter') ? ' Sain julisteen omaan huoneeseeni!' : '';
+          this.say('Talvimaa! Brrr, onpa kylmä! Lunta sataa. Tehdäänkö lumiukko?' + poster, 4.5);
         }
       }
       // --- Taxi leaving for the airport ---

@@ -13,6 +13,8 @@
 //   #egypti       Egypt, the taxi just arrived
 //   #talvimaa     Talvimaa (Winter Land), the taxi just arrived
 //   #thaimaa      Thailand's beach, the tuk-tuk just arrived
+//   #newyork      New York, the taxi just arrived
+//   #ilta         home in the evening (evening tasks, then bed)
 //   #pyramidi     inside the pyramid
 //   #kirjat       the bookshelf
 //   #galleria     all drawings and outfits
@@ -47,6 +49,8 @@ window.MP = window.MP || {};
     egypti:      () => { ready(true); return [MP.scenes.egypt]; },
     talvimaa:    () => { ready(true); return [MP.scenes.winter]; },
     thaimaa:     () => { ready(true); return [MP.scenes.thailand]; },
+    newyork:     () => { ready(true); return [MP.scenes.newyork]; },
+    ilta:        () => { ready(true); return [MP.scenes.home, { quest: 'evening' }]; },
     pyramidi:    () => { ready(true); return [MP.scenes.pyramid]; },
     kirjat:      () => { ready(false); return [MP.scenes.books]; },
     galleria:    () => [MP.scenes.gallery],

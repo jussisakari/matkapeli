@@ -5,6 +5,8 @@
 window.MP = window.MP || {};
 
 (function () {
+  // Breakfast in the morning, the evening meal in the evening
+  const menu = () => (window.MP.state.evening ? window.MP.EVENING_FOODS : window.MP.FOODS);
   const MP = window.MP;
 
   const TABLE_Y = 128;
@@ -30,7 +32,7 @@ window.MP = window.MP || {};
       this.chewUntil = 0;
       this.leaveAt = 0;
       this.bubble = null;
-      this.say('Mitä otetaan aamupalaksi?', 4);
+      this.say(MP.state.evening ? 'Mitä syödään iltaruoaksi?' : 'Mitä otetaan aamupalaksi?', 4);
     },
 
     say(text, seconds) {
@@ -45,9 +47,9 @@ window.MP = window.MP || {};
       if (this.leaveAt) return;
 
       // Menu cards at the top
-      for (let i = 0; i < MP.FOODS.length; i++) {
+      for (let i = 0; i < menu().length; i++) {
         if (MP.hit(cardRect(i), x, y)) {
-          this.pick(MP.FOODS[i]);
+          this.pick(menu()[i]);
           return;
         }
       }
@@ -137,7 +139,7 @@ window.MP = window.MP || {};
     update() {
       if (this.leaveAt && MP.time >= this.leaveAt && !this.left) {
         this.left = true;
-        MP.goTo(MP.scenes.home, { done: 'breakfast' });
+        MP.goTo(MP.scenes.home, { done: MP.state.evening ? 'dinner' : 'breakfast' });
       }
     },
 
@@ -207,7 +209,7 @@ window.MP = window.MP || {};
       }
 
       // Menu cards at the top
-      MP.FOODS.forEach((item, i) => {
+      menu().forEach((item, i) => {
         const r = cardRect(i);
         const chosen = this.plate.some((f) => f.id === item.id) ||
           (this.drink && this.drink.id === item.id && this.drink.sips < SIPS);

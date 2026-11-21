@@ -23,7 +23,7 @@ window.MP = window.MP || {};
   };
 
   const SPEED = 3.4;         // meters per second
-  const BOUNDS = { minX: -56, maxX: 56, minZ: -64, maxZ: 9.5 };
+  const BOUNDS = { minX: -56, maxX: 56, minZ: -64, maxZ: 11 };
   const START = { x: 0, z: 8.5 };
   const PLACES = {
     cross: { x: 0, z: -40, r: 5 },
@@ -63,10 +63,10 @@ window.MP = window.MP || {};
     const ground = new T.Mesh(new T.PlaneGeometry(400, 400), mat(MP.OUTSIDE.grass));
     ground.rotation.x = -Math.PI / 2;
     add(ground);
-    flat(6, 52, MP.OUTSIDE.road, 0, -17);                 // main street
+    flat(6, 49, MP.OUTSIDE.road, 0, -18.5);               // main street
     flat(104, 6, MP.OUTSIDE.road, 0, -40, 0.012);         // cross street
-    flat(1.2, 46, MP.OUTSIDE.sidewalk, -3.6, -14);
-    flat(1.2, 46, MP.OUTSIDE.sidewalk, 3.6, -14);
+    flat(1.2, 43, MP.OUTSIDE.sidewalk, -3.6, -15.5);
+    flat(1.2, 43, MP.OUTSIDE.sidewalk, 3.6, -15.5);
     flat(104, 1.2, MP.OUTSIDE.sidewalk, 0, -36.4, 0.011);
     flat(104, 1.2, MP.OUTSIDE.sidewalk, 0, -43.6, 0.011);
     for (let z = 5; z > -35; z -= 3) flat(0.2, 1.3, MP.OUTSIDE.line, 0, z, 0.02);
@@ -100,7 +100,52 @@ window.MP = window.MP || {};
       return g;
     }
     S.home = house(0, 17.5, Math.PI, '#f2d7b0', '#c0504d', '#d9534f', true);
-    flat(1.6, 6, MP.OUTSIDE.sidewalk, 0, 12, 0.013);   // path from our door to the street
+    flat(1.6, 9, MP.OUTSIDE.sidewalk, 0, 10.5, 0.013);   // path from our door to the gate
+    // Tap our own house to go home (in the evening)
+    S.home.traverse((m) => { m.userData.spot = 'home'; });
+    S.clickables.push(S.home);
+
+    // --- Our own yard with a wooden picket fence (and a gate by the path) ---
+    const YARD = { minX: -10, maxX: 10, minZ: 6, maxZ: 23 };
+    const wood = '#b07a45', woodDark = '#8b5a2b';
+    function fenceLine(x1, z1, x2, z2) {
+      const len = Math.hypot(x2 - x1, z2 - z1);
+      const n = Math.round(len / 0.5);
+      const along = Math.abs(x2 - x1) > Math.abs(z2 - z1);
+      for (let i = 0; i <= n; i++) {
+        const x = x1 + (x2 - x1) * i / n, z = z1 + (z2 - z1) * i / n;
+        box(along ? 0.3 : 0.08, 0.95, along ? 0.08 : 0.3, wood, x, 0, z);          // a picket
+        const tip = new T.Mesh(new T.ConeGeometry(0.2, 0.25, 4), mat(wood));       // pointed top
+        tip.position.set(x, 1.07, z);
+        tip.rotation.y = Math.PI / 4;
+        tip.scale.set(along ? 1 : 0.35, 1, along ? 0.35 : 1);
+        add(tip);
+      }
+      for (const y of [0.3, 0.7]) {                                               // two rails behind
+        box(along ? len : 0.06, 0.1, along ? 0.06 : len, woodDark, (x1 + x2) / 2, y, (z1 + z2) / 2 + (along ? 0.07 : 0));
+      }
+      S.obstacles.push({
+        minX: Math.min(x1, x2) - 0.1, maxX: Math.max(x1, x2) + 0.1,
+        minZ: Math.min(z1, z2) - 0.1, maxZ: Math.max(z1, z2) + 0.1,
+      });
+    }
+    fenceLine(YARD.minX, YARD.minZ, -1.3, YARD.minZ);          // front, left of the gate
+    fenceLine(1.3, YARD.minZ, YARD.maxX, YARD.minZ);           // front, right of the gate
+    fenceLine(YARD.minX, YARD.minZ, YARD.minX, YARD.maxZ);     // sides
+    fenceLine(YARD.maxX, YARD.minZ, YARD.maxX, YARD.maxZ);
+    fenceLine(YARD.minX, YARD.maxZ, YARD.maxX, YARD.maxZ);     // back
+    for (const gx of [-1.3, 1.3]) box(0.22, 1.3, 0.22, woodDark, gx, 0, YARD.minZ);   // gate posts
+    const gate = new T.Group();                                 // the gate, standing open
+    for (let i = 0; i < 4; i++) box(0.3, 0.9, 0.06, wood, 0.25 + i * 0.6, 0, 0, gate);
+    box(2.4, 0.1, 0.06, woodDark, 1.2, 0.55, 0.05, gate);
+    gate.position.set(1.3, 0, YARD.minZ);
+    gate.rotation.y = -1.9;
+    add(gate);
+    // a mailbox by the gate and a flower bed
+    box(0.08, 1.1, 0.08, woodDark, -2.2, 0, YARD.minZ - 0.6);
+    box(0.5, 0.35, 0.7, '#3f6fb5', -2.2, 1.1, YARD.minZ - 0.6);
+    flat(3, 1.2, '#8b5a2b', -6, 14.5, 0.014);
+    for (let i = 0; i < 6; i++) ball(0.16, ['#ff8fc0', '#ffd23f', '#e04848'][i % 3], -7.2 + i * 0.5, 0.2, 14.5);
     house(-12, -4, Math.PI / 2, '#bfe3f2', '#4a78c8', '#ffd23f');
     house(-12, -21, Math.PI / 2, '#ffe0e9', '#9b6bd6', '#4caf50');
     house(12, -10, -Math.PI / 2, '#fff1c9', '#e07a3a', '#4a78c8');
@@ -258,6 +303,7 @@ window.MP = window.MP || {};
     // Where to stand to use each thing
     S.spots = {
       taxi: { x: -30, z: -44.3 },
+      home: { x: 0, z: 10.8 },
       swing: { x: 30.5, z: -49.6 },
       slide: { x: 38.5, z: -48.2 },
       roundabout: { x: 29.5, z: -54.6 },
@@ -293,7 +339,7 @@ window.MP = window.MP || {};
       S.castle.visible = false;
       S.taxi.position.set(TAXI_AT.x, 0, TAXI_AT.z);
       S.ch.setVisible(true);
-      if (back) this.say('Kotona taas! Mennäänkö leikkipuistoon?', 3.5, 0.6);
+      if (back) this.say('Takaisin kotikadulla! Leikkipuistoon vai kotiin? Kotiin pääsee napauttamalla kotitalon ovea.', 4.5, 0.6);
       else this.say('Ulkona! Kävellään risteykseen.', 4, 0.6);
     },
 
@@ -311,6 +357,13 @@ window.MP = window.MP || {};
 
     // ---- Things to do ----
     use(spot) {
+      if (spot === 'home') {
+        this.say('Kotiin! Nyt on jo ilta.', 2);
+        MP.sfx.bling();
+        this.ride = { t: 0, home: true };          // stops walking while the screen fades
+        MP.goTo(MP.scenes.home, { quest: 'evening' });
+        return;
+      }
       if (spot === 'taxi') {
         // Hop in, and the taxi drives away to the airport
         this.ride = { t: 0 };
@@ -381,7 +434,7 @@ window.MP = window.MP || {};
       }
 
       // --- Taxi drives away (speeding up), to the airport ---
-      if (this.ride) {
+      if (this.ride && !this.ride.home) {
         this.ride.t += dt;
         const t = Math.max(0, this.ride.t - 0.8);
         S.taxi.position.x = TAXI_AT.x - t * t * 6;
@@ -430,12 +483,22 @@ window.MP = window.MP || {};
         }
       }
       this.headPos = S.ch.draw(x, y, z, { sit, walking: this.walking, walkTime: this.walkTime });
-      if (this.ride) this.headPos = S.taxi.position.clone().setY(2.6);
+      if (this.ride && !this.ride.home) this.headPos = S.taxi.position.clone().setY(2.6);
     },
 
     draw(ctx) {
       W3.drawBubble(ctx, this.bubble, this.headPos, S.camera);
       if (!this.ride) W3.drawTurnButton(ctx);
+      // the way home: an arrow over our own door once we have been somewhere
+      if (this.seen.taxi || this.seen.play) {
+        const s2 = W3.toScreen(new S.T.Vector3(0, 3.2, 14.6), S.camera);
+        const v = new S.T.Vector3(0, 3.2, 14.6).sub(S.camera.position);
+        const dir = new S.T.Vector3();
+        S.camera.getWorldDirection(dir);
+        if (v.dot(dir) > 0 && s2.x > 0 && s2.x < MP.W && s2.y > 0 && s2.y < MP.H) {
+          MP.draw('arrow', ctx, s2.x, s2.y + Math.sin(MP.time * 6) * 2.5);
+        }
+      }
     },
   };
 })();

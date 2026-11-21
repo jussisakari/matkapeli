@@ -274,6 +274,8 @@ window.MP = window.MP || {};
     outfit: { shirt: null, bottom: null, hat: null, costume: null },
     quest: 'wake',                                            // 'wake' = coming from the start screen
     tasks: null,                                              // morning tasks done (set in home.js)
+    evening: false,                                           // true after coming back home
+    treasures: {},                                            // things found on trips (tutMask)
   };
 
   MP.save = function () {
@@ -281,11 +283,23 @@ window.MP = window.MP || {};
       localStorage.setItem(SAVE_KEY, JSON.stringify({
         character: MP.state.character,
         outfit: MP.state.outfit,
+        treasures: MP.state.treasures,
       }));
       return true;
     } catch (_) {
       return false;
     }
+  };
+
+  // A poster from every country you visit goes to your own room.
+  // Returns true the first time.
+  MP.collectPoster = function (id) {
+    MP.state.treasures = MP.state.treasures || {};
+    const posters = MP.state.treasures.posters = MP.state.treasures.posters || {};
+    if (posters[id]) return false;
+    posters[id] = true;
+    MP.save();
+    return true;
   };
 
   MP.load = function () {
@@ -295,6 +309,7 @@ window.MP = window.MP || {};
       const data = JSON.parse(raw);
       if (data.character === 'girl' || data.character === 'boy') MP.state.character = data.character;
       if (data.outfit && typeof data.outfit === 'object') Object.assign(MP.state.outfit, data.outfit);
+      if (data.treasures && typeof data.treasures === 'object') MP.state.treasures = data.treasures;
       return true;
     } catch (_) {
       return false;
