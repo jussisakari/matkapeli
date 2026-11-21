@@ -167,6 +167,25 @@ window.MP = window.MP || {};
     c.restore();
   }
 
+  // ---------- Full screen on the tablet ----------
+  // In the browser the game goes full screen (no address bar) on the first tap
+  // with a finger, and again after the full screen was closed. Browsers only
+  // allow this right after a tap, so it is asked in the touch "up" event.
+  function goFullscreen(e) {
+    if (e.pointerType === 'mouse') return;                       // not on a computer
+    if (document.fullscreenElement || document.webkitFullscreenElement) return;
+    if (window.matchMedia && matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches) return;  // installed app
+    const el = document.documentElement;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (!req) return;
+    try {
+      const p = req.call(el, { navigationUI: 'hide' });
+      const lock = () => { try { screen.orientation.lock('landscape').catch(() => {}); } catch (_) { /* not supported */ } };
+      if (p && p.then) p.then(lock, () => {}); else lock();
+    } catch (_) { /* not allowed here */ }
+  }
+  canvas.addEventListener('pointerup', goFullscreen);
+
   canvas.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     MP.audio.unlock();
