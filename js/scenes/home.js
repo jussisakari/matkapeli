@@ -37,6 +37,8 @@ window.MP = window.MP || {};
     fridge: 354, counter: 428, clock: 492, kitchenWindow: 516, table: 590,
     // downstairs: hallway 640–960
     shoeRack: 772, hooks: 892, door: 932,
+    // the pet's basket (upstairs), the photo album table and the pet's food bowl (downstairs)
+    petBasket: 224, albumTable: 189, bowl: 478,
   };
 
   // Things you can tap (world coordinates; downstairs things are 180 lower).
@@ -62,6 +64,8 @@ window.MP = window.MP || {};
     shoes:      { x: 752, y: 306, w: 40, h: 26, standX: 772 },
     stairsDown: { x: 696, y: 182, w: 190, h: 138, standX: 872, arrowX: 846, arrowY: 268 },
     door:       { x: 916, y: 280, w: 32, h: 54, standX: 904 },
+    album:      { x: 177, y: 290, w: 24, h: 40, standX: 189 },
+    bowl:       { x: 464, y: 306, w: 28, h: 24, standX: 498 },
   };
   const floorOf = (spot) => (spot.y >= DOWN_Y ? 1 : 0);
 
@@ -73,6 +77,7 @@ window.MP = window.MP || {};
     { id: 'hair',      spot: 'mirror',   name: 'hiusten harjaus', girlOnly: true },
     { id: 'dress',     spot: 'wardrobe', name: 'pukeminen' },
     { id: 'breakfast', spot: 'table',    name: 'aamupala' },
+    { id: 'pet',       spot: 'bowl',     name: 'lemmikin ruokinta', needsPet: true },
     { id: 'shoes',     spot: 'shoes',    name: 'kengät' },
   ];
   // The evening tasks (after coming home), then off to bed
@@ -85,7 +90,7 @@ window.MP = window.MP || {};
 
   // The tasks for this character: long hair is brushed, short hair doesn't need it
   const myTasks = () => (MP.state.evening ? EVENING_TASKS
-    : TASKS.filter((k) => !k.girlOnly || MP.state.character === 'girl'));
+    : TASKS.filter((k) => (!k.girlOnly || MP.state.character === 'girl') && (!k.needsPet || MP.myPet())));
 
   // Said when you try something that is already done
   const ALREADY = {
@@ -95,6 +100,7 @@ window.MP = window.MP || {};
     mirror: 'Hiukset on jo harjattu!',
     table: 'Ruoka on jo syöty!',
     shoes: 'Kengät on jo jalassa!',
+    bowl: 'Lemmikki on jo syönyt aamupalansa!',
   };
 
   // Waking up (seconds after tapping the alarm clock): sit up → yawn → hop out
@@ -354,6 +360,8 @@ window.MP = window.MP || {};
         ctx.fillRect(cx - 3, cy - 1.5, 6, 1); ctx.fillRect(cx - 3, cy + 1.5, 6, 1);
         ctx.stroke();
       });
+    } else if (id === 'pet') {
+      foodBowl(ctx, cx, cy + 5, 0.75, true);
     } else if (id === 'hair') {
       MP.drawHairbrush(ctx, cx, cy, 0.5, -0.7);
     } else if (id === 'breakfast') {
@@ -366,6 +374,69 @@ window.MP = window.MP || {};
         ctx.quadraticCurveTo(cx + 6, cy + 0.5, cx + 6, cy + 4); ctx.closePath();
         ctx.fillStyle = MP.COLORS.shoes; ctx.fill(); ctx.stroke();
       });
+    }
+  }
+
+  // The pet's food bowl (x = middle, y = bottom)
+  function foodBowl(ctx, x, y, s, full) {
+    withLine(ctx, () => {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(s, s);
+      if (full) {
+        ctx.fillStyle = '#a0643c';
+        for (const [fx, fy] of [[-3, -5], [0, -5.8], [3, -5], [-1.5, -6.4], [1.6, -6.3]]) {
+          ctx.beginPath(); ctx.arc(fx, fy, 1.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        }
+      }
+      ctx.fillStyle = '#e04848';
+      ctx.beginPath(); ctx.moveTo(-7, -5); ctx.lineTo(7, -5); ctx.lineTo(5, 0); ctx.lineTo(-5, 0); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.arc(0, -2.5, 1.1, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    });
+  }
+
+  // The pet's basket with a soft cushion (x = middle)
+  function petBasket(ctx, x) {
+    withLine(ctx, () => {
+      ctx.fillStyle = '#ff8fc0';
+      ctx.beginPath(); ctx.ellipse(x, FLOOR - 6, 12, 3, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#c98b4f';
+      ctx.beginPath();
+      ctx.moveTo(x - 14, FLOOR - 8); ctx.quadraticCurveTo(x - 13, FLOOR, x - 9, FLOOR);
+      ctx.lineTo(x + 9, FLOOR); ctx.quadraticCurveTo(x + 13, FLOOR, x + 14, FLOOR - 8);
+      ctx.quadraticCurveTo(x, FLOOR - 3, x - 14, FLOOR - 8);
+      ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = 'rgba(43,35,64,0.35)';
+      for (let i = -10; i <= 10; i += 4) { ctx.beginPath(); ctx.moveTo(x + i, FLOOR - 4.5); ctx.lineTo(x + i + 1, FLOOR - 0.5); ctx.stroke(); }
+    });
+  }
+
+  // A little table with the photo album on it
+  function albumTable(ctx, x, t) {
+    withLine(ctx, () => {
+      box(ctx, x - 10, 127, 20, 3, 1, '#a0643c');
+      box(ctx, x - 8, 130, 2.5, 20, 0.8, '#6e4226');
+      box(ctx, x + 5.5, 130, 2.5, 20, 0.8, '#6e4226');
+      box(ctx, x - 8, 121, 16, 6, 1.2, '#3aa8a0');          // the album
+      box(ctx, x - 4, 122.2, 8, 3.6, 0.5, '#fffaf0');
+      ctx.fillStyle = '#87c8f0'; ctx.fillRect(x - 3.2, 122.8, 6.4, 2.4);
+      ctx.fillStyle = '#5aa84f'; ctx.fillRect(x - 3.2, 124.3, 6.4, 0.9);
+    });
+    // it sparkles a little when there are photos in it
+    if (MP.photos && MP.photos.length) {
+      ctx.save();
+      ctx.globalAlpha = 0.6 + Math.sin(t * 3) * 0.3;
+      ctx.fillStyle = '#ffd23f';
+      for (const [sx, sy, r] of [[x + 9, 116, 1.6], [x - 9, 118, 1.1]]) {
+        ctx.beginPath();
+        ctx.moveTo(sx, sy - r * 2); ctx.lineTo(sx + r * 0.5, sy - r * 0.5); ctx.lineTo(sx + r * 2, sy);
+        ctx.lineTo(sx + r * 0.5, sy + r * 0.5); ctx.lineTo(sx, sy + r * 2); ctx.lineTo(sx - r * 0.5, sy + r * 0.5);
+        ctx.lineTo(sx - r * 2, sy); ctx.lineTo(sx - r * 0.5, sy - r * 0.5); ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
     }
   }
 
@@ -664,7 +735,7 @@ window.MP = window.MP || {};
         MP.state.tv = { time: 0, locked: false, lockedBy: null };
       }
       if (waking || !MP.state.tasks) {
-        MP.state.tasks = { toilet: false, brush: false, hair: false, dress: false, breakfast: false, shoes: false };
+        MP.state.tasks = { toilet: false, brush: false, hair: false, dress: false, breakfast: false, pet: false, shoes: false };
         // long hair is all tangled in the morning
         MP.state.hairMessy = MP.state.character === 'girl';
         MP.state.tv = { time: 0, locked: false, lockedBy: null };
@@ -707,6 +778,19 @@ window.MP = window.MP || {};
       this.lastShowT = 0;
       this.sitting = false;       // sitting on the sofa
 
+      // The pet: sleeps in its basket at night, otherwise follows us around
+      const old = this.pet;
+      this.pet = { x: POS.petBasket, floor: 0, mode: 'basket', facing: 1, walking: false, walkTime: 0, happyFrom: -9, eatFrom: 0 };
+      if (evening) {
+        // runs to the door: you're home!
+        Object.assign(this.pet, { x: SPOTS.door.standX - 60, floor: 1, mode: 'follow', happyFrom: MP.time + 0.4 });
+      } else if (!waking) {
+        if (old && old.mode !== 'basket' && !params.done) Object.assign(this.pet, old, { mode: 'follow', walking: false });
+        else Object.assign(this.pet, { x: this.player.x - 18, floor: this.floor, mode: 'follow' });
+      }
+      this.petPick = null;
+      this.bowlFull = false;
+
       this.camX = this.cameraTargetX();
       this.camY = this.cameraTargetY();
       this.bubble = null;
@@ -720,8 +804,11 @@ window.MP = window.MP || {};
       if (evening) {
         const hadShoes = MP.state.outfit.shoes;
         MP.state.outfit.shoes = false;
-        this.say((hadShoes ? 'Kengät pois eteisessä! ' : '') + 'Kotona taas! Nyt on ilta. Iltatoimet: iltaruoka, pyjama, hampaat ja vessa. Sitten nukkumaan!', 6, 0.5);
+        const pet = MP.myPet();
+        this.say((hadShoes ? 'Kengät pois eteisessä! ' : '') + (pet ? pet.name + ' on iloinen, kun tulin kotiin! ' : '') + 'Kotona taas! Nyt on ilta. Iltatoimet: iltaruoka, pyjama, hampaat ja vessa. Sitten nukkumaan!', 6, 0.5);
+        if (pet) this.petHello = MP.time + 0.5;
       } else if (!this.intro) this.sayProgress(0.5);
+      if (!this.intro && !MP.myPet()) this.petPick = MP.petPicker.open();
     },
 
     setFloor(f) {
@@ -753,6 +840,7 @@ window.MP = window.MP || {};
     // Into bed with the chosen toy; the night comes and stays until a tap
     sleepWith(toy) {
       this.toyPick = null;
+      if (this.pet) Object.assign(this.pet, { mode: 'basket', x: POS.petBasket, floor: 0 });
       MP.sfx.tap();
       this.player.place(START_X, 1);
       // night.from stays empty until mom has read the story and switched the light off
@@ -824,6 +912,8 @@ window.MP = window.MP || {};
     finishIntro(skipped) {
       this.intro = null;
       this.player.place(START_X, 1);
+      if (this.pet && MP.myPet()) Object.assign(this.pet, { mode: 'follow', happyFrom: MP.time + 0.5 });
+      if (!MP.myPet()) this.petPick = MP.petPicker.open();
       this.tiredUntil = MP.time + (skipped ? 1.5 : 3.2);
       if (!skipped) MP.sfx.tap();
       this.sayProgress(skipped ? 0.2 : 0.9);
@@ -1073,6 +1163,28 @@ window.MP = window.MP || {};
         this.leave(MP.scenes.books);
         return;
       }
+      if (id === 'album') {
+        this.leave(MP.scenes.album);
+        return;
+      }
+      if (id === 'bowl') {
+        const pet = MP.myPet();
+        if (!pet) return;
+        if (this.pet.mode === 'toBowl' || this.pet.mode === 'eat') return;
+        if (!MP.state.evening && MP.state.tasks.pet) {
+          this.say(ALREADY.bowl, 2.5);
+          return;
+        }
+        // food into the bowl, and here it comes running
+        this.player.facing = -1;
+        this.pet.mode = 'toBowl';
+        this.pet.floor = this.floor;
+        this.bowlFull = true;
+        MP.sfx.tap();
+        this.say('Ruokaa, ' + pet.name + '!', 2);
+        MP.petSound();
+        return;
+      }
       if (id === 'bed') {
         if (!MP.state.evening) {
           this.say('Nyt on aamu! Ei vielä nukuta.', 2.5);
@@ -1147,6 +1259,17 @@ window.MP = window.MP || {};
     onTap(x, y) {
       if (this.busy || this.visit || this.stairs) return;
 
+      // Choosing our pet: kitten or puppy, then a name
+      if (this.petPick) {
+        if (MP.petPicker.tap(this.petPick, x, y)) {
+          this.petPick = null;
+          const pet = MP.myPet();
+          Object.assign(this.pet, { x: this.player.x - 18, floor: this.floor, mode: 'follow', happyFrom: MP.time });
+          this.say('Ihana! ' + pet.name + ' on nyt minun lemmikkini! Muistan antaa sille ruokaa keittiössä.', 5);
+        }
+        return;
+      }
+
       // Watching TV: only the remote control's red button works
       if (this.tvView) {
         if (Math.hypot(x - POWER.x, y - POWER.y) < POWER.r + 5) this.closeTv();
@@ -1194,6 +1317,18 @@ window.MP = window.MP || {};
         return;
       }
 
+      // Petting the pet: hearts and a purr or a woof
+      const pet = this.pet;
+      if (pet && MP.myPet() && pet.floor === this.floor && pet.mode !== 'eat') {
+        const py0 = pet.floor === 0 ? FLOOR_UP : FLOOR_DOWN;
+        if (Math.abs(wx - pet.x) < 12 && wy > py0 - 20 && wy < py0 + 4) {
+          pet.happyFrom = MP.time;
+          if (pet.mode === 'basket') pet.mode = 'follow';    // wakes up
+          MP.petSound();
+          return;
+        }
+      }
+
       if (this.floor === 0) {
         // Toys: jump and say boing (no walking)
         for (const toy of ['teddy', 'panda', 'elephantToy']) {
@@ -1218,17 +1353,20 @@ window.MP = window.MP || {};
           return;
         }
         // Band poster: plays a tune
+        // Band poster: plays a tune, and we remember the Turpapojat concert (concert.js)
         if (MP.hit(SPOTS.poster, wx, wy)) {
           MP.sfx.tune();
           for (let i = 0; i < 5; i++) {
             this.notes.push({ x: POS.poster + 8 + i * 5, y: 60, born: MP.time + i * 0.14, drift: (i % 2 ? 1 : -1) });
           }
+          this.say('Turpapojat! Muistatko konsertin?', 2);
+          this.player.walkTo(POS.poster + 10, () => this.leave(MP.scenes.concert));
           return;
         }
       }
 
       // Things on this floor: walk there, then use it
-      for (const id of ['toilet', 'sink', 'mirror', 'wardrobe', 'bed', 'stairsUp', 'books', 'tv', 'sofa', 'table', 'shoes', 'stairsDown', 'door']) {
+      for (const id of ['toilet', 'sink', 'mirror', 'wardrobe', 'bed', 'stairsUp', 'books', 'album', 'tv', 'sofa', 'table', 'bowl', 'shoes', 'stairsDown', 'door']) {
         const spot = SPOTS[id];
         if (floorOf(spot) === this.floor && MP.hit(spot, wx, wy)) {
           MP.sfx.tap();
@@ -1240,8 +1378,68 @@ window.MP = window.MP || {};
       this.player.walkTo(wx);
     },
 
+    // The pet follows us around (or runs to its bowl and eats)
+    updatePet(dt) {
+      const pet = this.pet;
+      const mine = MP.myPet();
+      if (!pet || !mine) return;
+      pet.walking = false;
+      if (pet.mode === 'basket') {
+        Object.assign(pet, { x: POS.petBasket, floor: 0 });
+        return;
+      }
+      if (pet.mode === 'eat') {
+        if (MP.time - pet.eatFrom >= 2.6) {
+          pet.mode = 'follow';
+          pet.happyFrom = MP.time;
+          this.bowlFull = false;
+          if (!MP.state.evening) MP.state.tasks.pet = true;
+          MP.petSound();
+          this.sayProgress(0, mine.name + ' on kylläinen!');
+        }
+        return;
+      }
+      let target;
+      if (pet.mode === 'toBowl') {
+        target = POS.bowl - 13;
+      } else {
+        if (pet.floor !== this.floor) {
+          if (this.stairs) return;           // comes along on the stairs
+          pet.floor = this.floor;
+          pet.x = this.player.x - this.player.facing * 22;
+        }
+        target = this.player.x - this.player.facing * 16;
+        if (Math.abs(target - pet.x) < 10 && !this.player.walking) target = pet.x;
+      }
+      const d = target - pet.x;
+      if (Math.abs(d) > 0.8) {
+        const sp = Math.abs(d) > 60 ? 150 : 80;
+        pet.x += Math.sign(d) * Math.min(Math.abs(d), sp * dt);
+        pet.walking = true;
+        pet.walkTime += dt;
+        pet.facing = Math.sign(d);
+      } else if (pet.mode === 'toBowl') {
+        pet.mode = 'eat';
+        pet.eatFrom = MP.time;
+        pet.facing = 1;
+        this.say('Nam nam! ' + mine.name + ' syö.', 2.4);
+      } else if (Math.abs(this.player.x - pet.x) > 2) {
+        pet.facing = Math.sign(this.player.x - pet.x);
+      }
+      pet.x = MP.clamp(pet.x, 12, pet.floor === 0 ? UP_MAX_X : WORLD_W - 12);
+    },
+
     update(dt) {
       this.updateParent(dt);
+      if (!this.petPick) this.updatePet(dt);
+      if (this.pet && this.pet.mode === 'eat' && MP.time - (this.lastNom || 0) > 0.8) {
+        this.lastNom = MP.time;
+        MP.sfx.nom();
+      }
+      if (this.petHello && MP.time >= this.petHello) {
+        this.petHello = 0;
+        MP.petSound();
+      }
 
       // --- Waking up ---
       if (this.intro) {
@@ -1396,6 +1594,7 @@ window.MP = window.MP || {};
         MP.draw(toy, ctx, POS[toy], FLOOR + hop);
       }
       MP.draw('ball', ctx, POS.ball, FLOOR, { r: 4 });
+      if (MP.myPet()) petBasket(ctx, POS.petBasket);
 
       // ===== Upstairs: bathroom =====
       MP.draw('toilet', ctx, POS.toilet, FLOOR);
@@ -1427,6 +1626,7 @@ window.MP = window.MP || {};
       sofa(ctx, POS.sofa);
       floorLamp(ctx, POS.lamp);
       tvSet(ctx, POS.tv, this.tvOn, this.showT);
+      albumTable(ctx, POS.albumTable, t);
       bookshelf(ctx, POS.bookshelf);
       // kitchen
       fridge(ctx, POS.fridge);
@@ -1434,6 +1634,7 @@ window.MP = window.MP || {};
       wallClock(ctx, POS.clock, 40, t);
       MP.draw('window', ctx, POS.kitchenWindow, 36, { t });
       kitchenTable(ctx, POS.table);
+      if (MP.myPet()) foodBowl(ctx, POS.bowl, FLOOR, 1, !!this.bowlFull);
       // hallway
       coatHooks(ctx, POS.hooks);
       MP.draw('shoeRack', ctx, POS.shoeRack, FLOOR, { taken: MP.state.tasks.shoes });
@@ -1481,6 +1682,29 @@ window.MP = window.MP || {};
             ctx.beginPath(); ctx.moveTo(bx - 6, by - 0.6); ctx.lineTo(bx, by + 1.2); ctx.lineTo(bx + 6, by - 0.6); ctx.lineTo(bx + 6, by + 5.8); ctx.lineTo(bx, by + 7.8); ctx.lineTo(bx - 6, by + 5.8); ctx.closePath();
             ctx.fill(); ctx.stroke();
           });
+        }
+      }
+
+      // Our pet
+      const myPet = MP.myPet();
+      if (myPet && this.pet && !(this.stairs && this.pet.mode !== 'basket')) {
+        const pet = this.pet;
+        const py0 = pet.floor === 0 ? FLOOR_UP : FLOOR_DOWN;
+        const age = t - pet.happyFrom;
+        const sleeping = pet.mode === 'basket';
+        MP.drawPet(ctx, pet.x, py0 - (sleeping ? 3 : 0), {
+          kind: myPet.kind, flip: pet.facing < 0, walking: pet.walking, walkTime: pet.walkTime,
+          sleep: sleeping, eat: pet.mode === 'eat', sit: !pet.walking && pet.mode === 'follow' && age > 1.2,
+          happy: age >= 0 && age < 1.2 ? 1 - age / 1.2 : 0,
+        });
+        MP.drawPetHearts(ctx, pet.x, py0 - 16, age);
+        MP.drawPetWord(ctx, pet.x, py0 - 30, age, MP.petWord());
+        if (sleeping) {
+          const p = (t * 0.6) % 1;
+          ctx.save();
+          ctx.globalAlpha = 1 - p;
+          MP.drawText(ctx, 'z', pet.x + 4 + p * 6, py0 - 12 - p * 10, { size: 0.5 + p * 0.3, color: '#4a78c8', outline: '#ffffff' });
+          ctx.restore();
         }
       }
 
@@ -1711,6 +1935,9 @@ window.MP = window.MP || {};
         MP.drawText(ctx, '(napauta)', MP.W / 2, 112, { size: 0.8, color: '#6e4226', align: 'center' });
         ctx.restore();
       }
+
+      // ===== Choosing our pet (on top of everything) =====
+      if (this.petPick) MP.petPicker.draw(ctx, this.petPick);
     },
   };
 })();

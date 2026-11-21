@@ -19,6 +19,9 @@
 //   #uima         swimming in the pool (swimsuit on)
 //   #rauta        outside in the Iron hero suit (tap the suit: fly)
 //   #hamahakki    outside in the spider suit (tap the suit: web)
+//   #lemmikki     home in the morning with a pet (a kitten if none chosen yet)
+//   #albumi       the photo album
+//   #konsertti    the Turpapojat concert (a memory from the poster)
 //   #pyramidi     inside the pyramid
 //   #kirjat       the bookshelf
 //   #galleria     all drawings and outfits
@@ -59,6 +62,9 @@ window.MP = window.MP || {};
     uima:        () => { ready(true); MP.state.outfit.costume = 'swimsuit'; return [MP.scenes.swim]; },
     rauta:       () => { ready(true); MP.state.outfit.costume = 'iron'; return [MP.scenes.street]; },
     hamahakki:   () => { ready(true); MP.state.outfit.costume = 'spider'; return [MP.scenes.street]; },
+    lemmikki:    () => { ready(false); MP.state.pet = MP.state.pet || { kind: 'cat', name: 'Mirri' }; return [MP.scenes.home]; },
+    albumi:      () => [MP.scenes.album],
+    konsertti:   () => { ready(false); return [MP.scenes.concert]; },
     pyramidi:    () => { ready(true); return [MP.scenes.pyramid]; },
     kirjat:      () => { ready(false); return [MP.scenes.books]; },
     galleria:    () => [MP.scenes.gallery],

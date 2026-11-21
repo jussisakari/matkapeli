@@ -225,7 +225,7 @@ window.MP = window.MP || {};
       ],
     },
     {
-      title: 'Hämähäkkisankari ja ystävät',
+      title: 'Spiderman ja ystävät',
       color: '#d62828',
       accent: '#2b4fa8',
       coverArt(c, r) {
@@ -234,8 +234,8 @@ window.MP = window.MP || {};
       },
       pages: [
         {
-          title: 'Hämähäkkisankari',
-          text: 'Tässä on Hämähäkkisankari. Hän kiipeää seinillä ja heittää seittiä. Hups, taas katon rajassa!',
+          title: 'Spiderman',
+          text: 'Tässä on Spiderman. Hän kiipeää seinillä ja heittää seittiä. Hups, taas katon rajassa!',
           art(c, r, t) {
             cityNight(c, r);
             web(c, r.x + r.w / 2 + 6, r.y + 40, 40, t);
@@ -244,8 +244,8 @@ window.MP = window.MP || {};
           },
         },
         {
-          title: 'Musta hämähäkki',
-          text: 'Mustassa puvussa on punaiset seitit. Musta hämähäkki on tosi nopea ja osaa hypätä talolta toiselle!',
+          title: 'Spin',
+          text: 'Mustassa puvussa on punaiset seitit. Spin on tosi nopea ja osaa hypätä talolta toiselle!',
           art(c, r, t) {
             cityNight(c, r);
             const u = (t * 0.5) % 1;
@@ -254,8 +254,8 @@ window.MP = window.MP || {};
           },
         },
         {
-          title: 'Aavehämähäkki',
-          text: 'Aavehämähäkillä on valkoinen huppu. Hän tanssii balettia ja soittaa rumpuja. Bum bum!',
+          title: 'Ghost Spider',
+          text: 'Ghost Spiderillä on valkoinen huppu. Hän tanssii balettia ja soittaa rumpuja. Bum bum!',
           art(c, r, t) {
             sky(c, r, '#ffd6ec', '#c7f2f2');
             c.fillStyle = '#c084fc';
@@ -267,8 +267,8 @@ window.MP = window.MP || {};
           },
         },
         {
-          title: 'Rautasankari',
-          text: 'Rautasankarin puvussa on hehkuva valo rinnassa. Hänen kenkänsä suihkuttavat tulta, ja hän lentää!',
+          title: 'Ironman',
+          text: 'Ironmanin puvussa on hehkuva valo rinnassa. Hänen kenkänsä suihkuttavat tulta, ja hän lentää!',
           art(c, r, t) {
             sky(c, r, '#8fd3ff', '#e1f4ff');
             MP.draw('sun', c, 0, 0, { x: r.x + r.w - 18, y: r.y + 16, r: 7 });

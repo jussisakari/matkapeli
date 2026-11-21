@@ -350,6 +350,7 @@ window.MP = window.MP || {};
     };
 
     S.ch = W3.character(S.scene);
+    S.pet = MP.petBuddy(S.scene, S.clickables);     // our pet follows us outside
     S.built = true;
   }
 
@@ -380,6 +381,10 @@ window.MP = window.MP || {};
       S.castle.visible = false;
       S.taxi.position.set(TAXI_AT.x, 0, TAXI_AT.z);
       S.ch.setVisible(true);
+      // the pet: waiting by the pool, running from the house to meet us, or coming out with us
+      if (swum) S.pet.place(this.p.x + 1.2, this.p.z + 0.6);
+      else if (back) { S.pet.place(0, 9); S.pet.happyFrom = MP.time + 0.3; }
+      else S.pet.place(this.p.x + 0.8, this.p.z + 1.2);
       if (swum) this.say('Olipa kivaa uida! Nyt kuivataan pyyhkeellä ja lähdetään seikkailemaan.', 4, 0.6);
       else if (back) this.say('Takaisin kotikadulla! Leikkipuistoon vai kotiin? Kotiin pääsee napauttamalla kotitalon ovea.', 4.5, 0.6);
       else this.say('Ulkona! Kävellään risteykseen.', 4, 0.6);
@@ -452,6 +457,10 @@ window.MP = window.MP || {};
         return;
       }
       W3.tap(this, x, y, S.camera, S.W, BOUNDS, (spot) => {
+        if (spot === 'pet') {
+          S.pet.pat();
+          return true;
+        }
         const stand = S.spots[spot];
         if (!stand) return false;
         MP.sfx.tap();
@@ -513,6 +522,7 @@ window.MP = window.MP || {};
       }
 
       W3.follow(S.camera, this, dt);
+      S.pet.update(dt, this, !!this.ride || !!this.play);
       this.drawCharacter();
       W3.render(S.scene, S.camera);
     },
@@ -549,6 +559,7 @@ window.MP = window.MP || {};
     },
 
     draw(ctx) {
+      S.pet.draw2d(ctx, S.camera);
       W3.drawBubble(ctx, this.bubble, this.headPos, S.camera);
       if (!this.ride) W3.drawTurnButton(ctx);
       // the way home: an arrow over our own door once we have been somewhere

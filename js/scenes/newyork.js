@@ -390,7 +390,7 @@ window.MP = window.MP || {};
       W3.tap(this, x, y, S.camera, S.W, BOUNDS, (spot) => {
         if (spot === 'hero') {
           this.heroWaveAt = MP.time;
-          this.heroBubble = { text: 'Hei! Olen Hämähäkkisankari! Tervetuloa New Yorkiin!', from: MP.time, until: Infinity };
+          this.heroBubble = { text: 'Hei! Olen Spiderman! Tervetuloa New Yorkiin!', from: MP.time, until: Infinity };
           MP.sfx.boing();
           return true;
         }
@@ -459,7 +459,7 @@ window.MP = window.MP || {};
           if (!this.seen[id] && Math.hypot(p.x - pl.x, p.z - pl.z) < pl.r) {
             this.seen[id] = true;
             if (id === 'pizza') this.say('Pizzeria! New Yorkissa syödään isoja pizzapaloja. Napauta pizzeriaa!', 4);
-            if (id === 'hero') this.say('Hämähäkkisankari heilahtaa seitillä! Napauta häntä!', 3.5);
+            if (id === 'hero') this.say('Spiderman heilahtaa seitillä! Napauta häntä!', 3.5);
             if (id === 'water') this.say('Tuolla on Vapaudenpatsas! Napauta sitä.', 3.5);
           }
         }

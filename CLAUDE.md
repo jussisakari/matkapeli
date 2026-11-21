@@ -16,7 +16,7 @@ labels `feature` and `bug`).
 ## Rules of the project
 - Game texts in Finnish; code comments in English, simple enough for a child to follow.
 - Speech bubbles stay until tapped (`until: Infinity`).
-- No copyrighted characters by name or look: use our own heroes (Hämähäkkiasu, Rautasankari…).
+- Hero costumes use the names the family chose: Spiderman, Spin, Ghost Spider, Ironman (and Pantterisankari). Otherwise no other famous characters by name or look – make our own.
 - New script files go into `index.html` **and** the `FILES` list in `sw.js` (offline app).
   When changing cached files a lot, bump `CACHE` in `sw.js` (`matkapeli-vN`).
 - Shortcuts for testing are listed at the top of `js/main.js` (`index.html#ulos` etc.).

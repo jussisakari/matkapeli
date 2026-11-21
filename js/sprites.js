@@ -66,7 +66,7 @@ MP.CLOTHES = {
     // T-shirts have short sleeves; "print" is the picture on the front
     { id: 'tshirt',    name: 'T-paita',        color: '#ff8fc0', sleeves: 'short' },
     { id: 'kpop',      name: 'K-pop-paita',    color: '#2b2340', sleeves: 'short', print: 'kpop' },
-    { id: 'spiderTee', name: 'Hämähäkkipaita', color: '#d62828', sleeves: 'short', print: 'spider' },
+    { id: 'spiderTee', name: 'Spiderman-paita', color: '#d62828', sleeves: 'short', print: 'spider' },
   ],
   bottom: [
     { id: 'pyjama',      name: 'Pyjama',        hidden: true, type: 'pants', color: '#9fc8ff' },
@@ -86,12 +86,12 @@ MP.CLOTHES = {
   ],
   costume: [
     { id: 'none',   name: 'Ei asua' },
-    { id: 'spider',  name: 'Hämähäkkiasu', type: 'spider', top: '#d62828', legs: '#2b4fa8', boots: '#d62828', web: '#7a1418' },
-    { id: 'spiderBlack', name: 'Musta hämähäkki', type: 'spider', top: '#26262e', legs: '#26262e', boots: '#d62828',
+    { id: 'spider',  name: 'Spiderman', type: 'spider', top: '#d62828', legs: '#2b4fa8', boots: '#d62828', web: '#7a1418' },
+    { id: 'spiderBlack', name: 'Spin', type: 'spider', top: '#26262e', legs: '#26262e', boots: '#d62828',
       gloves: '#d62828', web: '#d62828', emblem: '#d62828' },
-    { id: 'spiderGhost', name: 'Aavehämähäkki', type: 'spider', top: '#ffffff', legs: '#ffffff', boots: '#2ec4c4',
+    { id: 'spiderGhost', name: 'Ghost Spider', type: 'spider', top: '#ffffff', legs: '#ffffff', boots: '#2ec4c4',
       gloves: '#2ec4c4', web: '#c9b8e8', hood: '#ffffff', hoodInner: '#ff8fc0' },
-    { id: 'iron',    name: 'Rautasankari', type: 'iron', top: '#c62828', legs: '#c62828', boots: '#f2c230',
+    { id: 'iron',    name: 'Ironman', type: 'iron', top: '#c62828', legs: '#c62828', boots: '#f2c230',
       gold: '#f2c230', glow: '#bff3ff' },
     { id: 'panther', name: 'Pantterisankari', type: 'panther', top: '#1c1c24', legs: '#1c1c24', boots: '#1c1c24',
       accent: '#b8a2e0', silver: '#d8dde6' },
@@ -264,6 +264,8 @@ MP.findItem = function (slot, id) {
 
   MP.drawPerson = function (c, x, y, opts) {
     opts = opts || {};
+    // Smile for the camera: the player cheers with both hands up
+    if (opts.hero && MP.photoPose && MP.photoPose()) opts = Object.assign({}, opts, { armUp: 0.8, mouth: 'smile', eyes: 'open' });
     const st = MP.state || {};
     const charId = MP.CHARACTERS[opts.character] ? opts.character
       : (MP.CHARACTERS[st.character] ? st.character : 'girl');

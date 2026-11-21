@@ -2,7 +2,7 @@
 // (installed from the browser with "Add to Home screen").
 // Network first: when online you always get the newest version from GitHub,
 // and it is saved; without a network the saved copy is used.
-const CACHE = 'matkapeli-v1';
+const CACHE = 'matkapeli-v2';
 const FILES = [
     './',
     './index.html',
@@ -15,8 +15,12 @@ const FILES = [
     './js/lib/three.min.js',
     './js/main.js',
     './js/player.js',
+    './js/pet.js',
+    './js/photos.js',
     './js/scenes/airport.js',
     './js/scenes/books.js',
+    './js/scenes/album.js',
+    './js/scenes/concert.js',
     './js/scenes/breakfast.js',
     './js/scenes/brush.js',
     './js/scenes/egypt.js',

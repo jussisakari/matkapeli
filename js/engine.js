@@ -128,6 +128,7 @@ window.MP = window.MP || {};
       MP.restartAsk = true;
       return true;
     }
+    if (!fade.active && MP.photoTap && MP.photoTap(x, y)) return true;   // the camera (photos.js)
     if (!fade.active && MP.heroTap && MP.heroTap(x, y)) {
       MP.closeBubbles(MP.scene);
       return true;
@@ -177,7 +178,7 @@ window.MP = window.MP || {};
     MP.pointer.y = p.y;
     MP.pointer.down = true;
     // the restart button and its question are not for the scene
-    active.engine = MP.restartAsk || onRestart(p.x, p.y);
+    active.engine = MP.restartAsk || onRestart(p.x, p.y) || !!(MP.photoHit && MP.photoHit(p.x, p.y));
     if (!active.engine) callScene('onPointerDown', p.x, p.y);
   });
 
@@ -330,6 +331,10 @@ window.MP = window.MP || {};
       reportError(err);
     }
 
+    // the camera: takes the photo now (before the buttons are drawn), then its button
+    MP.gameTransform();
+    try { if (MP.photoAfterDraw) MP.photoAfterDraw(ctx, s, fade.active); } catch (err) { reportError(err); }
+
     MP.gameTransform();
     try { drawRestart(ctx); } catch (err) { reportError(err); }
 
@@ -369,6 +374,7 @@ window.MP = window.MP || {};
         character: MP.state.character,
         outfit: MP.state.outfit,
         treasures: MP.state.treasures,
+        pet: MP.state.pet || null,
       }));
       return true;
     } catch (_) {
@@ -389,7 +395,7 @@ window.MP = window.MP || {};
 
   // ---------- Superhero tricks ----------
   // Tap the middle of your hero costume:
-  //   Rautasankari: fly ⇄ walk
+  //   Ironman: fly ⇄ walk
   //   spider suits: aim (web-shooting hand) → shoot webs → normal
   MP.heroKind = function () {
     const c = MP.findItem && MP.findItem('costume', MP.state.outfit.costume);
@@ -428,6 +434,7 @@ window.MP = window.MP || {};
       if (data.character === 'girl' || data.character === 'boy') MP.state.character = data.character;
       if (data.outfit && typeof data.outfit === 'object') Object.assign(MP.state.outfit, data.outfit);
       if (data.treasures && typeof data.treasures === 'object') MP.state.treasures = data.treasures;
+      if (data.pet && typeof data.pet === 'object') MP.state.pet = data.pet;
       return true;
     } catch (_) {
       return false;
@@ -677,6 +684,102 @@ window.MP = window.MP || {};
     tap() {
       if (!ready()) return;
       try { tone(660, 0, 0.08, 'triangle', 0.3); } catch (_) {}
+    },
+    // A kitten: "miau" (the pitch slides up and down)
+    meow() {
+      if (!ready()) return;
+      try {
+        const a = audio.ctx, t0 = a.currentTime;
+        const osc = a.createOscillator(), g = a.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(700, t0);
+        osc.frequency.linearRampToValueAtTime(1100, t0 + 0.15);
+        osc.frequency.linearRampToValueAtTime(650, t0 + 0.45);
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(0.25, t0 + 0.05);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.5);
+        osc.connect(g); g.connect(audio.master);
+        osc.start(t0); osc.stop(t0 + 0.55);
+      } catch (_) {}
+    },
+    // A puppy: "hau hau!"
+    woof() {
+      if (!ready()) return;
+      try {
+        for (const w of [0, 0.22]) {
+          tone(420, w, 0.09, 'sawtooth', 0.14);
+          tone(300, w + 0.04, 0.1, 'square', 0.1);
+        }
+      } catch (_) {}
+    },
+    // ---- Music for the concert ----
+    // One note: freq in Hz, how long, the sound type and loudness
+    note(freq, dur, type, vol) {
+      if (!ready()) return;
+      try { tone(freq, 0, dur || 0.3, type || 'triangle', vol || 0.18); } catch (_) {}
+    },
+    // Bass drum: "bum"
+    kick() {
+      if (!ready()) return;
+      try {
+        const a = audio.ctx, t0 = a.currentTime;
+        const osc = a.createOscillator(), g = a.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(140, t0);
+        osc.frequency.exponentialRampToValueAtTime(45, t0 + 0.15);
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(0.5, t0 + 0.005);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.2);
+        osc.connect(g); g.connect(audio.master);
+        osc.start(t0); osc.stop(t0 + 0.22);
+      } catch (_) {}
+    },
+    // Hi-hat: "tss" (a very short noise; louder = a snare "tsak")
+    hat(loud) {
+      if (!ready()) return;
+      try {
+        const a = audio.ctx, t0 = a.currentTime;
+        const src = a.createBufferSource();
+        src.buffer = noiseBuffer();
+        const f = a.createBiquadFilter();
+        f.type = loud ? 'bandpass' : 'highpass';
+        f.frequency.value = loud ? 1800 : 7000;
+        const g = a.createGain();
+        const len = loud ? 0.14 : 0.05;
+        g.gain.setValueAtTime(loud ? 0.35 : 0.12, t0);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + len);
+        src.connect(f); f.connect(g); g.connect(audio.master);
+        src.start(t0); src.stop(t0 + len + 0.02);
+      } catch (_) {}
+    },
+    // Applause: lots of little claps
+    applause(seconds) {
+      if (!ready()) return;
+      try {
+        const a = audio.ctx;
+        const n = Math.round((seconds || 2) * 26);
+        for (let i = 0; i < n; i++) {
+          const t0 = a.currentTime + Math.random() * (seconds || 2);
+          const src = a.createBufferSource();
+          src.buffer = noiseBuffer();
+          const f = a.createBiquadFilter();
+          f.type = 'bandpass';
+          f.frequency.value = 1200 + Math.random() * 1400;
+          const g = a.createGain();
+          g.gain.setValueAtTime(0.12 + Math.random() * 0.1, t0);
+          g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.06);
+          src.connect(f); f.connect(g); g.connect(audio.master);
+          src.start(t0); src.stop(t0 + 0.08);
+        }
+      } catch (_) {}
+    },
+    // The camera: "klik!"
+    shutter() {
+      if (!ready()) return;
+      try {
+        tone(2400, 0, 0.03, 'square', 0.12);
+        tone(1500, 0.06, 0.05, 'square', 0.1);
+      } catch (_) {}
     },
     // Happy "bling" for success
     bling() {
