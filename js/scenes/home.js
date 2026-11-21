@@ -71,6 +71,7 @@ window.MP = window.MP || {};
     games:      { x: 277, y: 232, w: 32, h: 16, standX: 286 },    // the memory game box on the bookshelf
     drums:      { x: 644, y: 116, w: 42, h: 36, standX: 638 },    // the drum kit on the landing
     treats:     { x: 398, y: 277, w: 18, h: 17, standX: 410 },    // the pet's treat jar on the counter
+    booth:      { x: 648, y: 258, w: 46, h: 74, standX: 672 },    // the photo booth in the hallway
     calendar:   { x: 554, y: 212, w: 26, h: 28, standX: 566 },    // the season calendar (seasons.js)
     xmasTree:   { x: 4,   y: 252, w: 48, h: 80, standX: 56 },     // the Christmas tree (in December)
   };
@@ -343,6 +344,24 @@ window.MP = window.MP || {};
       }
     });
     MP.drawText(ctx, MP.seasonName(), x, y + 1, { size: 0.32, color: '#ffffff', align: 'center' });
+  }
+
+  // The funny photo booth in the hallway (photobooth.js): a box with a curtain
+  function photoBooth(ctx, x, t) {
+    withLine(ctx, () => {
+      box(ctx, x - 22, 78, 44, 72, 3, '#ffd23f');
+      box(ctx, x - 24, 74, 48, 10, 2, '#e0559a');
+      // the curtain (it moves a little)
+      ctx.fillStyle = '#d65a8a';
+      ctx.beginPath(); ctx.rect(x - 17, 88, 34, 58); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = 'rgba(43,35,64,0.35)';
+      for (let i = 1; i < 5; i++) { const cx = x - 17 + i * 7 + Math.sin(t * 1.5 + i) * 0.5; ctx.beginPath(); ctx.moveTo(cx, 89); ctx.lineTo(cx, 145); ctx.stroke(); }
+    });
+    MP.drawText(ctx, 'KUVAT', x, 75.5, { size: 0.55, color: '#ffffff', align: 'center' });
+    // a flash now and then
+    if (Math.sin(t * 0.9) > 0.985) {
+      ctx.save(); ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.fillRect(x - 17, 88, 34, 58); ctx.restore();
+    }
   }
 
   function kitchenTable(ctx, x) {
@@ -1321,6 +1340,11 @@ window.MP = window.MP || {};
         this.leave(MP.scenes.album);
         return;
       }
+      if (id === 'booth') {
+        this.say('Valokuvakoppi! Hassuja kuvia!', 1.5);
+        this.leave(MP.scenes.photobooth);
+        return;
+      }
       if (id === 'calendar') {
         const next = MP.nextSeason();
         MP.sfx.tap();
@@ -1599,7 +1623,7 @@ window.MP = window.MP || {};
       }
 
       // Things on this floor: walk there, then use it
-      for (const id of ['toilet', 'sink', 'mirror', 'wardrobe', 'bed', 'drums', 'stairsUp', 'games', 'books', 'album', 'passport', 'recipe', 'treats', 'calendar', 'xmasTree', 'tv', 'sofa', 'table', 'bowl', 'shoes', 'stairsDown', 'door']) {
+      for (const id of ['toilet', 'sink', 'mirror', 'wardrobe', 'bed', 'drums', 'stairsUp', 'games', 'books', 'album', 'passport', 'recipe', 'treats', 'calendar', 'xmasTree', 'booth', 'tv', 'sofa', 'table', 'bowl', 'shoes', 'stairsDown', 'door']) {
         const spot = SPOTS[id];
         if (id === 'xmasTree' && MP.seasonNow() !== 'christmas') continue;
         if (floorOf(spot) === this.floor && MP.hit(spot, wx, wy)) {
@@ -1881,6 +1905,7 @@ window.MP = window.MP || {};
       kitchenTable(ctx, POS.table);
       if (MP.myPet()) foodBowl(ctx, POS.bowl, FLOOR, 1, !!this.bowlFull);
       // hallway
+      photoBooth(ctx, 672, t);
       coatHooks(ctx, POS.hooks);
       MP.draw('shoeRack', ctx, POS.shoeRack, FLOOR, { taken: MP.state.tasks.shoes });
       doormat(ctx, POS.door);
