@@ -68,6 +68,7 @@ window.MP = window.MP || {};
     passport:   { x: 16,  y: 134, w: 28, h: 17, standX: 46 },     // the nightstand drawer
     bowl:       { x: 464, y: 306, w: 28, h: 24, standX: 498 },
     recipe:     { x: 338, y: 268, w: 22, h: 24, standX: 374 },    // the recipe card on the fridge
+    games:      { x: 277, y: 232, w: 32, h: 16, standX: 286 },    // the memory game box on the bookshelf
   };
   const floorOf = (spot) => (spot.y >= DOWN_Y ? 1 : 0);
 
@@ -626,6 +627,17 @@ window.MP = window.MP || {};
 
   // Bookshelf: rows of colorful books. The Egypt book (gold) and the
   // spider-hero book (red) stick out a little – those can be read.
+  // The memory game box on top of the bookshelf (memory.js)
+  function gameBox(ctx, x) {
+    withLine(ctx, () => {
+      box(ctx, x - 13, 57, 26, 11, 1.5, '#4a78c8');
+      box(ctx, x - 14, 55.5, 28, 3, 1, '#2f4a8a');
+      ctx.fillStyle = '#ffffff';
+      for (let i = 0; i < 3; i++) { ctx.fillRect(x - 9 + i * 7, 60, 5, 6); }
+      ctx.fillStyle = '#e0559a'; ctx.fillRect(x - 2, 61.5, 2, 3);
+    });
+  }
+
   function bookshelf(ctx, x) {
     const cols = ['#4a78c8', '#3cb371', '#c084fc', '#e07a3a', '#ff8fc0', '#5aa84f', '#e04848', '#2bb3a3'];
     withLine(ctx, () => {
@@ -1235,6 +1247,11 @@ window.MP = window.MP || {};
         this.leave(MP.scenes.album);
         return;
       }
+      if (id === 'games') {
+        this.say('Muistipeli! Pelataan!', 1.5);
+        this.leave(MP.scenes.memory);
+        return;
+      }
       if (id === 'recipe') {
         this.say('Leivotaanko? Mennään!', 1.5);
         this.leave(MP.scenes.baking);
@@ -1454,7 +1471,7 @@ window.MP = window.MP || {};
       }
 
       // Things on this floor: walk there, then use it
-      for (const id of ['toilet', 'sink', 'mirror', 'wardrobe', 'bed', 'stairsUp', 'books', 'album', 'passport', 'recipe', 'tv', 'sofa', 'table', 'bowl', 'shoes', 'stairsDown', 'door']) {
+      for (const id of ['toilet', 'sink', 'mirror', 'wardrobe', 'bed', 'stairsUp', 'games', 'books', 'album', 'passport', 'recipe', 'tv', 'sofa', 'table', 'bowl', 'shoes', 'stairsDown', 'door']) {
         const spot = SPOTS[id];
         if (floorOf(spot) === this.floor && MP.hit(spot, wx, wy)) {
           MP.sfx.tap();
@@ -1719,6 +1736,7 @@ window.MP = window.MP || {};
       tvSet(ctx, POS.tv, this.tvOn, this.showT);
       albumTable(ctx, POS.albumTable, t);
       bookshelf(ctx, POS.bookshelf);
+      gameBox(ctx, POS.bookshelf);
       // kitchen
       fridge(ctx, POS.fridge);
       counter(ctx, POS.counter);
