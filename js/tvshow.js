@@ -325,22 +325,45 @@ window.MP = window.MP || {};
     MP.drawText(c, singer.name, 33, 87.5, { size: singer.name.length > 10 ? 0.45 : 0.65, color: '#b0208a', align: 'center' });
   }
 
+  // The two shows from this file (the other channels are in tvchannels.js)
+  MP.tvHaha = function (c, t) {
+    const gag = MP.tvGag(t), lt = MP.tvGagTime(t);
+    if (gag === 0) dog(c, lt);
+    else if (gag === 1) duck(c, lt);
+    else cat(c, lt);
+  };
+  MP.tvMasked = function (c, t) {
+    if (MP.state && MP.state.evening) {
+      maskedSinger(c, t);
+    } else {
+      // in the morning: only a "tonight" card
+      const g = c.createLinearGradient(0, 0, 0, 100);
+      g.addColorStop(0, '#120b3a'); g.addColorStop(1, '#3a1f6a');
+      c.fillStyle = g; c.fillRect(0, 0, 160, 100);
+      MP.drawText(c, 'MASKED SINGER', 80, 26, { size: 1.4, color: '#ffe680', outline: O, align: 'center' });
+      MP.drawText(c, 'SUOMI', 80, 42, { size: 1.1, color: '#ffffff', outline: O, align: 'center' });
+      MP.drawText(c, 'Tänä iltana!', 80, 62, { size: 1, color: '#ff9fe0', outline: O, align: 'center' });
+    }
+  };
+
   // Draws the show into the rectangle (x, y, w, h). t = seconds the TV has been on.
-  MP.drawTvShow = function (c, x, y, w, h, t) {
+  // channel = 1…6 (MP.TV_CHANNELS); without it: Masked Singer in the evening, else HAHA-TV.
+  MP.drawTvShow = function (c, x, y, w, h, t, channel) {
     c.save();
     c.beginPath(); c.rect(x, y, w, h); c.clip();
     c.translate(x, y);
     c.scale(w / 160, h / 100);
     c.lineWidth = 1; c.lineJoin = 'round'; c.lineCap = 'round'; c.strokeStyle = O;
-    if (MP.state && MP.state.evening) {
-      // the evening show
+    const list = MP.TV_CHANNELS;
+    const ch = list && channel ? list[channel - 1] : null;
+    if (ch) {
+      ch.draw(c, t);
+      MP.drawText(c, ch.logo || ch.name, 156, 90, { size: 0.5, color: 'rgba(255,255,255,0.9)', outline: O, align: 'right' });
+    } else if (MP.state && MP.state.evening) {
       maskedSinger(c, t);
       MP.drawText(c, 'MASKED SINGER SUOMI', 156, 90, { size: 0.5, color: 'rgba(255,255,255,0.9)', outline: O, align: 'right' });
     } else {
-      const gag = MP.tvGag(t), lt = MP.tvGagTime(t);
-      if (gag === 0) dog(c, lt);
-      else if (gag === 1) duck(c, lt);
-      else cat(c, lt);
+      MP.tvHaha(c, t);
       MP.drawText(c, 'HAHA-TV', 156, 90, { size: 0.6, color: 'rgba(255,255,255,0.9)', outline: O, align: 'right' });
     }
     c.restore();

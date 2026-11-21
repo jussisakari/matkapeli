@@ -128,6 +128,8 @@ window.MP = window.MP || {};
   const TV_SCREEN = { x: 52, y: 22, w: 212, h: 124 };
   const REMOTE = { x: 284, y: 96, w: 28, h: 66 };
   const POWER = { x: 298, y: 110, r: 7 };
+  // the channel buttons 1–6 on the remote control (tvchannels.js)
+  const CH_BTN = (i) => ({ x: 291 + (i % 2) * 14, y: 126 + Math.floor(i / 2) * 12, r: 5 });
 
   // ---------------------------------------------------------------------------
   // Small drawing helpers for the rooms
@@ -609,7 +611,7 @@ window.MP = window.MP || {};
       box(ctx, x - 33, 88, 66, 37, 3, '#2b2b33');        // TV
     });
     if (on) {
-      MP.drawTvShow(ctx, x - 30, 91, 60, 31, showT);
+      MP.drawTvShow(ctx, x - 30, 91, 60, 31, showT, MP.state.tvChannel);
     } else {
       ctx.save();
       ctx.fillStyle = '#3a3f4f';
@@ -1147,6 +1149,12 @@ window.MP = window.MP || {};
       this.tvView = true;
       this.tvViewFrom = MP.time;
       this.bubble = null;
+      // the evening starts with Masked Singer, the morning with HAHA-TV
+      if (!MP.state.tvChannel || MP.state.tvChannelEvening !== !!MP.state.evening) {
+        MP.state.tvChannel = MP.state.evening ? 6 : 1;
+        MP.state.tvChannelEvening = !!MP.state.evening;
+      }
+      this.zapAt = MP.time;
       MP.sfx.tap();
     },
 
@@ -1160,7 +1168,14 @@ window.MP = window.MP || {};
 
     // Plays the funny sounds of the cartoon
     tvSounds(prev, now) {
-      if (MP.state.evening) {
+      const ch = MP.state.tvChannel || (MP.state.evening ? 6 : 1);
+      if (ch !== 1 && ch !== 6) {
+        const c = MP.TV_CHANNELS && MP.TV_CHANNELS[ch - 1];
+        if (c && c.sounds) c.sounds(prev, now);
+        return;
+      }
+      if (ch === 6 && !MP.state.evening) return;
+      if (ch === 6) {
         // Masked Singer Suomi: a fanfare, the singer's tune, then applause
         const M = MP.MASKED;
         const a = MP.maskedNow(prev), b = MP.maskedNow(now);
@@ -1371,8 +1386,17 @@ window.MP = window.MP || {};
 
       // Watching TV: only the remote control's red button works
       if (this.tvView) {
-        if (Math.hypot(x - POWER.x, y - POWER.y) < POWER.r + 5) this.closeTv();
-        else if (MP.state.evening && MP.hit(TV_SCREEN, x, y)) {
+        if (Math.hypot(x - POWER.x, y - POWER.y) < POWER.r + 5) { this.closeTv(); return; }
+        for (let i = 0; i < 6; i++) {
+          const b = CH_BTN(i);
+          if (Math.hypot(x - b.x, y - b.y) < b.r + 2.5) {
+            MP.state.tvChannel = i + 1;
+            this.zapAt = MP.time;
+            MP.sfx.note(90 + Math.random() * 40, 0.25, 'sawtooth', 0.05);     // zzzt
+            return;
+          }
+        }
+        if (MP.state.tvChannel === 6 && MP.state.evening && MP.hit(TV_SCREEN, x, y)) {
           // Masked Singer: tap the picture for the next singer
           const L = MP.MASKED.LEN;
           this.showT = (Math.floor(this.showT / L) + 1) * L;
@@ -1976,7 +2000,22 @@ window.MP = window.MP || {};
         MP.roundRect(ctx, TV_VIEW.x + 4, TV_VIEW.y + 4, TV_VIEW.w - 8, TV_VIEW.h - 8, 6);
         ctx.fill();
         ctx.restore();
-        MP.drawTvShow(ctx, TV_SCREEN.x, TV_SCREEN.y, TV_SCREEN.w, TV_SCREEN.h, this.showT);
+        MP.drawTvShow(ctx, TV_SCREEN.x, TV_SCREEN.y, TV_SCREEN.w, TV_SCREEN.h, this.showT, MP.state.tvChannel);
+        // switching channels: a moment of static, then the channel's number and name
+        const zap = t - (this.zapAt || -9);
+        if (zap < 0.35) {
+          ctx.save();
+          for (let i = 0; i < 160; i++) {
+            const v = Math.floor(Math.random() * 255);
+            ctx.fillStyle = 'rgb(' + v + ',' + v + ',' + v + ')';
+            ctx.fillRect(TV_SCREEN.x + Math.random() * TV_SCREEN.w, TV_SCREEN.y + Math.random() * TV_SCREEN.h, 6, 3);
+          }
+          ctx.restore();
+        }
+        const chInfo = MP.TV_CHANNELS && MP.TV_CHANNELS[(MP.state.tvChannel || 1) - 1];
+        if (chInfo && zap < 2.2) {
+          MP.drawText(ctx, chInfo.n + ' ' + chInfo.name, TV_SCREEN.x + 5, TV_SCREEN.y + 4, { size: 0.8, color: '#7bff7b', outline: '#000000' });
+        }
         ctx.save();
         ctx.fillStyle = '#4cd964';
         ctx.beginPath(); ctx.arc(TV_VIEW.x + TV_VIEW.w - 10, TV_VIEW.y + TV_VIEW.h - 6, 1.6, 0, Math.PI * 2); ctx.fill();
@@ -1993,13 +2032,18 @@ window.MP = window.MP || {};
         ctx.lineWidth = 1.2;
         ctx.beginPath(); ctx.arc(POWER.x, POWER.y, 3, -Math.PI * 0.3, Math.PI * 1.3); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(POWER.x, POWER.y - 4); ctx.lineTo(POWER.x, POWER.y - 0.5); ctx.stroke();
-        ctx.fillStyle = '#c9d3e6';
-        for (let r = 0; r < 3; r++) for (let cI = 0; cI < 2; cI++) {
-          ctx.beginPath(); ctx.arc(REMOTE.x + 9 + cI * 10, REMOTE.y + 30 + r * 10, 2.4, 0, Math.PI * 2); ctx.fill();
+        for (let i = 0; i < 6; i++) {
+          const b = CH_BTN(i);
+          const on = (MP.state.tvChannel || 1) === i + 1;
+          ctx.fillStyle = on ? '#ffd23f' : '#c9d3e6';
+          ctx.lineWidth = 0.6;
+          ctx.strokeStyle = MP.COLORS.outline;
+          ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+          MP.drawText(ctx, String(i + 1), b.x, b.y - 3, { size: 0.65, color: MP.COLORS.outline, align: 'center' });
         }
         ctx.restore();
         if (t - this.tvViewFrom < 4) {
-          MP.drawText(ctx, 'Sulje TV punaisesta napista', MP.W / 2, 166, {
+          MP.drawText(ctx, 'Kanavat: numeronapit. Sulje punaisesta napista.', MP.W / 2, 166, {
             size: 0.9, color: '#ffffff', outline: MP.COLORS.outline, align: 'center',
           });
         }

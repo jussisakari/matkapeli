@@ -95,6 +95,7 @@ window.MP = window.MP || {};
     { name: 'Sasu', x: 40, hair: '#e8c25a', outfit: { shirt: 'kpop', bottom: 'jeans', hat: 'none', costume: 'none', shoes: true }, guitar: true },
     { name: 'Daniel', x: 86, hair: '#4a3020', outfit: { shirt: 'red', bottom: 'brown', hat: 'cap', costume: 'none', shoes: true }, mic: true },
   ];
+  MP.TURPA_BAND = BAND;      // the Turpapojat TV show uses them too (tvchannels.js)
 
   MP.scenes.concert = {
     enter() {
