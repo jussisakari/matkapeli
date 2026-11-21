@@ -400,6 +400,30 @@ window.MP = window.MP || {};
     ctx.restore();
   }
 
+  // Bedtime stories mom reads. A tap moves on to the next line.
+  const STORIES = [
+    ['Luetaanpa iltasatu.',
+      'Olipa kerran pieni norsu, joka halusi nähdä meren.',
+      'Matkalla norsu tapasi pingviinin, joka oli eksynyt Talvimaasta.',
+      'Yhdessä he löysivät rannan, jossa aallot kimmelsivät kuunvalossa.',
+      'Ja siihen lämpimään hiekkaan he nukahtivat. Sen pituinen se.'],
+    ['Luetaanpa iltasatu.',
+      'Olipa kerran pieni faarao, joka asui pyramidissa.',
+      'Joka ilta hän laski taivaan tähtiä: yksi, kaksi, kolme…',
+      'Kun tähtiä oli sata, faarao haukotteli ja veti peiton korviin.',
+      'Ja niin pieni faarao nukahti. Sen pituinen se.'],
+    ['Luetaanpa iltasatu.',
+      'Olipa kerran lumiukko, joka halusi lentää lentokoneella.',
+      'Lentokentällä se valitsi lähtötaulusta Thaimaan.',
+      'Mutta Thaimaassa oli niin lämmin, että lumiukon nenä alkoi valua!',
+      'Niinpä se lensi kiireesti takaisin kotiin Talvimaahan. Sen pituinen se.'],
+    ['Luetaanpa iltasatu.',
+      'Olipa kerran kaksi poikaa, joilla oli bändi nimeltä Turpapojat.',
+      'He soittivat niin iloisia lauluja, että koko koulu alkoi tanssia.',
+      'Jopa rehtori tanssi! Ja koulun kissa lauloi mukana: miau, miau!',
+      'Illalla pojat olivat niin väsyneitä, että nukahtivat kitarat sylissä. Sen pituinen se.'],
+  ];
+
   // Cuddly toys to take to bed
   const TOY_CHOICES = [
     { id: 'teddy', name: 'Nalle' },
@@ -729,9 +753,24 @@ window.MP = window.MP || {};
     // Into bed with the chosen toy; the night comes and stays until a tap
     sleepWith(toy) {
       this.toyPick = null;
-      MP.sfx.yawn();
+      MP.sfx.tap();
       this.player.place(START_X, 1);
-      this.intro = { awake: false, t: 0, sleepT: -1e9, yawned: false, dawn: 1, nextRing: Infinity, night: { from: MP.time, toy } };
+      // night.from stays empty until mom has read the story and switched the light off
+      this.intro = { awake: false, t: 0, sleepT: -1e9, yawned: false, dawn: 1, nextRing: Infinity, night: { from: null, toy, listening: true } };
+      const story = STORIES[Math.floor(Math.random() * STORIES.length)];
+      this.callParent({
+        who: 'mom', floorY: FLOOR_UP, fromX: 345, standX: 124, talkFor: 0.6, book: true,
+        lines: story.concat(['Hyvää yötä, kultaseni! Nuku hyvin. Laitan valot pois.']),
+        onGone: () => {
+          // click: the light goes off
+          MP.sfx.tap();
+          if (this.intro && this.intro.night) {
+            this.intro.night.from = MP.time;
+            this.intro.night.listening = false;
+            MP.sfx.yawn();
+          }
+        },
+      });
     },
 
     // The sky in the child's window: night → sunrise → day while waking up
@@ -814,6 +853,7 @@ window.MP = window.MP || {};
         const u = MP.clamp((t - WAKE.sitUp) / (WAKE.sitDone - WAKE.sitUp), 0, 1);
         const angle = -Math.PI / 2 * (1 - u * u * (3 - 2 * u));
         let eyes = t < WAKE.sitUp ? 'closed' : 'sleepy';
+        if (intro.night && intro.night.listening) eyes = 'open';
         let mouth = 'flat';
         let armUp = 0;
         if (t >= WAKE.yawnStart && t < WAKE.yawnEnd) {
@@ -841,7 +881,7 @@ window.MP = window.MP || {};
         this.introHead = { x: hipX + d * Math.sin(angle), y: hipY - d * Math.cos(angle) };
 
         // Floating "z z z" while sleeping
-        if (!intro.awake) {
+        if (!intro.awake && !(intro.night && intro.night.listening)) {
           for (let i = 0; i < 3; i++) {
             const p = (MP.time * 0.7 + i / 3) % 1;
             ctx.save();
@@ -874,6 +914,7 @@ window.MP = window.MP || {};
       this.parent.x = this.parent.fromX;
       this.parent.facing = this.parent.standX < this.parent.fromX ? -1 : 1;
       if (typeof this.parent.say === 'function') this.parent.say = this.parent.say(this.parent.who);
+      if (this.parent.lines) { this.parent.line = 0; this.parent.say = this.parent.lines[0]; }
     },
 
     updateParent(dt) {
@@ -896,7 +937,14 @@ window.MP = window.MP || {};
           if (p.onTalk) p.onTalk();
         }
         // mom or dad waits until the text has been tapped away
-        if (p.t >= p.talkFor && !this.parentBubble) p.state = 'leave';
+        if (p.lines && !this.parentBubble && p.t >= p.talkFor && p.line < p.lines.length - 1) {
+          // the next line of the story (a tap closed the previous one)
+          p.line++;
+          p.t = 0;
+          this.parentBubble = { text: p.lines[p.line], from: MP.time, until: Infinity };
+          MP.sfx.tap();
+        }
+        if (p.t >= p.talkFor && !this.parentBubble && (!p.lines || p.line >= p.lines.length - 1)) p.state = 'leave';
       } else {
         const d = p.fromX - p.x;
         p.facing = d < 0 ? -1 : 1;
@@ -1118,7 +1166,7 @@ window.MP = window.MP || {};
         return;
       }
       if (this.intro && this.intro.night) {
-        if (MP.time - this.intro.night.from > 1.2) {
+        if (this.intro.night.from != null && MP.time - this.intro.night.from > 1.2) {
           MP.sfx.rooster();
           MP.goTo(MP.scenes.home, { quest: 'wake' });
         }
@@ -1422,6 +1470,18 @@ window.MP = window.MP || {};
           noBow: look.noBow, glasses: look.glasses,
           walking: par.state !== 'talk', walkTime: par.walkTime, flip: par.facing < 0,
         });
+        if (par.book) {
+          // an open book held in front
+          const bx = par.x + par.facing * 2, by = par.floorY - 20 * look.scale;
+          withLine(ctx, () => {
+            ctx.fillStyle = '#6b4fb5';
+            ctx.beginPath(); ctx.moveTo(bx - 7, by); ctx.lineTo(bx, by + 2); ctx.lineTo(bx + 7, by); ctx.lineTo(bx + 7, by + 7); ctx.lineTo(bx, by + 9); ctx.lineTo(bx - 7, by + 7); ctx.closePath();
+            ctx.fill(); ctx.stroke();
+            ctx.fillStyle = '#fffaf0';
+            ctx.beginPath(); ctx.moveTo(bx - 6, by - 0.6); ctx.lineTo(bx, by + 1.2); ctx.lineTo(bx + 6, by - 0.6); ctx.lineTo(bx + 6, by + 5.8); ctx.lineTo(bx, by + 7.8); ctx.lineTo(bx - 6, by + 5.8); ctx.closePath();
+            ctx.fill(); ctx.stroke();
+          });
+        }
       }
 
       // Bouncing arrows over the things still to do (on this floor),
@@ -1509,19 +1569,20 @@ window.MP = window.MP || {};
 
       // ===== Night: dark until tapped =====
       if (this.intro && this.intro.night) {
-        const k = MP.clamp((t - this.intro.night.from) / 2.5, 0, 1);
+        const k = this.intro.night.from == null ? 0 : MP.clamp((t - this.intro.night.from) / 1.2, 0, 1);
         ctx.save();
         ctx.fillStyle = '#0d1433';
         ctx.globalAlpha = 0.72 * k;
         ctx.fillRect(0, 0, MP.W, MP.H);
         ctx.restore();
         if (k > 0.6) {
+          MP.drawText(ctx, 'Äiti: Hyvää yötä, kultaseni!', MP.W / 2, 118, { size: 0.9, color: '#ffffff', outline: MP.COLORS.outline, align: 'center' });
           MP.drawText(ctx, 'Hyvää yötä!', MP.W / 2, 132, { size: 1.6, color: '#ffe680', outline: MP.COLORS.outline, align: 'center' });
           MP.drawText(ctx, '(napauta, niin tulee aamu)', MP.W / 2, 152, { size: 0.8, color: '#ffffff', outline: MP.COLORS.outline, align: 'center' });
         }
       }
       // evening light in the house
-      if (MP.state.evening && !(this.intro && this.intro.night) && !this.tvView) {
+      if (MP.state.evening && !(this.intro && this.intro.night && this.intro.night.from != null) && !this.tvView) {
         ctx.save();
         ctx.fillStyle = '#ff9a5a';
         ctx.globalAlpha = 0.12;
