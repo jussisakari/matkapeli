@@ -876,6 +876,11 @@ window.MP = window.MP || {};
         MP.state.hairMessy = MP.state.character === 'girl';
         MP.state.tv = { time: 0, locked: false, lockedBy: null };
       }
+      // every morning something has gone missing (lostthings.js); in the evening it is forgotten
+      if (waking) MP.lostPick();
+      if (evening) MP.state.lost = null;
+      this.petHint = null;
+      this.foundAt = null;
 
       this.player = this.player || new MP.Player(START_X);
       this.cakeBtn = null;
@@ -1053,7 +1058,9 @@ window.MP = window.MP || {};
       if (!MP.state.pet) this.petPick = MP.petPicker.open();
       this.tiredUntil = MP.time + (skipped ? 1.5 : 3.2);
       if (!skipped) MP.sfx.tap();
-      this.sayProgress(skipped ? 0.2 : 0.9);
+      const lost = MP.lostNow();
+      this.sayProgress(skipped ? 0.2 : 0.9, lost ? 'Voi ei, missä on minun ' + MP.lostItem(lost.item).name + '? Pitää etsiä!' : undefined);
+      if (lost) lost.from = MP.time;
       if (!MP.state.evening) this.cakeBtn = { from: MP.time + 1 };
     },
 
@@ -1330,6 +1337,13 @@ window.MP = window.MP || {};
         this.startStairs();
         return;
       }
+      // the lost thing is needed first (lostthings.js)
+      const needKey = { tv: 'tv', sofa: 'tv', wardrobe: 'dress', sink: 'brush', shoes: 'shoes' }[id];
+      const needMsg = needKey && !MP.state.evening && MP.lostBlocks(needKey);
+      if (needMsg) {
+        this.say(needMsg, 3);
+        return;
+      }
       if (id === 'tv' || id === 'sofa') {
         this.startTv();
         return;
@@ -1483,6 +1497,25 @@ window.MP = window.MP || {};
       }
     },
 
+    // Looking for the lost thing at a place (lostthings.js)
+    searchAt(p) {
+      const l = MP.lostNow();
+      if (!l) return;
+      const item = MP.lostItem(l.item);
+      if (l.place === p.id) {
+        l.found = true;
+        this.petHint = null;
+        this.foundAt = { t: MP.time, x: p.px, y: p.py, item: l.item };
+        MP.sfx.bling();
+        MP.sfx.applause(0.8);
+        this.say('Löytyi! ' + item.found + ' oli ' + p.where + '! Kuka sen sinne laittoi?', 4);
+        return;
+      }
+      l.wrong++;
+      MP.sfx.tap();
+      this.say(['Ei täällä…', 'Ei ole ' + p.where + '.', 'Hmm, ei täälläkään.'][l.wrong % 3] + ' Etsitään muualta!', 2.5);
+    },
+
     leave(scene) {
       if (this.busy) return;
       this.busy = true;
@@ -1593,9 +1626,18 @@ window.MP = window.MP || {};
         }
       }
 
+      // Looking for the lost thing: tap a hiding place
+      const lp = MP.lostPlaceAt(wx, wy, this.floor);
+      if (lp) {
+        MP.sfx.tap();
+        this.player.walkTo(MP.clamp(lp.x + lp.w / 2, 14, this.floor === 0 ? UP_MAX_X : WORLD_W - 14), () => this.searchAt(lp));
+        return;
+      }
+
       if (this.floor === 0) {
         // Toys: jump and say boing (no walking)
         for (const toy of ['teddy', 'panda', 'elephantToy']) {
+          if (toy === 'teddy' && MP.lostNow() && MP.lostNow().item === 'teddy') continue;   // the teddy is lost!
           if (MP.hit(SPOTS[toy], wx, wy)) {
             this.toys[toy] = MP.time;
             MP.sfx.boing();
@@ -1677,6 +1719,9 @@ window.MP = window.MP || {};
         }
         target = this.player.x - this.player.facing * 16;
         if (Math.abs(target - pet.x) < 10 && !this.player.walking) target = pet.x;
+        // sniffing out the lost thing: to its place, or to the stairs if it is on the other floor
+        const hint = this.petHint;
+        if (hint) target = hint.floor === this.floor ? hint.x : (this.floor === 0 ? UP_MAX_X - 6 : SPOTS.stairsDown.standX);
       }
       const d = target - pet.x;
       if (Math.abs(d) > 0.8) {
@@ -1740,6 +1785,16 @@ window.MP = window.MP || {};
         }
         if (intro.t >= WAKE.land) this.finishIntro(false);
         return;
+      }
+
+      // --- The lost thing: after a while (or two wrong places) the pet helps ---
+      const lost = MP.lostNow();
+      if (lost && !this.petHint && !this.intro && MP.myPet() && (lost.wrong >= 2 || MP.time - lost.from > 25) && !this.busy) {
+        const pl = MP.lostPlace(lost.place);
+        this.petHint = { x: pl.px, floor: pl.floor };
+        MP.petSound();
+        const pet = MP.myPet();
+        this.say(pet.name + ' haistelee… ' + (pl.floor === this.floor ? 'se juoksee jonnekin! Katso, missä se on!' : 'se juoksee portaille! Ehkä toisessa kerroksessa?'), 4);
       }
 
       // --- The doorbell (Turpapojat at the door) ---
@@ -1880,6 +1935,7 @@ window.MP = window.MP || {};
       if (this.intro) this.drawIntro(ctx);
       for (const toy of ['teddy', 'panda', 'elephantToy']) {
         if (this.intro && this.intro.night && this.intro.night.toy === toy) continue;   // it's in bed
+        if (toy === 'teddy' && MP.lostNow() && MP.lostNow().item === 'teddy') continue;  // lost!
         const u = (t - this.toys[toy]) / 0.45;
         const hop = u >= 0 && u < 1 ? -Math.sin(u * Math.PI) * 7 : 0;
         MP.draw(toy, ctx, POS[toy], FLOOR + hop);
@@ -1940,6 +1996,18 @@ window.MP = window.MP || {};
       doormat(ctx, POS.door);
       MP.draw('door', ctx, POS.door, FLOOR, { open: this.doorOpen });
       ctx.restore();
+
+      // the lost thing peeking out of its hiding place, and a found thing popping up
+      if (!this.intro) MP.lostDrawPeek(ctx, t);
+      const fa = this.foundAt;
+      if (fa && t - fa.t < 1.8) {
+        const u = (t - fa.t) / 1.8;
+        MP.lostDrawItem(ctx, fa.item, fa.x, fa.y - 14 - u * 10, 1.6);
+        for (let i = 0; i < 6; i++) {
+          const a = i / 6 * Math.PI * 2 + u * 3;
+          MP.drawText(ctx, '★', fa.x + Math.cos(a) * 14 * (0.5 + u), fa.y - 20 + Math.sin(a) * 10 * (0.5 + u), { size: 0.6, color: '#ffd23f', align: 'center' });
+        }
+      }
 
       // ===== Stairs and walls between rooms =====
       staircase(ctx);
@@ -2132,6 +2200,7 @@ window.MP = window.MP || {};
             ctx.restore();
           }
         });
+        if (!MP.state.evening) MP.lostDrawBadge(ctx, 3 + n * 19 + 8, 8, t);
       }
 
       // ===== Speech bubbles =====
