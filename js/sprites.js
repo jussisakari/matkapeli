@@ -102,6 +102,9 @@ MP.CLOTHES = {
     { id: 'pharaoh', name: 'Faarao',       top: '#f4efe1', kilt: '#f4efe1', boots: '#c8913a',
       gold: '#f2c230', blue: '#2f5fb5', red: '#d33a3a' },
     { id: 'swimsuit', name: 'Uimapuku', type: 'swim', top: '#2bb3a3', dots: '#ffffff' },
+    // a souvenir from Japan (gift: in the wardrobe after visiting)
+    { id: 'kimono', name: 'Kimono', gift: true, top: '#e0559a', legs: '#e0559a', boots: '#2b2340',
+      obi: '#ffd23f', flowers: '#ffffff' },
     { id: 'mermaid', name: 'Merenneito',   top: '#b46be0', legs: '#2bb3a3', scales: '#1d7f74',
       fin: '#7fe0c8', shell: '#ffc6e0', starfish: '#ffb347' },
   ],
@@ -611,6 +614,16 @@ MP.findItem = function (slot, id) {
       for (const side of [-1, 1]) {
         striped(c, () => rr(c, side * 7.8 - 1.9, -30, 3.8, 12.5, 1.5), suit.gold, suit.blue, 1.6);
       }
+    }
+
+    if (suit && suit.obi) {
+      // Kimono: a wide belt (obi), a crossed collar and little flowers
+      c.beginPath(); c.moveTo(-3.4, -24); c.lineTo(1.2, -17.5); c.moveTo(3.4, -24); c.lineTo(-0.6, -19.5);
+      c.lineWidth = 0.6; c.stroke(); c.lineWidth = 0.7;
+      rr(c, -6.4, -15.2, 12.8, 3.6, 1); fs(c, suit.obi);
+      c.save(); c.fillStyle = suit.flowers;
+      for (const [fx, fy] of [[-3.6, -20], [3.8, -21.5], [-2.5, -6], [3, -3]]) { c.beginPath(); c.arc(fx, fy, 0.8, 0, Math.PI * 2); c.fill(); }
+      c.restore();
     }
 
     if (kind === 'panther') {

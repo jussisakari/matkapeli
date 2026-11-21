@@ -13,7 +13,8 @@
 //   sky, ground, fog    colors; fog = [color, near, far]
 //   bounds              { minX, maxX, minZ, maxZ } where you can walk
 //   start               { x, z } where you stand after arriving
-//   car                 { at: {x, z}, color, name: 'Jeeppi', build(W) }
+//   car                 { at: {x, z}, color, name: 'Jeeppi', build(W), w, d (its size on the ground) }
+//   onArrive(scene, S)  called when you get out of the car; may return more words to say
 //   sign                { text, x, z }
 //   hotel               { x, z, rot, look: {...}, room: {...} }  (room = hotel.js look)
 //   airport             { title, hall, floor, plant }
@@ -109,7 +110,7 @@ window.MP = window.MP || {};
       // the car that brings you here (front toward -x)
       S.car = CAR.build ? W.add(CAR.build(W)) : W.taxi(CAR.color);
       S.car.position.set(CAR.at.x, 0, CAR.at.z);
-      W.block(CAR.at.x, CAR.at.z, 4, 2);
+      W.block(CAR.at.x, CAR.at.z, CAR.w || 4, CAR.d || 2);
       W.clickable(S.car, 'taxi');
       if (cfg.sign) {
         W.cyl(0.1, 2.6, '#8a6a45', cfg.sign.x, 0, cfg.sign.z);
@@ -226,7 +227,8 @@ window.MP = window.MP || {};
             S.ch.setVisible(true);
             MP.sfx.bling();
             const poster = MP.collectPoster(id) ? ' Sain julisteen omaan huoneeseeni!' : '';
-            this.say((cfg.welcome || 'Tervetuloa ' + (cfg.to || cfg.name) + '!') + poster, 4.5);
+            const extra = cfg.onArrive ? cfg.onArrive(this, S) || '' : '';
+            this.say((cfg.welcome || 'Tervetuloa ' + (cfg.to || cfg.name) + '!') + poster + extra, 4.5);
           }
         }
         if (this.leaving) {
