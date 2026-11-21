@@ -21,6 +21,7 @@
 //   #hamahakki    outside in the spider suit (tap the suit: web)
 //   #lemmikki     home in the morning with a pet (a kitten if none chosen yet)
 //   #albumi       the photo album
+//   #passi        the passport (with the Egypt stamp for testing)
 //   #konsertti    the Turpapojat concert (a memory from the poster)
 //   #iltakatu     back on the home street in the evening (after a trip)
 //   #pyramidi     inside the pyramid
@@ -65,6 +66,7 @@ window.MP = window.MP || {};
     hamahakki:   () => { ready(true); MP.state.outfit.costume = 'spider'; return [MP.scenes.street]; },
     lemmikki:    () => { ready(false); MP.state.pet = MP.state.pet || { kind: 'cat', name: 'Mirri' }; return [MP.scenes.home]; },
     albumi:      () => [MP.scenes.album],
+    passi:       () => { ready(false); MP.addStamp('egypt'); return [MP.scenes.passport]; },
     iltakatu:    () => { ready(true); MP.state.dusk = true; return [MP.scenes.street, { from: 'taxi' }]; },
     konsertti:   () => { ready(false); return [MP.scenes.concert]; },
     pyramidi:    () => { ready(true); return [MP.scenes.pyramid]; },

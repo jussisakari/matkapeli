@@ -235,10 +235,17 @@ window.MP = window.MP || {};
       this.t = 0;
       this.done = false;
       this.landedSound = false;
+      this.welcomed = false;
+      this.stamp = null;          // a new stamp in the passport after landing
       MP.sfx.tap();
     },
 
     onTap() {
+      // the stamp is in the passport: tap to go on
+      if (this.stamp) {
+        if (this.t - this.stamp.from > MP.STAMP_HIT + 0.4) this.finish();
+        return;
+      }
       // skip to the end
       if (this.t > 0.5 && this.t < TAKEOFF + CRUISE + LANDING) this.t = TAKEOFF + CRUISE + LANDING;
     },
@@ -254,11 +261,23 @@ window.MP = window.MP || {};
         this.welcomed = true;
         MP.sfx.bling();
       }
-      if (this.t > end + WELCOME && !this.done) {
-        this.done = true;
-        this.welcomed = false;
-        MP.goTo(MP.scenes[this.to.scene], this.to.params);
+      // The first visit to a country: the passport gets a stamp. TUMP!
+      if (this.t > end + WELCOME * 0.6 && !this.stamp && !this.done && MP.addStamp && MP.addStamp(this.to.id)) {
+        this.stamp = { id: this.to.id, from: this.t, all: MP.allStamps(), hit: false };
       }
+      const st = this.stamp;
+      if (st && !st.hit && this.t - st.from > MP.STAMP_HIT) {
+        st.hit = true;
+        MP.sfx.kick();
+        if (st.all) MP.sfx.applause(2);
+      }
+      if (st ? this.t - st.from > (st.all ? 6 : 4) : this.t > end + WELCOME) this.finish();
+    },
+
+    finish() {
+      if (this.done) return;
+      this.done = true;
+      MP.goTo(MP.scenes[this.to.scene], this.to.params);
     },
 
     draw(ctx) {
@@ -346,6 +365,8 @@ window.MP = window.MP || {};
       if (t < TAKEOFF + CRUISE + LANDING && t > 0.5) {
         MP.drawText(ctx, '(napauta ohittaaksesi)', MP.W - 4, 170, { size: 0.55, color: '#ffffff', outline: O(), align: 'right' });
       }
+      // the new stamp in the passport (passport.js)
+      if (this.stamp) MP.drawStampMoment(ctx, this.stamp.id, t - this.stamp.from, this.stamp.all);
     },
   };
 })();

@@ -65,6 +65,7 @@ window.MP = window.MP || {};
     stairsDown: { x: 696, y: 182, w: 190, h: 138, standX: 872, arrowX: 846, arrowY: 268 },
     door:       { x: 916, y: 280, w: 32, h: 54, standX: 904 },
     album:      { x: 177, y: 290, w: 24, h: 40, standX: 189 },
+    passport:   { x: 16,  y: 134, w: 28, h: 17, standX: 46 },     // the nightstand drawer
     bowl:       { x: 464, y: 306, w: 28, h: 24, standX: 498 },
   };
   const floorOf = (spot) => (spot.y >= DOWN_Y ? 1 : 0);
@@ -1186,6 +1187,11 @@ window.MP = window.MP || {};
         this.leave(MP.scenes.album);
         return;
       }
+      if (id === 'passport') {
+        this.player.facing = -1;
+        this.leave(MP.scenes.passport);
+        return;
+      }
       if (id === 'bowl') {
         const pet = MP.myPet();
         if (!pet) return;
@@ -1386,7 +1392,7 @@ window.MP = window.MP || {};
       }
 
       // Things on this floor: walk there, then use it
-      for (const id of ['toilet', 'sink', 'mirror', 'wardrobe', 'bed', 'stairsUp', 'books', 'album', 'tv', 'sofa', 'table', 'bowl', 'shoes', 'stairsDown', 'door']) {
+      for (const id of ['toilet', 'sink', 'mirror', 'wardrobe', 'bed', 'stairsUp', 'books', 'album', 'passport', 'tv', 'sofa', 'table', 'bowl', 'shoes', 'stairsDown', 'door']) {
         const spot = SPOTS[id];
         if (floorOf(spot) === this.floor && MP.hit(spot, wx, wy)) {
           MP.sfx.tap();
@@ -1602,6 +1608,8 @@ window.MP = window.MP || {};
       for (const ps of POSTERS) if (hasPoster(ps.id)) countryPoster(ctx, ps);
       MP.draw('wardrobe', ctx, POS.wardrobe, FLOOR);
       MP.draw('nightstand', ctx, POS.nightstand, FLOOR);
+      // the passport peeks out of the drawer
+      MP.drawPassportIcon(ctx, POS.nightstand + 6, FLOOR - 13, 0.55);
       MP.draw('alarmClock', ctx, POS.nightstand, FLOOR - 19.5, {
         ringing: !!(this.intro && !this.intro.awake && this.intro.dawn >= 1 && !this.intro.night), t,
       });

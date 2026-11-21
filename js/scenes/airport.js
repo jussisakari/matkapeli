@@ -82,7 +82,7 @@ window.MP = window.MP || {};
   };
 
   const FLOOR = 150;
-  const POS = { doors: 28, board: 150, gate: 292 };
+  const POS = { doors: 28, board: 150, gate: 292, officer: 172, check: 134 };
   const SPOTS = {
     doors: { x: 6, y: 70, w: 46, h: 80, standX: 40 },
     board: { x: 104, y: 28, w: 92, h: 58, standX: 150 },
@@ -243,6 +243,38 @@ window.MP = window.MP || {};
     }
   }
 
+  // The passport officer behind the desk (only the top half shows)
+  function officer(c, x, t, happy) {
+    c.save();
+    c.lineWidth = 0.8;
+    c.strokeStyle = O();
+    c.fillStyle = '#2b3f73';                                   // jacket
+    MP.roundRect(c, x - 9, 100, 18, 22, 4); c.fill(); c.stroke();
+    c.fillStyle = '#ffffff';
+    c.beginPath(); c.moveTo(x - 3, 100); c.lineTo(x, 106); c.lineTo(x + 3, 100); c.closePath(); c.fill();
+    c.fillStyle = '#ffd23f';
+    c.fillRect(x + 3, 104, 3, 2);                              // a badge
+    c.fillStyle = MP.COLORS.skin || '#f6cfa8';
+    c.beginPath(); c.arc(x, 92, 7, 0, Math.PI * 2); c.fill(); c.stroke();
+    c.fillStyle = '#2b3f73';                                   // cap
+    c.beginPath(); c.ellipse(x, 85.5, 8, 3.2, 0, Math.PI, 0); c.fill(); c.stroke();
+    c.fillRect(x - 8, 85, 16, 2.2);
+    c.fillStyle = '#ffd23f';
+    c.fillRect(x - 1.2, 82.6, 2.4, 2);
+    c.fillStyle = O();
+    const blink = Math.floor(t * 0.7) % 5 === 0 && (t * 0.7) % 1 < 0.15;
+    for (const ex of [-2.5, 2.5]) {
+      if (blink) c.fillRect(x + ex - 1, 91.5, 2, 0.6);
+      else { c.beginPath(); c.arc(x + ex, 91.5, 0.9, 0, Math.PI * 2); c.fill(); }
+    }
+    c.lineWidth = 0.7;
+    c.beginPath();
+    if (happy) c.arc(x, 94.5, 2.2, 0.15 * Math.PI, 0.85 * Math.PI);
+    else { c.moveTo(x - 2, 96); c.lineTo(x + 2, 96); }
+    c.stroke();
+    c.restore();
+  }
+
   function desk(c) {
     c.lineWidth = 1;
     c.strokeStyle = O();
@@ -250,7 +282,7 @@ window.MP = window.MP || {};
     MP.roundRect(c, 112, 118, 76, 32, 3); c.fill(); c.stroke();
     c.fillStyle = '#2f6fb8';
     c.fillRect(112, 124, 76, 4);
-    MP.drawText(c, 'Lähtöselvitys', 150, 132, { size: 0.7, color: O(), align: 'center' });
+    MP.drawText(c, 'Passintarkastus', 150, 132, { size: 0.7, color: O(), align: 'center' });
   }
 
   function gate(c, open) {
@@ -283,6 +315,7 @@ window.MP = window.MP || {};
       this.bubble = null;
       this.doorsAt = MP.time;     // the doors were just opened
       this.gateAt = -10;
+      this.check = null;          // the passport check: 'walk' → 'ask' → 'show' → 'done'
       const here = { home: 'Lentokenttä!', egypt: 'Kairon lentokenttä!', winter: 'Talvimaan lentokenttä!', thailand: 'Phuketin lentokenttä!', newyork: 'New Yorkin lentokenttä!' }[this.country] || 'Lentokenttä!';
       this.say(here + ' Napauta lähtötaulua ja valitse, minne lennetään.', 5, 0.6);
     },
@@ -290,13 +323,29 @@ window.MP = window.MP || {};
     say(text, seconds, delay) {
       this.bubble = { text, from: MP.time + (delay || 0), until: Infinity };   // stays until the next tap
     },
+    // the passport officer says something
+    officerSays(text, delay) {
+      this.bubble = { text, from: MP.time + (delay || 0), until: Infinity, x: POS.officer, y: 78 };
+    },
 
     choose(d) {
       this.panel = null;
       this.chosen = d;
       MP.sfx.bling();
-      this.say(d.to.charAt(0).toUpperCase() + d.to.slice(1) + '! Mennään portille.', 3, 0.2);
-      this.player.walkTo(SPOTS.gate.standX, () => this.board());
+      // First the passport check at the desk, then to the gate
+      this.check = { stage: 'walk', at: MP.time };
+      this.bubble = null;
+      this.player.walkTo(POS.check, () => {
+        this.player.facing = 1;
+        this.check = { stage: 'ask', at: MP.time };
+        this.officerSays('Passi, kiitos!');
+      });
+    },
+
+    showPassport() {
+      this.check = { stage: 'show', at: MP.time };
+      MP.sfx.tap();
+      this.officerSays('Kiitos! Hyvää matkaa ' + this.chosen.to + '!', 0.7);
     },
 
     // Into the plane!
@@ -309,6 +358,11 @@ window.MP = window.MP || {};
 
     onTap(x, y) {
       if (this.busy || MP.isFading()) return;
+      // The passport check: any tap shows the passport
+      if (this.check && this.check.stage !== 'done') {
+        if (this.check.stage === 'ask') this.showPassport();
+        return;
+      }
       if (this.panel) {
         if (Math.hypot(x - CLOSE.x, y - CLOSE.y) < CLOSE.r + 4) { this.panel = null; MP.sfx.tap(); return; }
         choices(this.country).forEach((d, i) => {
@@ -347,6 +401,13 @@ window.MP = window.MP || {};
 
     update(dt) {
       this.player.update(dt);
+      const ch = this.check;
+      if (ch && ch.stage === 'show' && MP.time - ch.at > 2.4) {
+        this.check = { stage: 'done', at: MP.time };
+        const d = this.chosen;
+        this.say(d.to.charAt(0).toUpperCase() + d.to.slice(1) + '! Mennään portille.', 3, 0.2);
+        this.player.walkTo(SPOTS.gate.standX, () => this.board());
+      }
     },
 
     draw(ctx) {
@@ -417,6 +478,8 @@ window.MP = window.MP || {};
       const doorsOpen = MP.clamp(1 - Math.abs(t - this.doorsAt - 0.6) / 0.6, 0, 1);
       slidingDoors(ctx, doorsOpen);
       board(ctx, this.country, t);
+      const ch = this.check;
+      officer(ctx, POS.officer, t, ch && ch.stage === 'show' && t - ch.at > 0.7);
       desk(ctx);
       seats(ctx, 212);
       plant(ctx, 66, look.plant);
@@ -426,14 +489,23 @@ window.MP = window.MP || {};
       // arrows: first to the board, then to the gate
       const ax = this.chosen ? POS.gate - 1 : POS.board;
       const ay = this.chosen ? 58 : 26;
-      if (!this.panel && !this.busy) MP.draw('arrow', ctx, ax, ay + Math.sin(t * 6) * 2.5);
+      const checking = ch && ch.stage !== 'done';
+      if (!this.panel && !this.busy && !checking) MP.draw('arrow', ctx, ax, ay + Math.sin(t * 6) * 2.5);
 
       // ===== The character =====
-      if (!(this.busy && t - this.gateAt > 0.4 && this.gateAt > 0)) this.player.draw(ctx, FLOOR, 0);
+      const showing = ch && ch.stage === 'show';
+      if (!(this.busy && t - this.gateAt > 0.4 && this.gateAt > 0)) this.player.draw(ctx, FLOOR, 0, showing ? { armUp: 0.6, mouth: 'smile' } : null);
+      if (showing) MP.drawPassportIcon(ctx, this.player.x + 9, FLOOR - 36, 1.1);
+      if (ch && ch.stage === 'ask') {
+        // tap here: the passport, bouncing over your head
+        MP.drawPassportIcon(ctx, this.player.x, FLOOR - 56 + Math.sin(t * 6) * 2, 1.4 + Math.sin(t * 8) * 0.08);
+        MP.drawText(ctx, 'Näytä passi!', this.player.x, FLOOR - 76, { size: 0.65, color: '#ffffff', outline: O(), align: 'center' });
+      }
 
       const b = this.bubble;
       if (b && t >= b.from && !this.panel) {
-        MP.drawBubble(ctx, b.text, this.player.x, FLOOR - 46, { maxWidth: 140 });
+        if (b.x != null) MP.drawBubble(ctx, b.text, b.x, b.y, { maxWidth: 120 });
+        else MP.drawBubble(ctx, b.text, this.player.x, FLOOR - 46, { maxWidth: 140 });
       }
 
       // ===== "Minne lennetään?" =====
