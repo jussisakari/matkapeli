@@ -349,7 +349,11 @@ window.MP = window.MP || {};
       slide: { x: 38.5, z: -48.2 },
       roundabout: { x: 29.5, z: -54.6 },
       sandbox: { x: 38.5, z: -55.2 },
+      garden: { x: -5.6, z: 15.4 },
     };
+
+    // --- Our own garden: three garden boxes next to the house (garden.js) ---
+    S.garden = MP.garden3d(W, T);
 
     S.ch = W3.character(S.scene);
     S.pet = MP.petBuddy(S.scene, S.clickables);     // our pet follows us outside
@@ -384,8 +388,11 @@ window.MP = window.MP || {};
       W3.show();
       const back = params && params.from === 'taxi';
       const swum = params && params.from === 'pool';
+      const gardened = params && params.from === 'garden';
       this.p = back ? { x: -30, z: -44.3, heading: Math.PI / 2 }
-        : swum ? { x: S.spots.pool.x, z: S.spots.pool.z, heading: 0 } : { x: START.x, z: START.z, heading: 0 };
+        : swum ? { x: S.spots.pool.x, z: S.spots.pool.z, heading: 0 }
+          : gardened ? { x: S.spots.garden.x, z: S.spots.garden.z, heading: Math.PI / 2 } : { x: START.x, z: START.z, heading: 0 };
+      S.garden.update();
       this.camHeading = this.p.heading;
       this.target = null;
       this.onArrive = null;
@@ -404,7 +411,8 @@ window.MP = window.MP || {};
       if (swum) S.pet.place(this.p.x + 1.2, this.p.z + 0.6);
       else if (back) { S.pet.place(0, 9); S.pet.happyFrom = MP.time + 0.3; }
       else S.pet.place(this.p.x + 0.8, this.p.z + 1.2);
-      if (swum) this.say('Olipa kivaa uida! Nyt kuivataan pyyhkeellä ja lähdetään seikkailemaan.', 4, 0.6);
+      if (gardened) this.say('Kasvimaa on hoidettu! Huomenna kasvit ovat taas vähän isompia.', 3.5, 0.4);
+      else if (swum) this.say('Olipa kivaa uida! Nyt kuivataan pyyhkeellä ja lähdetään seikkailemaan.', 4, 0.6);
       else if (back && MP.state.dusk) this.say('Takaisin kotikadulla! On jo ilta – katulamput palavat. Kotiin pääsee napauttamalla kotitalon ovea.', 4.5, 0.6);
       else if (back) this.say('Takaisin kotikadulla! Leikkipuistoon vai kotiin? Kotiin pääsee napauttamalla kotitalon ovea.', 4.5, 0.6);
       else this.say('Ulkona! Kävellään risteykseen.', 4, 0.6);
@@ -429,6 +437,13 @@ window.MP = window.MP || {};
         MP.sfx.bling();
         this.ride = { t: 0, home: true };          // stops walking while the screen fades
         MP.goTo(MP.scenes.home, { quest: 'evening' });
+        return;
+      }
+      if (spot === 'garden') {
+        this.say('Oma kasvimaa!', 1.5);
+        MP.sfx.tap();
+        this.ride = { t: 0, home: true };          // stops walking while the screen fades
+        MP.goTo(MP.scenes.garden);
         return;
       }
       if (spot === 'pool') {

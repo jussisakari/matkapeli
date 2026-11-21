@@ -403,6 +403,8 @@ window.MP = window.MP || {};
         outfit: MP.state.outfit,
         treasures: MP.state.treasures,
         pet: MP.state.pet || null,
+        garden: MP.state.garden || null,
+        pantry: MP.state.pantry || null,
       }));
       return true;
     } catch (_) {
@@ -463,6 +465,8 @@ window.MP = window.MP || {};
       if (data.outfit && typeof data.outfit === 'object') Object.assign(MP.state.outfit, data.outfit);
       if (data.treasures && typeof data.treasures === 'object') MP.state.treasures = data.treasures;
       if (data.pet && typeof data.pet === 'object') MP.state.pet = data.pet;
+      if (Array.isArray(data.garden)) MP.state.garden = data.garden;
+      if (data.pantry && typeof data.pantry === 'object') MP.state.pantry = data.pantry;
       return true;
     } catch (_) {
       return false;

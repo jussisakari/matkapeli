@@ -6,7 +6,18 @@ window.MP = window.MP || {};
 
 (function () {
   // Breakfast in the morning, the evening meal in the evening
-  const menu = () => (window.MP.state.evening ? window.MP.EVENING_FOODS : window.MP.FOODS);
+  // Strawberries and carrots from our own garden are on the menu when we have picked some
+  const GARDEN_FOODS = [
+    { id: 'strawberries', name: 'Mansikat', type: 'food', garden: true },
+    { id: 'carrot', name: 'Porkkana', type: 'food', garden: true },
+  ];
+  const menu = () => {
+    const base = window.MP.state.evening ? window.MP.EVENING_FOODS : window.MP.FOODS;
+    const pantry = window.MP.state.pantry || {};
+    const own = GARDEN_FOODS.filter((f) => pantry[f.id] > 0);
+    // drinks stay last
+    return base.filter((f) => f.type !== 'drink').concat(own, base.filter((f) => f.type === 'drink'));
+  };
   const MP = window.MP;
 
   const TABLE_Y = 128;
@@ -19,7 +30,9 @@ window.MP = window.MP || {};
   const doneButton = { x: 236, y: 150, w: 76, h: 24 };
 
   function cardRect(i) {
-    return { x: 6 + i * 44.5, y: 5, w: 41, h: 46 };
+    const n = menu().length;
+    const w = Math.min(41, (308 - (n - 1) * 3.5) / n);
+    return { x: 6 + i * (w + 3.5), y: 5, w, h: 46 };
   }
 
   MP.scenes.breakfast = {
@@ -100,6 +113,13 @@ window.MP = window.MP || {};
         return;
       }
       this.plate.push({ id: item.id, name: item.name, bites: 0 });
+      if (item.garden) {
+        // one portion out of the pantry
+        MP.state.pantry[item.id]--;
+        MP.save();
+        this.say(item.name + ' omasta kasvimaasta! Napauta, niin syöt.', 3);
+        return;
+      }
       if (this.eaten === 0) this.say('Napauta ruokaa, niin syöt!', 3);
     },
 
@@ -221,7 +241,7 @@ window.MP = window.MP || {};
         ctx.fill();
         ctx.stroke();
         ctx.restore();
-        MP.draw(item.id, ctx, r.x + r.w / 2, r.y + 19, { scale: 1.45 });
+        MP.draw(item.id, ctx, r.x + r.w / 2, r.y + 19, { scale: Math.min(1.45, r.w / 28) });
         MP.drawText(ctx, item.name, r.x + r.w / 2, r.y + 35, {
           size: item.name.length > 10 ? 0.5 : 0.62, color: MP.COLORS.outline, align: 'center',
         });

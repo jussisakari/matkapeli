@@ -768,7 +768,10 @@ window.MP = window.MP || {};
       params = params || {};
       const waking = params.quest === 'wake';
       const evening = params.quest === 'evening';
-      if (waking) { MP.state.evening = false; MP.state.dusk = false; MP.state.baked = null; }
+      if (waking) {
+        MP.state.evening = false; MP.state.dusk = false; MP.state.baked = null;
+        if (MP.gardenMorning) MP.gardenMorning();   // the garden grows during the night
+      }
       if (evening) {
         // Back home from outside: the evening tasks start
         MP.state.evening = true;

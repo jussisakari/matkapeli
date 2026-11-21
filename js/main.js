@@ -21,6 +21,7 @@
 //   #ilta         home in the evening (evening tasks, then bed)
 //   #hotelli      a hotel room in Thailand (sleep one night)
 //   #uima         swimming in the pool (swimsuit on)
+//   #kasvimaa     our own garden (one box ready to pick, one flowering)
 //   #rauta        outside in the Iron hero suit (tap the suit: fly)
 //   #hamahakki    outside in the spider suit (tap the suit: web)
 //   #lemmikki     home in the morning with a pet (a kitten if none chosen yet)
@@ -70,6 +71,7 @@ window.MP = window.MP || {};
     ilta:        () => { ready(true); return [MP.scenes.home, { quest: 'evening' }]; },
     hotelli:     () => { ready(true); return [MP.scenes.hotel, { country: 'thailand' }]; },
     uima:        () => { ready(true); MP.state.outfit.costume = 'swimsuit'; return [MP.scenes.swim]; },
+    kasvimaa:    () => { ready(true); MP.state.garden = MP.state.garden || [{ seed: 'strawberry', stage: 4, watered: true }, { seed: 'sunflower', stage: 3, watered: false }, { seed: null, stage: 0, watered: false }]; return [MP.scenes.garden]; },
     rauta:       () => { ready(true); MP.state.outfit.costume = 'iron'; return [MP.scenes.street]; },
     hamahakki:   () => { ready(true); MP.state.outfit.costume = 'spider'; return [MP.scenes.street]; },
     lemmikki:    () => { ready(false); MP.state.pet = MP.state.pet || { kind: 'cat', name: 'Mirri' }; return [MP.scenes.home]; },

@@ -1356,6 +1356,26 @@ MP.findItem = function (slot, id) {
     circle(c, 7, -3, 0.8); c.fill();
   });
 
+  // From our own garden: strawberries in a little bowl, and a carrot
+  D.strawberries = (c, o) => food(c, o, () => {
+    for (const [bx, by] of [[-3, -1], [2.5, -1.5], [-0.5, -4]]) {
+      c.beginPath(); c.moveTo(bx - 2.6, by - 1.6); c.quadraticCurveTo(bx, by + 4.5, bx + 2.6, by - 1.6); c.quadraticCurveTo(bx, by - 3, bx - 2.6, by - 1.6);
+      c.closePath(); fs(c, '#e8343f');
+      c.save(); c.fillStyle = '#3d9a46'; c.fillRect(bx - 1.6, by - 3, 3.2, 1.2); c.restore();
+    }
+    c.beginPath(); c.moveTo(-6, 1); c.quadraticCurveTo(0, 7, 6, 1); c.closePath(); fs(c, '#ffffff');
+  });
+  D.carrot = (c, o) => food(c, o, () => {
+    c.beginPath(); c.moveTo(-2.6, -3); c.lineTo(2.6, -3); c.lineTo(0.3, 7); c.closePath(); fs(c, '#ff8a2a');
+    c.save(); c.strokeStyle = '#c85a10'; c.lineWidth = 0.4;
+    c.beginPath(); c.moveTo(-1.6, 0); c.lineTo(0, 0.4); c.moveTo(-0.8, 3); c.lineTo(0.8, 3.2); c.stroke(); c.restore();
+    for (const a of [-0.5, 0, 0.5]) {
+      c.save(); c.translate(0, -3); c.rotate(a);
+      ellipse(c, 0, -2.6, 0.9, 2.6); fs(c, '#4caf50');
+      c.restore();
+    }
+  });
+
   D.apple = (c, o) => food(c, o, () => {
     c.beginPath(); c.moveTo(0, -3.5);
     c.bezierCurveTo(4, -7, 8, -2, 5.5, 3);
