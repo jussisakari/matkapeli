@@ -32,6 +32,7 @@ window.MP = window.MP || {};
     hero: { x: 0, z: HERO.z + 8, r: 7 },
     water: { x: 0, z: -62, r: 6 },
     grandma: { x: -7, z: -40, r: 4.5 },
+    hq: { x: 7, z: -46, r: 4.5 },
   };
   const BITES = 4;
 
@@ -287,6 +288,19 @@ window.MP = window.MP || {};
     // Mummi and Ukki live high up in the skyscraper on the left (grandparents.js)
     S.grandma = W.hotel(-10, -40, Math.PI / 2, { facadeOnly: true, d: 0, h: 0, awning: '#3c3b6e', glass: '#ffe9a0', sign: 'MUMMI & UKKI' });
     W.clickable(S.grandma.group, 'grandma');
+    // the superheroes' headquarters (hq.js): only heroes may come in
+    S.hq = W.hotel(10, -46, -Math.PI / 2, { facadeOnly: true, d: 0, h: 0, awning: '#d62828', glass: '#2b3350', door: '#2b2b33', sign: 'SPIDER HQ' });
+    W.clickable(S.hq.group, 'hq');
+    // a big spider logo over the door
+    const logo = new T.Group();
+    W.ball(0.45, '#d62828', 0, 0, 0, logo).scale.set(0.8, 1.2, 0.3);
+    for (let k = 0; k < 4; k++) for (const sd of [-1, 1]) {
+      const leg = W.box(1, 0.08, 0.08, '#d62828', sd * 0.55, 0.45 - k * 0.3, 0, logo);
+      leg.rotation.z = sd * (0.6 - k * 0.4);
+    }
+    logo.position.set(10 - 0.15, 4.8, -46);
+    logo.rotation.y = -Math.PI / 2;
+    W.add(logo);
     S.ch = W3.character(S.scene);
     S.built = true;
   }
@@ -316,6 +330,15 @@ window.MP = window.MP || {};
       S.taxi.position.set(TAXI_AT.x, 0, TAXI_AT.z);
       this.arrive = { t: 0 };
       S.ch.setVisible(false);
+      // back from the superheroes' headquarters
+      if (params && params.from === 'hq') {
+        const d = S.hq.door;
+        this.p = { x: d.x, z: d.z, heading: d.heading + Math.PI };
+        this.camHeading = this.p.heading;
+        this.arrive = null;
+        S.ch.setVisible(true);
+        this.say('Takaisin kadulla. Supersankari on valmiina seikkailuun!', 3, 0.5);
+      }
       // back from Mummi and Ukki
       if (params && params.from === 'grandma') {
         const d = S.grandma.door;
@@ -351,6 +374,7 @@ window.MP = window.MP || {};
     stand(spot) {
       if (spot === 'hotel') return S.hotel.door;
       if (spot === 'grandma') return S.grandma.door;
+      if (spot === 'hq') return S.hq.door;
       if (spot === 'taxi') return { x: TAXI_AT.x - 1, z: TAXI_AT.z - 1.9 };
       if (spot === 'pizza') return { x: PIZZA.x + 1.6, z: PIZZA.z };
       if (spot === 'liberty') return { x: 0, z: BOUNDS.minZ + 0.5 };
@@ -358,6 +382,21 @@ window.MP = window.MP || {};
     },
 
     use(spot) {
+      if (spot === 'hq') {
+        const k = MP.heroKind();
+        if (k !== 'spider' && k !== 'iron' && k !== 'panther') {
+          this.say('Ovirobotti: Bip! Vain supersankareille! Hae sankariasu kotoa vaatekaapista.', 4);
+          MP.sfx.boing();
+          return;
+        }
+        const suit = MP.findItem('costume', MP.state.outfit.costume);
+        this.scanAt = MP.time;
+        this.say('Ovirobotti skannaa… Tunnistettu: ' + suit.name + '! Tervetuloa päämajaan!', 2.5);
+        MP.sfx.bling();
+        this.leaving = { t: 0, visit: true };
+        setTimeout(() => { if (MP.scene === this) MP.goTo(MP.scenes.hq); }, 1500);
+        return;
+      }
       if (spot === 'grandma') {
         this.say('Täällä asuvat Mummi ja Ukki! Mennään kylään.', 2);
         MP.sfx.bling();
@@ -482,6 +521,7 @@ window.MP = window.MP || {};
             if (id === 'pizza') this.say('Pizzeria! New Yorkissa syödään isoja pizzapaloja. Napauta pizzeriaa!', 4);
             if (id === 'hero') this.say('Spiderman heilahtaa seitillä! Napauta häntä!', 3.5);
             if (id === 'water') this.say('Tuolla on Vapaudenpatsas! Napauta sitä.', 3.5);
+            if (id === 'hq') this.say('Supersankarien päämaja! Sisään pääsee vain sankariasussa.', 3.5);
             if (id === 'grandma') this.say('Tässä pilvenpiirtäjässä asuvat Mummi ja Ukki! Napauta ovea.', 3.5);
           }
         }
@@ -540,6 +580,17 @@ window.MP = window.MP || {};
 
     draw(ctx) {
       if (this.pizza) { this.drawPizza(ctx); return; }
+      // the door robot's red scanning laser
+      const sc = MP.time - (this.scanAt || -9);
+      if (sc < 1.4) {
+        const y = 20 + (Math.sin(sc * 6) * 0.5 + 0.5) * 140;
+        ctx.save();
+        ctx.fillStyle = 'rgba(255,40,40,0.75)';
+        ctx.fillRect(0, y, MP.W, 2);
+        ctx.fillStyle = 'rgba(255,40,40,0.15)';
+        ctx.fillRect(0, y - 6, MP.W, 14);
+        ctx.restore();
+      }
       W3.drawBubble(ctx, this.bubble, this.headPos, S.camera);
       const hb = this.heroBubble;
       if (hb && MP.time >= hb.from) {

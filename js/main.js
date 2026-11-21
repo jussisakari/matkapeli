@@ -21,6 +21,7 @@
 //   #huvipuisto   the theme park in Thailand
 //   #newyork      New York, the taxi just arrived
 //   #mummi        visiting Mummi and Ukki in the New York skyscraper
+//   #paamaja      the superheroes' headquarters in New York (in the spider suit)
 //   #australia    Australia, the jeep just arrived
 //   #japani       Japan, the bullet train just arrived
 //   #belgia       Belgium, the taxi just arrived
@@ -82,6 +83,7 @@ window.MP = window.MP || {};
     huvipuisto:  () => { ready(true); MP.state.outfit.hat = 'cap'; return [MP.scenes.themepark]; },
     temppeli:    () => { ready(true); MP.state.outfit.hat = 'sunhat'; return [MP.scenes.temple]; },
     newyork:     () => { ready(true); return [MP.scenes.newyork]; },
+    paamaja:     () => { ready(true); MP.state.outfit.costume = 'spider'; return [MP.scenes.hq]; },
     mummi:       () => { ready(true); return [MP.scenes.grandparents]; },
     australia:   () => { ready(true); return [MP.scenes.australia]; },
     japani:      () => { ready(true); return [MP.scenes.japan]; },
