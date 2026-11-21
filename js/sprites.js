@@ -87,6 +87,7 @@ MP.CLOTHES = {
     { id: 'ponytail', name: 'Poninhäntä', color: '#ff8fc0' },   // color = the hair tie
     { id: 'crown',    name: 'Kruunu',       gift: true, color: '#f2c230', shade: '#c8913a' },
     { id: 'partyHat', name: 'Juhlahattu',   gift: true, color: '#4cc9f0', shade: '#ff5d8f' },
+    { id: 'beret',    name: 'Baskeri',      gift: true, color: '#2b2340', shade: '#4a3a60' },   // from France
   ],
   costume: [
     { id: 'none',   name: 'Ei asua' },
@@ -835,6 +836,11 @@ MP.findItem = function (slot, id) {
       circle(c, 0, -39.5, 1.1); fs(c, '#e0303a');
       circle(c, -4.6, -38.6, 0.8); fs(c, '#4a78c8');
       circle(c, 4.6, -38.6, 0.8); fs(c, '#3cb371');
+    } else if (hat.id === 'beret') {
+      // a soft flat French beret, a bit tilted, with a little stem
+      ellipse(c, 1.2, -36.4, 9.6, 3.2, -0.12); fs(c, hat.color);
+      c.beginPath(); c.arc(1, -36.6, 6.4, Math.PI, 2 * Math.PI); c.closePath(); fs(c, hat.color);
+      rr(c, 0.4, -44.4, 1.2, 1.8, 0.5); fs(c, hat.shade);
     } else if (hat.id === 'partyHat') {
       // a pointy party hat with stripes and a pompom
       c.beginPath(); c.moveTo(-5.5, -35.5); c.lineTo(0, -49); c.lineTo(5.5, -35.5); c.closePath(); fs(c, hat.color);

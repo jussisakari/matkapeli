@@ -257,6 +257,12 @@ window.MP = window.MP || {};
         }
 
         W3.follow(S.camera, this, dt, this.camDistWanted, this.camHeightWanted);
+        if (this.camLift) {
+          // the camera goes up too (e.g. riding up a tower)
+          const fx = Math.sin(this.camHeading), fz = -Math.cos(this.camHeading);
+          S.camera.position.y += this.camLift;
+          S.camera.lookAt(p.x + fx * 3, 0.9 + this.camLift, p.z + fz * 3);
+        }
         this.headPos = S.ch.draw(p.x, this.y || 0, p.z, Object.assign({ walking: this.walking, walkTime: this.walkTime }, this.pose || {}));
         if (this.leaving || this.arrive) this.headPos = S.car.position.clone().setY(2.6);
         W3.render(S.scene, S.camera);
