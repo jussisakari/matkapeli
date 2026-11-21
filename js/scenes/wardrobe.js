@@ -16,7 +16,10 @@ window.MP = window.MP || {};
   ];
   const tabRect = (i) => ({ x: 4, y: 6 + i * 35, w: 76, h: 30 });
   const doneButton = { x: 4, y: 148, w: 76, h: 26 };
-  const cardRect = (i) => ({ x: 200 + (i % 2) * 60, y: 5 + Math.floor(i / 2) * 43, w: 56, h: 40 });
+  // Cards on the right: 2 columns, or 3 narrower ones when there are many things
+  const cardRect = (i, n) => (n > 8
+    ? { x: 196 + (i % 3) * 41, y: 5 + Math.floor(i / 3) * 43, w: 39, h: 40 }
+    : { x: 200 + (i % 2) * 60, y: 5 + Math.floor(i / 2) * 43, w: 56, h: 40 });
   const ME = { x: 140, y: 172, scale: 2.5 };   // the big character
   const PRAISE = ['Hieno!', 'Tosi siisti!', 'Upea!', 'Näyttää hyvältä!', 'Jee!'];
 
@@ -85,8 +88,9 @@ window.MP = window.MP || {};
           MP.sfx.tap();
         }
       });
-      items(this.tab).forEach((it, i) => {
-        if (MP.hit(cardRect(i), x, y)) this.putOn(this.tab, it.id);
+      const list = items(this.tab);
+      list.forEach((it, i) => {
+        if (MP.hit(cardRect(i, list.length), x, y)) this.putOn(this.tab, it.id);
       });
       if (MP.hit(doneButton, x, y)) {
         const o = MP.state.outfit;
@@ -137,7 +141,7 @@ window.MP = window.MP || {};
       ctx.restore();
       const name = itemName(tab, it);
       MP.drawText(ctx, name, cx, r.y + r.h - 8.5, {
-        size: name.length > 11 ? 0.46 : 0.58, color: O(), align: 'center',
+        size: r.w < 50 ? (name.length > 9 ? 0.36 : 0.46) : (name.length > 11 ? 0.46 : 0.58), color: O(), align: 'center',
       });
     },
 
@@ -194,7 +198,8 @@ window.MP = window.MP || {};
       });
 
       // Cards for the open tab
-      items(this.tab).forEach((it, i) => this.drawCard(ctx, this.tab, it, cardRect(i)));
+      const list = items(this.tab);
+      list.forEach((it, i) => this.drawCard(ctx, this.tab, it, cardRect(i, list.length)));
 
       MP.drawButton(ctx, 'Valmis!', doneButton, { size: 1.15 });
 

@@ -23,6 +23,10 @@ window.MP = window.MP || {};
     const g = c.createLinearGradient(0, r.y, 0, horizon);
     if (land === 'desert') {
       g.addColorStop(0, '#8fc8ec'); g.addColorStop(1, '#f6e6c4');
+    } else if (land === 'snow') {
+      g.addColorStop(0, '#a9d2f0'); g.addColorStop(1, '#eef7ff');
+    } else if (land === 'beach') {
+      g.addColorStop(0, '#5fc2f2'); g.addColorStop(1, '#d8f4ff');
     } else {
       g.addColorStop(0, '#8fd0f6'); g.addColorStop(1, '#e6f6ff');
     }
@@ -60,6 +64,70 @@ window.MP = window.MP || {};
           c.beginPath(); c.ellipse(x + 2 * k + Math.cos(a) * 7 * k, base - 26 * k + Math.sin(a) * 3 * k + 3 * k, 8 * k, 2 * k, a, 0, Math.PI * 2); c.fill();
         }
       }
+    } else if (land === 'beach') {
+      MP.draw('sun', c, 0, 0, { x: r.x + r.w * 0.8, y: r.y + r.h * 0.18, r: 10 * k + 2 });
+      // turquoise sea with tall rocky islands
+      c.fillStyle = '#1f9fc4';
+      c.fillRect(r.x, horizon - 10 * k, r.w, 10 * k);
+      for (const [px, pw, ph] of [[0.2, 10, 26], [0.3, 7, 18], [0.66, 12, 30]]) {
+        const x = wrap(r.x + r.w * px + sx(0.3)), base = horizon - 6 * k;
+        c.fillStyle = '#9a9283';
+        c.fillRect(x - pw * k / 2, base - ph * k, pw * k, ph * k);
+        c.fillStyle = '#3f8a3f';
+        c.beginPath(); c.ellipse(x, base - ph * k, pw * k * 0.7, 3.5 * k, 0, 0, Math.PI * 2); c.fill();
+      }
+      c.fillStyle = '#5fd8d2';
+      c.fillRect(r.x, horizon - 2 * k, r.w, 4 * k);
+      c.fillStyle = '#f3e0b0';
+      c.fillRect(r.x, horizon + 2 * k, r.w, r.y + r.h - horizon);
+      // palms leaning over the beach
+      for (let i = 0; i < 5; i++) {
+        const x = wrap(r.x + i * 70 + 30 + sx(1));
+        const base = horizon + 12 * k;
+        c.strokeStyle = '#9b7a4f'; c.lineWidth = 2.2 * k;
+        c.beginPath(); c.moveTo(x, base); c.quadraticCurveTo(x + 2 * k, base - 16 * k, x + 8 * k, base - 26 * k); c.stroke();
+        c.fillStyle = '#3d9a46';
+        for (let j = 0; j < 5; j++) {
+          const a = -Math.PI / 2 + (j - 2) * 0.65;
+          c.beginPath(); c.ellipse(x + 8 * k + Math.cos(a) * 7 * k, base - 26 * k + Math.sin(a) * 3 * k + 3 * k, 8 * k, 2 * k, a, 0, Math.PI * 2); c.fill();
+        }
+      }
+    } else if (land === 'snow') {
+      MP.draw('sun', c, 0, 0, { x: r.x + r.w * 0.82, y: r.y + r.h * 0.3, r: 8 * k + 2 });
+      // the sea with icebergs far away
+      c.fillStyle = '#2f6f9f';
+      c.fillRect(r.x, horizon - 8 * k, r.w, 8 * k);
+      for (const [px, pw, ph] of [[0.15, 30, 18], [0.42, 22, 12], [0.7, 36, 22]]) {
+        const x = wrap(r.x + r.w * px + sx(0.3)), base = horizon - 4 * k;
+        c.fillStyle = '#f4fbff';
+        c.beginPath(); c.moveTo(x - pw * k / 2, base); c.lineTo(x - pw * k * 0.2, base - ph * k);
+        c.lineTo(x + pw * k * 0.05, base - ph * k * 0.75); c.lineTo(x + pw * k * 0.25, base - ph * k * 0.95);
+        c.lineTo(x + pw * k / 2, base); c.closePath(); c.fill();
+        c.fillStyle = '#bfe2f7';
+        c.beginPath(); c.moveTo(x + pw * k * 0.05, base - ph * k * 0.75); c.lineTo(x + pw * k * 0.25, base - ph * k * 0.95);
+        c.lineTo(x + pw * k / 2, base); c.lineTo(x + pw * k * 0.1, base); c.closePath(); c.fill();
+      }
+      c.fillStyle = '#f4f8ff';
+      c.fillRect(r.x, horizon - 1, r.w, r.y + r.h - horizon + 1);
+      // snowy spruces
+      for (let i = 0; i < 14; i++) {
+        const x = wrap(r.x + i * 27 + 8 + sx(0.6));
+        const h = (14 + (i * 7) % 9) * k, base = horizon + 4 * k;
+        c.fillStyle = '#2e6b4a';
+        c.beginPath(); c.moveTo(x - h * 0.3, base); c.lineTo(x, base - h); c.lineTo(x + h * 0.3, base); c.closePath(); c.fill();
+        c.fillStyle = '#ffffff';
+        c.beginPath(); c.moveTo(x - h * 0.13, base - h * 0.55); c.lineTo(x, base - h); c.lineTo(x + h * 0.13, base - h * 0.55); c.closePath(); c.fill();
+      }
+      // a penguin and a snowman
+      const px = wrap(r.x + r.w * 0.3 + sx(1));
+      c.fillStyle = '#1f2230';
+      c.beginPath(); c.ellipse(px, horizon + 8 * k, 3 * k, 5 * k, 0, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#ffffff';
+      c.beginPath(); c.ellipse(px + 0.6 * k, horizon + 9 * k, 1.8 * k, 3.6 * k, 0, 0, Math.PI * 2); c.fill();
+      const smx = wrap(r.x + r.w * 0.62 + sx(1));
+      c.beginPath(); c.arc(smx, horizon + 10 * k, 4 * k, 0, Math.PI * 2); c.arc(smx, horizon + 3.5 * k, 3 * k, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#ff8a2a';
+      c.fillRect(smx, horizon + 3 * k, 2.5 * k, 0.9 * k);
     } else {
       // far hills and a lake
       c.fillStyle = '#7fb6d8';

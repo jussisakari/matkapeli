@@ -63,6 +63,10 @@ MP.CLOTHES = {
     { id: 'yellow', name: 'Keltainen', color: '#ffd23f' },
     { id: 'green',  name: 'Vihreä',    color: '#4caf50' },
     { id: 'sailor', name: 'Raita',     color: '#ffffff', stripe: '#2f4a8a' },
+    // T-shirts have short sleeves; "print" is the picture on the front
+    { id: 'tshirt',    name: 'T-paita',        color: '#ff8fc0', sleeves: 'short' },
+    { id: 'kpop',      name: 'K-pop-paita',    color: '#2b2340', sleeves: 'short', print: 'kpop' },
+    { id: 'spiderTee', name: 'Hämähäkkipaita', color: '#d62828', sleeves: 'short', print: 'spider' },
   ],
   bottom: [
     { id: 'pyjama',      name: 'Pyjama',        hidden: true, type: 'pants', color: '#9fc8ff' },
@@ -70,12 +74,15 @@ MP.CLOTHES = {
     { id: 'brown',       name: 'Ruskeat',       type: 'pants', color: '#8b5a2b' },
     { id: 'skirtPink',   name: 'Pinkki hame',   type: 'skirt', color: '#ff8fc0' },
     { id: 'skirtPurple', name: 'Violetti hame', type: 'skirt', color: '#9b6bd6' },
+    { id: 'shorts',      name: 'Shortsit',      type: 'shorts', color: '#3f6fb5' },
+    { id: 'shortsPink',  name: 'Pinkit shortsit', type: 'shorts', color: '#ff8fc0' },
   ],
   hat: [
     { id: 'none',   name: 'Ei hattua' },
     { id: 'cap',    name: 'Lippis',       color: '#e04848', shade: '#a83232' },
     { id: 'beanie', name: 'Pipo',         color: '#4a78c8', shade: '#2f4a8a' },
     { id: 'sunhat', name: 'Aurinkohattu', color: '#ffe08a', shade: '#e04848' },
+    { id: 'ponytail', name: 'Poninhäntä', color: '#ff8fc0' },   // color = the hair tie
   ],
   costume: [
     { id: 'none',   name: 'Ei asua' },
@@ -90,6 +97,7 @@ MP.CLOTHES = {
       accent: '#b8a2e0', silver: '#d8dde6' },
     { id: 'pharaoh', name: 'Faarao',       top: '#f4efe1', kilt: '#f4efe1', boots: '#c8913a',
       gold: '#f2c230', blue: '#2f5fb5', red: '#d33a3a' },
+    { id: 'swimsuit', name: 'Uimapuku', type: 'swim', top: '#2bb3a3', dots: '#ffffff' },
     { id: 'mermaid', name: 'Merenneito',   top: '#b46be0', legs: '#2bb3a3', scales: '#1d7f74',
       fin: '#7fe0c8', shell: '#ffc6e0', starfish: '#ffb347' },
   ],
@@ -257,19 +265,43 @@ MP.findItem = function (slot, id) {
     const suit = costume.id !== 'none' ? costume : null;
     const kind = suit ? (suit.type || suit.id) : null; // 'spider', 'iron', 'pharaoh' or 'mermaid'
 
-    const top = suit ? suit.top : shirt.color;
+    // swimsuit: the girl has a one-piece suit, the boy swimming trunks
+    const top = suit ? (kind === 'swim' && charId !== 'girl' ? C.skin : suit.top) : shirt.color;
     const legs = suit ? (suit.legs || C.skin) : bottom.color;
     const skirt = !suit && bottom.type === 'skirt';
-    const shoes = suit ? (suit.boots || C.shoes) : C.shoes;
+    const shorts = !suit && bottom.type === 'shorts';
+    const shoes = kind === 'swim' ? C.skin : (suit ? (suit.boots || C.shoes) : C.shoes);
     // Indoors (outfit.shoes === false) we wear socks – no shoes inside in Finland!
     const socks = !suit && outfit.shoes === false;
     const sit = !!opts.sit;             // sitting (legs shorter, lap shows)
     const hands = kind === 'spider' ? (suit.gloves || suit.top)
       : (kind === 'iron' || kind === 'panther') ? suit.top : C.skin;
-    const arms = (kind === 'pharaoh' || kind === 'mermaid') ? C.skin : top;
+    const shortSleeves = !suit && shirt.sleeves === 'short';
+    const arms = (kind === 'pharaoh' || kind === 'mermaid' || kind === 'swim' || shortSleeves) ? C.skin : top;
     const isGirl = charId === 'girl';
     const hairColor = opts.hair || ch.hair;
     const showHair = kind !== 'spider' && kind !== 'pharaoh' && kind !== 'iron' && kind !== 'panther';
+    // Tangled morning hair (girl): opts.messy 0..1, or MP.state.hairMessy for the player
+    const messy = isGirl && showHair
+      ? (opts.messy != null ? +opts.messy : (!opts.hair && st.hairMessy && charId === st.character ? 1 : 0))
+      : 0;
+    // strands of hair sticking out every which way
+    const messyStrands = () => {
+      if (messy <= 0) return;
+      const strands = [[-5, -38, -2.2, 4.5], [0, -39.3, -1.5, 5.5], [4.6, -38.3, -0.9, 5], [7.6, -35, -0.2, 4.5],
+        [-7.8, -34.5, -2.9, 4.5], [2.2, -39, -1.9, 3.5], [8.4, -27, 0.4, 3.5], [-8.5, -25, 2.7, 3.5]];
+      c.save();
+      c.lineCap = 'round';
+      for (const [sx, sy, a, len] of strands) {
+        const l = len * messy;
+        const ex = sx + Math.cos(a) * l, ey = sy + Math.sin(a) * l;
+        const cx2 = (sx + ex) / 2 + Math.sin(a) * 1.4, cy2 = (sy + ey) / 2 - Math.cos(a) * 1.4;
+        c.beginPath(); c.moveTo(sx, sy); c.quadraticCurveTo(cx2, cy2, ex, ey);
+        c.strokeStyle = C.outline; c.lineWidth = 2.3; c.stroke();
+        c.strokeStyle = hairColor; c.lineWidth = 1.2; c.stroke();
+      }
+      c.restore();
+    };
 
     const t = opts.walkTime || 0;
     const sw = opts.walking ? Math.sin(t * 11) : 0;
@@ -281,7 +313,28 @@ MP.findItem = function (slot, id) {
     c.scale(opts.flip ? -s : s, s);
 
     // Long hair behind the head (girl)
-    if (isGirl && showHair) { rr(c, -8.3, -37, 16.6, kind === 'mermaid' ? 29 : 22, 6); fs(c, hairColor); }
+    const ponytail = showHair && !suit && hat.id === 'ponytail';
+    if (isGirl && showHair && !ponytail) { rr(c, -8.3, -37, 16.6, kind === 'mermaid' ? 29 : 22, 6); fs(c, hairColor); }
+    // Ponytail: hair tied up at the back of the head, swinging a little
+    const drawPonytail = (backView) => {
+      c.save();
+      c.translate(backView ? 0 : 6.6, -35);
+      c.rotate((backView ? 0 : -0.55) + sw * 0.15);
+      c.beginPath();
+      c.moveTo(-1.6, 0); c.quadraticCurveTo(-3.4, 6, -1.2, isGirl ? 13 : 8);
+      c.quadraticCurveTo(0.6, isGirl ? 14 : 9, 1.4, isGirl ? 12 : 7.5);
+      c.quadraticCurveTo(3.2, 6, 1.6, 0); c.closePath();
+      fs(c, hairColor);
+      rr(c, -2, -1, 4, 2.2, 1); fs(c, hat.color);
+      c.restore();
+    };
+    if (ponytail && !opts.back) drawPonytail(false);
+    // tangled: bushy lumps sticking out of the long hair
+    if (messy > 0) {
+      for (const [mx, my, mr] of [[-9.2, -25, 3], [9.6, -21, 3.2], [-9.4, -17.5, 2.6], [9.1, -30, 2.6], [-8.8, -33, 2.4], [8.6, -15.5, 2.2]]) {
+        circle(c, mx * (1 - 0.1 * (1 - messy)), my, mr * messy); fs(c, hairColor);
+      }
+    }
 
     if (kind === 'mermaid') {
       // Fish tail instead of legs (it sways when walking)
@@ -325,7 +378,8 @@ MP.findItem = function (slot, id) {
         c.translate(side * 2.4, sit ? -9.5 : -12.5);
         c.rotate(side * sw * 0.35);
         const len = sit ? 8.5 : 11;
-        rr(c, -1.8, 0, 3.6, len, 1.7); fs(c, skirt ? C.skin : legs);
+        rr(c, -1.8, 0, 3.6, len, 1.7); fs(c, skirt || shorts ? C.skin : legs);
+        if (shorts) { rr(c, -2, -0.5, 4, 4, 1.5); fs(c, legs); }
         if (socks) { ellipse(c, 0.6, len + 0.1, 2.3, 1.4); fs(c, '#f4f4f8'); }
         else { ellipse(c, 0.9, len + 0.3, 2.9, 1.7); fs(c, shoes); }
         c.restore();
@@ -350,7 +404,7 @@ MP.findItem = function (slot, id) {
         c.quadraticCurveTo(0, -5, -7.5, -6.5);
         c.closePath(); fs(c, legs);
       } else {
-        rr(c, -5, -14.5, 10, 5, 1.8); fs(c, legs);
+        rr(c, -5, -14.5, 10, 5, 1.8); fs(c, kind === 'swim' ? suit.top : legs);
       }
     }
 
@@ -362,6 +416,7 @@ MP.findItem = function (slot, id) {
       const up = -side * (Math.PI - 0.35);            // arms stretched up
       c.rotate(rest + (up - rest) * (opts.armUp || 0));
       rr(c, -1.7, 0, 3.4, 8.5, 1.7); fs(c, arms);
+      if (shortSleeves) { rr(c, -2, -0.5, 4, 4, 1.6); fs(c, top); }            // short T-shirt sleeve
       if (kind === 'pharaoh') { rr(c, -1.9, 2.5, 3.8, 1.4, 0.7); fs(c, suit.gold); } // arm band
       if (kind === 'iron') { rr(c, -1.9, 4.6, 3.8, 3.6, 1.2); fs(c, suit.gold); }    // gold forearm
       circle(c, 0, 9.4, 1.8); fs(c, hands);
@@ -371,6 +426,61 @@ MP.findItem = function (slot, id) {
     // Body / shirt
     rr(c, -6, -23.5, 12, 11, 3.5); fs(c, top);
     const stripe = !suit && shirt.stripe;
+    if (!suit && shirt.print && !opts.back) {
+      c.save();
+      rr(c, -6, -23.5, 12, 11, 3.5); c.clip();
+      if (shirt.print === 'kpop') {
+        // K-pop: a glowing pink star, a golden microphone and the letters
+        c.fillStyle = 'rgba(192,132,252,0.5)';
+        circle(c, 0, -19.5, 4.5); c.fill();
+        c.fillStyle = '#ff5fb0';
+        c.beginPath();
+        for (let i = 0; i < 10; i++) {
+          const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 1.4 : 3.2;
+          c.lineTo(Math.cos(a) * r, -19.8 + Math.sin(a) * r);
+        }
+        c.closePath(); c.fill();
+        c.fillStyle = '#f2c14e';
+        circle(c, 0, -20.4, 0.9); c.fill();
+        c.fillRect(-0.3, -19.6, 0.6, 2.2);
+        c.fillStyle = '#5ff0ff';
+        c.font = 'bold 2.4px ' + MP.FONT_FAMILY;
+        c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.fillText('K-POP', 0, -14.6);
+        c.fillStyle = '#ffffff';
+        circle(c, -4, -22, 0.35); c.fill(); circle(c, 4.2, -17.5, 0.35); c.fill();
+      } else if (shirt.print === 'spider') {
+        // a web and a black spider on the front
+        web(c, 0, -18.5, 9, 'rgba(0,0,0,0.35)', 0.25);
+        c.fillStyle = '#1b1b24';
+        c.strokeStyle = '#1b1b24';
+        c.lineWidth = 0.4;
+        for (const sd of [-1, 1]) for (let i = 0; i < 4; i++) {
+          c.beginPath();
+          c.moveTo(0, -18.6);
+          c.quadraticCurveTo(sd * 2.4, -20.6 + i * 1.3, sd * 3.4, -21.6 + i * 2);
+          c.stroke();
+        }
+        ellipse(c, 0, -17.8, 1, 1.6); c.fill();
+        circle(c, 0, -20, 0.8); c.fill();
+      }
+      c.restore();
+      c.lineWidth = 0.7;
+      c.strokeStyle = C.outline;
+      rr(c, -6, -23.5, 12, 11, 3.5); c.stroke();
+    }
+    if (kind === 'swim' && isGirl) {
+      // white polka dots on the swimsuit
+      c.save();
+      rr(c, -6, -23.5, 12, 11, 3.5); c.clip();
+      c.fillStyle = suit.dots;
+      for (const [dx, dy] of [[-3, -20], [2, -21.5], [3.5, -16], [-1, -15], [-4.5, -14.8], [0.5, -18.3]]) { circle(c, dx, dy, 0.7); c.fill(); }
+      c.restore();
+      // the neckline
+      c.save(); c.fillStyle = C.skin;
+      c.beginPath(); c.ellipse(0, -23.6, 3.4, 1.8, 0, 0, Math.PI); c.fill();
+      c.restore();
+    }
     if (stripe || kind === 'spider' || kind === 'pharaoh' || kind === 'iron' || kind === 'panther') {
       c.save();
       rr(c, -6, -23.5, 12, 11, 3.5); c.clip();
@@ -503,6 +613,8 @@ MP.findItem = function (slot, id) {
       if (showHair) {
         circle(c, 0, -30.8, 7.9); fs(c, hairColor);
         c.beginPath(); c.arc(0.5, -34, 2.2, 0.3, Math.PI * 1.4); c.stroke();
+        messyStrands();
+        if (ponytail) drawPonytail(true);
       } else if (kind === 'pharaoh') {
         striped(c, () => circle(c, 0, -31, 8.6), suit.gold, suit.blue, 1.6);
       }
@@ -589,6 +701,7 @@ MP.findItem = function (slot, id) {
       c.quadraticCurveTo(-6.6, -33, -7.9, -30);
     }
     c.closePath(); fs(c, hairColor);
+    messyStrands();
     }
     } // end of face (not back view)
 
@@ -613,6 +726,8 @@ MP.findItem = function (slot, id) {
       ellipse(c, 0, -34.2, 12.5, 2.4); fs(c, hat.color);
       c.beginPath(); c.arc(0, -34.6, 6.8, Math.PI, 2 * Math.PI); c.closePath(); fs(c, hat.color);
       rr(c, -6.8, -36.6, 13.6, 2, 1); fs(c, hat.shade);
+    } else if (hat.id === 'ponytail') {
+      // the hair tie is drawn with the ponytail
     } else if (isGirl && !opts.noBow) {
       // Bow when there is no hat
       c.save(); c.translate(5.6, -37.2);
@@ -707,10 +822,13 @@ MP.findItem = function (slot, id) {
     }
     if (o.moon) D.moon(c, { x: 19, y: 10, r: 4 });
     if (o.sun !== false && !o.moon) {
-      D.sun(c, { x: 19, y: 11, r: 4.5, t: o.t });
-      c.fillStyle = '#ffffff';
-      ellipse(c, 9, 17, 4, 1.8); c.fill();
-      ellipse(c, 12, 16, 3, 2); c.fill();
+      // o.sunY: a lower sun while it is rising
+      D.sun(c, { x: 19, y: o.sunY != null ? o.sunY : 11, r: 4.5, t: o.t });
+      if (o.sunY == null || o.sunY < 14) {
+        c.fillStyle = '#ffffff';
+        ellipse(c, 9, 17, 4, 1.8); c.fill();
+        ellipse(c, 12, 16, 3, 2); c.fill();
+      }
     }
     c.restore();
     c.save();
@@ -1236,6 +1354,22 @@ MP.findItem = function (slot, id) {
   };
 
   MP.DRAW = D;
+
+  // A hairbrush. (x, y) = middle of the brush head; angle turns it.
+  MP.drawHairbrush = function (c, x, y, s, angle) {
+    begin(c, 0.8);
+    c.translate(x, y);
+    c.rotate(angle || 0);
+    c.scale(s || 1, s || 1);
+    rr(c, -2, 6, 4, 14, 2); fs(c, '#c084fc');          // handle
+    ellipse(c, 0, 0, 6, 8); fs(c, '#e0559a');           // head
+    ellipse(c, 0, 0, 4.3, 6.2); fs(c, '#ffd6ec');       // soft cushion
+    c.fillStyle = C.outline;
+    for (let bx = -3; bx <= 3; bx += 1.5) for (let by = -4.5; by <= 4.5; by += 1.5) {
+      if (bx * bx / 16 + by * by / 36 < 0.9) { c.beginPath(); c.arc(bx, by, 0.35, 0, Math.PI * 2); c.fill(); }
+    }
+    c.restore();
+  };
 
   // MP.draw('bed', ctx, x, y, opts)
   // Furniture: (x, y) = middle of the bottom. window: top-left. mirror: middle.

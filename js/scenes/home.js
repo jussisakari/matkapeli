@@ -26,7 +26,7 @@ window.MP = window.MP || {};
   // Where things are (x = middle)
   const POS = {
     // upstairs: child's room 0–320
-    nightstand: 30, window: 52, bed: 70, teddy: 126, panda: 140, ball: 172, poster: 196, rug: 150, wardrobe: 274,
+    nightstand: 30, window: 52, bed: 70, teddy: 126, panda: 140, ball: 172, poster: 196, rug: 150, wardrobe: 274, standMirror: 302,
     // upstairs: bathroom 320–640
     toilet: 385, sink: 480, mirror: 480, towel: 560,
     // upstairs: landing 640–960
@@ -47,6 +47,7 @@ window.MP = window.MP || {};
     panda:      { x: 133, y: 131, w: 15, h: 21 },
     poster:     { x: 196, y: 38,  w: 36, h: 46 },
     wardrobe:   { x: 254, y: 92,  w: 40, h: 62, standX: 248 },
+    mirror:     { x: 291, y: 74,  w: 22, h: 78, standX: 298 },
     toilet:     { x: 370, y: 112, w: 30, h: 42, standX: 404 },
     sink:       { x: 464, y: 84,  w: 34, h: 70, standX: 461 },
     // Big areas for the stairs: upstairs the whole landing, downstairs the whole staircase
@@ -66,20 +67,26 @@ window.MP = window.MP || {};
   const TASKS = [
     { id: 'toilet',    spot: 'toilet',   name: 'vessa' },
     { id: 'brush',     spot: 'sink',     name: 'hampaiden pesu' },
+    { id: 'hair',      spot: 'mirror',   name: 'hiusten harjaus', girlOnly: true },
     { id: 'dress',     spot: 'wardrobe', name: 'pukeminen' },
     { id: 'breakfast', spot: 'table',    name: 'aamupala' },
     { id: 'shoes',     spot: 'shoes',    name: 'kengät' },
   ];
+  // The tasks for this character: long hair is brushed, short hair doesn't need it
+  const myTasks = () => TASKS.filter((k) => !k.girlOnly || MP.state.character === 'girl');
+
   // Said when you try something that is already done
   const ALREADY = {
     toilet: 'Ei tarvitse nyt.',
     sink: 'Hampaat on jo puhtaat!',
     wardrobe: 'Vaatteet on jo päällä!',
+    mirror: 'Hiukset on jo harjattu!',
     table: 'Aamupala on jo syöty!',
     shoes: 'Kengät on jo jalassa!',
   };
 
   // Waking up (seconds after tapping the alarm clock): sit up → yawn → hop out
+  const DAWN_TIME = 4.5;     // seconds for the night to turn into morning
   const WAKE = { sitUp: 0.3, sitDone: 1.1, yawnStart: 1.4, yawnEnd: 2.6, hop: 2.9, land: 3.5 };
   const START_X = 102;       // where the character lands next to the bed
   const IN_BED_SCALE = 0.9;  // a bit smaller while in bed
@@ -319,6 +326,8 @@ window.MP = window.MP || {};
         ctx.closePath();
         ctx.fillStyle = '#e04848'; ctx.fill(); ctx.stroke();
       });
+    } else if (id === 'hair') {
+      MP.drawHairbrush(ctx, cx, cy, 0.5, -0.7);
     } else if (id === 'breakfast') {
       MP.draw('porridge', ctx, cx, cy + 1, { scale: 0.7 });
     } else if (id === 'shoes') {
@@ -330,6 +339,28 @@ window.MP = window.MP || {};
         ctx.fillStyle = MP.COLORS.shoes; ctx.fill(); ctx.stroke();
       });
     }
+  }
+
+  // A tall standing mirror in the child's room (for brushing hair)
+  function standMirror(ctx, x, t) {
+    withLine(ctx, () => {
+      box(ctx, x - 1.5, 128, 3, 20, 1, '#c084fc');                  // stand
+      box(ctx, x - 8, 146, 16, 4, 2, '#c084fc');
+      ctx.beginPath(); ctx.ellipse(x, 104, 10, 28, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#c084fc'; ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(x, 104, 7.5, 25, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#d4efff'; ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.moveTo(x - 4, 92); ctx.lineTo(x - 1, 84); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x - 4, 100); ctx.lineTo(x + 1, 88); ctx.stroke();
+      // little hearts on the frame
+      ctx.fillStyle = '#ff8fc0';
+      for (const hy of [78, 130]) {
+        ctx.beginPath(); ctx.arc(x - 1, hy, 1.2, 0, Math.PI * 2); ctx.arc(x + 1, hy, 1.2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(x - 2.2, hy + 0.4); ctx.lineTo(x, hy + 2.8); ctx.lineTo(x + 2.2, hy + 0.4); ctx.fill();
+      }
+    });
   }
 
   // ---- Living room, landing and stairs ----
@@ -517,7 +548,9 @@ window.MP = window.MP || {};
       params = params || {};
       const waking = params.quest === 'wake';
       if (waking || !MP.state.tasks) {
-        MP.state.tasks = { toilet: false, brush: false, dress: false, breakfast: false, shoes: false };
+        MP.state.tasks = { toilet: false, brush: false, hair: false, dress: false, breakfast: false, shoes: false };
+        // long hair is all tangled in the morning
+        MP.state.hairMessy = MP.state.character === 'girl';
         MP.state.tv = { time: 0, locked: false, lockedBy: null };
       }
 
@@ -540,7 +573,8 @@ window.MP = window.MP || {};
       }
 
       // Waking up: sleeping until the alarm clock is tapped
-      this.intro = waking ? { awake: false, t: 0, sleepT: 0, yawned: false, nextRing: MP.time + 0.6 } : null;
+      // First the night turns into morning (dawn 0 → 1), then the alarm starts ringing
+      this.intro = waking ? { awake: false, t: 0, sleepT: 0, yawned: false, dawn: 0, nextRing: Infinity } : null;
       this.introHead = { x: START_X, y: 100 };
       this.tiredUntil = 0;
 
@@ -584,9 +618,23 @@ window.MP = window.MP || {};
       this.bubble = { text, from: MP.time + (delay || 0), until: Infinity };   // stays until the next tap
     },
 
+    // The sky in the child's window: night → sunrise → day while waking up
+    skyNow() {
+      const d = this.intro ? this.intro.dawn : 1;
+      if (d >= 1) return {};
+      const night = ['#14204a', '#2c3c78'], dawn = ['#ff9a6a', '#ffd9a0'], day = ['#6cc0ff', '#cdeeff'];
+      const mix = (a, b, k) => [MP.mixColor(a[0], b[0], k), MP.mixColor(a[1], b[1], k)];
+      const col = d < 0.5 ? mix(night, dawn, d / 0.5) : mix(dawn, day, (d - 0.5) / 0.5);
+      return {
+        skyTop: col[0], skyBottom: col[1],
+        stars: d < 0.4, moon: d < 0.35,
+        sunY: 26 - 15 * MP.clamp((d - 0.3) / 0.7, 0, 1),
+      };
+    },
+
     // ---- The morning tasks ----
     missing() {
-      return TASKS.filter((k) => !MP.state.tasks[k.id]);
+      return myTasks().filter((k) => !MP.state.tasks[k.id]);
     },
 
     allDone() {
@@ -594,7 +642,7 @@ window.MP = window.MP || {};
     },
 
     sayProgress(delay, before) {
-      const done = TASKS.length - this.missing().length;
+      const done = myTasks().length - this.missing().length;
       let text;
       if (this.allDone()) text = 'Kaikki aamutoimet tehty! Nyt lähdetään ulos!';
       else if (done === 0) text = 'Huomenta! Mitä tehdään ensin?';
@@ -858,6 +906,10 @@ window.MP = window.MP || {};
         }
         return;
       }
+      if (id === 'mirror' && MP.state.character !== 'girl') {
+        this.say('Peilistä katsoo komea poika! Lyhyttä tukkaa ei tarvitse harjata.', 3);
+        return;
+      }
       const task = TASKS.find((k) => k.spot === id);
       // The toilet and the wardrobe can be used again any time
       const again = id === 'toilet' || id === 'wardrobe';
@@ -879,6 +931,8 @@ window.MP = window.MP || {};
         this.leave(MP.scenes.brush);
       } else if (id === 'wardrobe') {
         this.leave(MP.scenes.wardrobe);
+      } else if (id === 'mirror') {
+        this.leave(MP.scenes.hairbrush);
       } else if (id === 'table') {
         this.leave(MP.scenes.breakfast);
       }
@@ -907,7 +961,11 @@ window.MP = window.MP || {};
 
       // Waking up: tap the alarm clock. Tapping during the wake-up skips it.
       if (this.intro) {
-        if (!this.intro.awake) {
+        if (this.intro.dawn < 1) {
+          // tapping during the sunrise skips it
+          this.intro.dawn = 1;
+          this.intro.nextRing = MP.time + 0.2;
+        } else if (!this.intro.awake) {
           if (MP.hit(SPOTS.alarm, wx, wy)) this.wakeUp();
         } else {
           this.finishIntro(true);
@@ -944,7 +1002,7 @@ window.MP = window.MP || {};
       }
 
       // Things on this floor: walk there, then use it
-      for (const id of ['toilet', 'sink', 'wardrobe', 'stairsUp', 'books', 'tv', 'sofa', 'table', 'shoes', 'stairsDown', 'door']) {
+      for (const id of ['toilet', 'sink', 'mirror', 'wardrobe', 'stairsUp', 'books', 'tv', 'sofa', 'table', 'shoes', 'stairsDown', 'door']) {
         const spot = SPOTS[id];
         if (floorOf(spot) === this.floor && MP.hit(spot, wx, wy)) {
           MP.sfx.tap();
@@ -962,6 +1020,11 @@ window.MP = window.MP || {};
       // --- Waking up ---
       if (this.intro) {
         const intro = this.intro;
+        if (intro.dawn < 1) {
+          intro.dawn = Math.min(1, intro.dawn + dt / DAWN_TIME);
+          if (intro.dawn >= 1) intro.nextRing = MP.time + 0.3;
+          return;
+        }
         if (!intro.awake) {
           intro.sleepT += dt;
           if (intro.sleepT >= PARENT_AFTER && !this.parent) {
@@ -1087,12 +1150,13 @@ window.MP = window.MP || {};
 
       // ===== Upstairs: child's room =====
       rug(ctx, POS.rug);
-      MP.draw('window', ctx, POS.window - 15, 34, { t });
+      MP.draw('window', ctx, POS.window - 15, 34, Object.assign({ t }, this.skyNow()));
       MP.draw('poster', ctx, POS.poster, 38);
+      standMirror(ctx, POS.standMirror, t);
       MP.draw('wardrobe', ctx, POS.wardrobe, FLOOR);
       MP.draw('nightstand', ctx, POS.nightstand, FLOOR);
       MP.draw('alarmClock', ctx, POS.nightstand, FLOOR - 19.5, {
-        ringing: !!(this.intro && !this.intro.awake), t,
+        ringing: !!(this.intro && !this.intro.awake && this.intro.dawn >= 1), t,
       });
       MP.draw('bed', ctx, POS.bed, FLOOR);
       if (this.intro) this.drawIntro(ctx);
@@ -1182,7 +1246,7 @@ window.MP = window.MP || {};
       // or over the stairs when everything left is on the other floor
       let spots = [];
       if (this.intro) {
-        if (!this.intro.awake) spots = [SPOTS.alarm];
+        if (!this.intro.awake && this.intro.dawn >= 1) spots = [SPOTS.alarm];
       } else if (!this.panel && !this.visit && !this.stairs && !this.tvView && !this.parent) {
         const wanted = this.allDone() ? [SPOTS.door] : this.missing().map((k) => SPOTS[k.spot]);
         spots = wanted.filter((s) => floorOf(s) === this.floor);
@@ -1231,9 +1295,25 @@ window.MP = window.MP || {};
         }
       }
 
+      // ===== Night turning into morning: the room is dark, then it gets light =====
+      if (this.intro && this.intro.dawn < 1) {
+        const d = this.intro.dawn;
+        ctx.save();
+        ctx.fillStyle = MP.mixColor('#0d1433', '#ff9a6a', MP.clamp(d * 1.6, 0, 1));
+        ctx.globalAlpha = 0.72 * (1 - d) * (1 - d) + 0.05 * Math.sin(d * Math.PI);
+        ctx.fillRect(0, 0, MP.W, MP.H);
+        ctx.restore();
+        if (d < 0.35) {
+          MP.drawText(ctx, 'Yö…', MP.W / 2, 150, { size: 1.2, color: '#ffffff', outline: MP.COLORS.outline, align: 'center' });
+        } else if (d > 0.45 && d < 0.95) {
+          MP.drawText(ctx, 'Aamu koittaa…', MP.W / 2, 150, { size: 1.2, color: '#ffffff', outline: MP.COLORS.outline, align: 'center' });
+        }
+      }
+
       // ===== Checklist of the morning tasks (top-left corner) =====
       if (!this.intro && !this.tvView) {
-        const n = TASKS.length;
+        const tasks = myTasks();
+        const n = tasks.length;
         ctx.save();
         ctx.lineWidth = 0.8;
         ctx.strokeStyle = MP.COLORS.outline;
@@ -1242,7 +1322,7 @@ window.MP = window.MP || {};
         ctx.fill();
         ctx.stroke();
         ctx.restore();
-        TASKS.forEach((k, i) => {
+        tasks.forEach((k, i) => {
           const cx = 3 + 12 + i * 19, cy = 18.5;
           const done = MP.state.tasks[k.id];
           ctx.save();

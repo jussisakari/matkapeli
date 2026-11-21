@@ -5,11 +5,14 @@
 //   #ulos         straight outside (dressed, shoes on)
 //   #koti         the house, alarm clock ringing
 //   #hampaat      tooth brushing
+//   #hiukset      hair brushing (girl)
 //   #vaatekaappi  the wardrobe
 //   #aamupala     breakfast
 //   #lentokentta  the airport (choose where to fly)
 //   #lento        the flight animation to Egypt
 //   #egypti       Egypt, the taxi just arrived
+//   #talvimaa     Talvimaa (Winter Land), the taxi just arrived
+//   #thaimaa      Thailand's beach, the tuk-tuk just arrived
 //   #pyramidi     inside the pyramid
 //   #kirjat       the bookshelf
 //   #galleria     all drawings and outfits
@@ -36,11 +39,14 @@ window.MP = window.MP || {};
     ulos:        () => { ready(true); return [MP.scenes.street]; },
     koti:        () => { ready(false); MP.state.outfit = { shirt: 'pyjama', bottom: 'pyjama', hat: 'none', costume: 'none', shoes: false }; return [MP.scenes.home, { quest: 'wake' }]; },
     hampaat:     () => { ready(false); return [MP.scenes.brush]; },
+    hiukset:     () => { MP.state.character = 'girl'; MP.state.hairMessy = true; return [MP.scenes.hairbrush]; },
     vaatekaappi: () => { ready(false); return [MP.scenes.wardrobe]; },
     aamupala:    () => { ready(false); return [MP.scenes.breakfast]; },
     lentokentta: () => { ready(true); return [MP.scenes.airport, { country: 'home' }]; },
     lento:       () => { ready(true); return [MP.scenes.flight, { from: 'home', to: 'egypt' }]; },
     egypti:      () => { ready(true); return [MP.scenes.egypt]; },
+    talvimaa:    () => { ready(true); return [MP.scenes.winter]; },
+    thaimaa:     () => { ready(true); return [MP.scenes.thailand]; },
     pyramidi:    () => { ready(true); return [MP.scenes.pyramid]; },
     kirjat:      () => { ready(false); return [MP.scenes.books]; },
     galleria:    () => [MP.scenes.gallery],

@@ -26,6 +26,30 @@ window.MP = window.MP || {};
       },
     },
     {
+      id: 'winter', name: 'Talvimaa', city: 'Jäävuoret', to: 'Talvimaahan', time: '12:15',
+      scene: 'winter', land: 'snow',
+      // a made-up flag: light blue with a white snowflake
+      flag(c, x, y, w, h) {
+        c.fillStyle = '#5fb4e8'; c.fillRect(x, y, w, h);
+        c.save();
+        c.strokeStyle = '#ffffff'; c.lineWidth = Math.max(0.6, h / 9);
+        const cx = x + w / 2, cy = y + h / 2, r = h * 0.38;
+        for (let i = 0; i < 3; i++) {
+          const a = i * Math.PI / 3;
+          c.beginPath(); c.moveTo(cx - Math.cos(a) * r, cy - Math.sin(a) * r); c.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); c.stroke();
+        }
+        c.restore();
+      },
+    },
+    {
+      id: 'thailand', name: 'Thaimaa', city: 'Phuket', to: 'Thaimaahan', time: '22:40',
+      scene: 'thailand', land: 'beach',
+      flag(c, x, y, w, h) {
+        const bands = ['#a51931', '#f4f5f8', '#2d2a4a', '#2d2a4a', '#f4f5f8', '#a51931'];
+        bands.forEach((col, i) => { c.fillStyle = col; c.fillRect(x, y + i * h / 6, w, h / 6 + 0.2); });
+      },
+    },
+    {
       id: 'home', name: 'Suomi', city: 'Koti', to: 'kotiin Suomeen', time: '15:45',
       scene: 'street', params: { from: 'taxi' }, land: 'forest',
       flag(c, x, y, w, h) {
@@ -38,6 +62,14 @@ window.MP = window.MP || {};
   ];
   MP.findDestination = (id) => MP.DESTINATIONS.find((d) => d.id === id);
 
+  // How each airport looks: hall and floor colors, the land outside, the plants
+  const LOOK = {
+    home:   { title: 'LENTOKENTTÄ', hall: '#eef1f5', floor: '#d7dbe3', land: 'forest', plant: 'leafy' },
+    egypt:  { title: 'KAIRON LENTOKENTTÄ', hall: '#f1e2c4', floor: '#d9c39a', land: 'desert', plant: 'palm' },
+    thailand: { title: 'PHUKETIN LENTOKENTTÄ', hall: '#fff3e0', floor: '#e8d2b0', land: 'beach', plant: 'palm' },
+    winter: { title: 'TALVIMAAN LENTOKENTTÄ', hall: '#e8f3fb', floor: '#cfe0ee', land: 'snow', plant: 'spruce' },
+  };
+
   const FLOOR = 150;
   const POS = { doors: 28, board: 150, gate: 292 };
   const SPOTS = {
@@ -48,12 +80,12 @@ window.MP = window.MP || {};
   };
   const PANEL = { x: 30, y: 18, w: 260, h: 146 };
   const CLOSE = { x: 268, y: 22, r: 8 };
-  const card = (i) => ({ x: 44 + i * 80, y: 50, w: 72, h: 92 });
+  const card = (i) => ({ x: 40 + i * 62, y: 50, w: 56, h: 92 });
 
   // The places to show: not the country you are in, and two "coming soon" cards
   function choices(country) {
     const list = MP.DESTINATIONS.filter((d) => d.id !== country);
-    while (list.length < 3) list.push(null);
+    while (list.length < 4) list.push(null);
     return list;
   }
 
@@ -140,11 +172,21 @@ window.MP = window.MP || {};
     c.fillRect(x + 2, 139, 2, 11); c.fillRect(x + 34, 139, 2, 11);
   }
 
-  function plant(c, x, palm) {
+  function plant(c, x, kind) {
     c.lineWidth = 0.8;
     c.strokeStyle = O();
+    const palm = kind === 'palm';
     c.fillStyle = palm ? '#4d8a3a' : '#3cb371';
-    if (palm) {
+    if (kind === 'spruce') {
+      // a little spruce with snow on it
+      for (let i = 0; i < 3; i++) {
+        const y = 140 - i * 8, w = 11 - i * 3;
+        c.fillStyle = '#2e6b4a';
+        c.beginPath(); c.moveTo(x - w, y); c.lineTo(x, y - 12); c.lineTo(x + w, y); c.closePath(); c.fill(); c.stroke();
+        c.fillStyle = '#ffffff';
+        c.beginPath(); c.moveTo(x - w * 0.4, y - 7); c.lineTo(x, y - 12); c.lineTo(x + w * 0.4, y - 7); c.closePath(); c.fill();
+      }
+    } else if (palm) {
       c.fillStyle = '#8a6a45';
       c.fillRect(x - 1.2, 112, 2.4, 28);
       c.fillStyle = '#4d8a3a';
@@ -229,7 +271,7 @@ window.MP = window.MP || {};
       this.bubble = null;
       this.doorsAt = MP.time;     // the doors were just opened
       this.gateAt = -10;
-      const here = this.country === 'home' ? 'Lentokenttä!' : 'Kairon lentokenttä!';
+      const here = { home: 'Lentokenttä!', egypt: 'Kairon lentokenttä!', winter: 'Talvimaan lentokenttä!', thailand: 'Phuketin lentokenttä!' }[this.country] || 'Lentokenttä!';
       this.say(here + ' Napauta lähtötaulua ja valitse, minne lennetään.', 5, 0.6);
     },
 
@@ -283,8 +325,8 @@ window.MP = window.MP || {};
           this.busy = true;
           this.doorsAt = MP.time;
           // back out by taxi
-          if (this.country === 'egypt') MP.goTo(MP.scenes.egypt);
-          else MP.goTo(MP.scenes.street, { from: 'taxi' });
+          const here = MP.findDestination(this.country) || MP.findDestination('home');
+          MP.goTo(MP.scenes[here.scene], here.params);
         });
         return;
       }
@@ -297,21 +339,33 @@ window.MP = window.MP || {};
 
     draw(ctx) {
       const t = MP.time;
-      const egypt = this.country === 'egypt';
+      const look = LOOK[this.country] || LOOK.home;
 
       // ===== The terminal hall =====
-      ctx.fillStyle = egypt ? '#f1e2c4' : '#eef1f5';
+      ctx.fillStyle = look.hall;
       ctx.fillRect(0, 0, MP.W, MP.H);
       // big windows to the runway
       ctx.save();
       ctx.beginPath(); ctx.rect(60, 12, 260, 88); ctx.clip();
       ctx.fillStyle = '#9fdcff';
       ctx.fillRect(60, 12, 260, 88);
-      ctx.fillStyle = egypt ? '#e2c28b' : '#7cc56b';
+      ctx.fillStyle = { desert: '#e2c28b', forest: '#7cc56b', snow: '#f4f8ff', beach: '#f3e0b0' }[look.land];
       ctx.fillRect(60, 80, 260, 20);
-      if (egypt) {
+      if (look.land === 'beach') {
+        ctx.fillStyle = '#1f9fc4';
+        ctx.fillRect(60, 74, 260, 6);
+        ctx.fillStyle = '#9a9283';
+        ctx.fillRect(200, 60, 8, 14); ctx.fillRect(240, 64, 6, 10);
+        ctx.fillStyle = '#3f8a3f';
+        ctx.beginPath(); ctx.ellipse(204, 60, 6, 3, 0, 0, Math.PI * 2); ctx.ellipse(243, 64, 5, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+      } else if (look.land === 'desert') {
         ctx.fillStyle = '#d6b886';
         ctx.beginPath(); ctx.moveTo(230, 80); ctx.lineTo(250, 62); ctx.lineTo(270, 80); ctx.closePath(); ctx.fill();
+      } else if (look.land === 'snow') {
+        ctx.fillStyle = '#e3f4ff';
+        ctx.beginPath(); ctx.moveTo(180, 80); ctx.lineTo(196, 58); ctx.lineTo(206, 66); ctx.lineTo(222, 80); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        for (let i = 0; i < 20; i++) ctx.fillRect(60 + (i * 53) % 260, 14 + (i * 37 + MP.time * 20) % 66, 1.5, 1.5);
       } else {
         ctx.fillStyle = '#2e7d4f';
         for (let x = 64; x < 320; x += 9) {
@@ -331,20 +385,20 @@ window.MP = window.MP || {};
       // ceiling and floor
       ctx.fillStyle = '#c9d0dc';
       ctx.fillRect(0, 0, MP.W, 12);
-      ctx.fillStyle = egypt ? '#d9c39a' : '#d7dbe3';
+      ctx.fillStyle = look.floor;
       ctx.fillRect(0, FLOOR, MP.W, MP.H - FLOOR);
       ctx.strokeStyle = 'rgba(80,90,110,0.25)';
       ctx.lineWidth = 0.6;
       for (let x = 0; x < MP.W; x += 24) { ctx.beginPath(); ctx.moveTo(x, FLOOR); ctx.lineTo(x - 12, MP.H); ctx.stroke(); }
-      MP.drawText(ctx, egypt ? 'KAIRON LENTOKENTTÄ' : 'LENTOKENTTÄ', 4, 2, { size: 0.75, color: '#2f6fb8' });
+      MP.drawText(ctx, look.title, 4, 2, { size: 0.75, color: '#2f6fb8' });
 
       const doorsOpen = MP.clamp(1 - Math.abs(t - this.doorsAt - 0.6) / 0.6, 0, 1);
       slidingDoors(ctx, doorsOpen);
       board(ctx, this.country, t);
       desk(ctx);
       seats(ctx, 212);
-      plant(ctx, 66, egypt);
-      plant(ctx, 258, egypt);
+      plant(ctx, 66, look.plant);
+      plant(ctx, 258, look.plant);
       gate(ctx, MP.clamp((t - this.gateAt) / 0.5, 0, 1));
 
       // arrows: first to the board, then to the gate
@@ -386,14 +440,14 @@ window.MP = window.MP || {};
             MP.drawLandscape(ctx, d.land, pic, 0);
             ctx.restore();
             ctx.strokeRect(pic.x, pic.y, pic.w, pic.h);
-            d.flag(ctx, r.x + 6, r.y + 60, 16, 11);
-            ctx.strokeRect(r.x + 6, r.y + 60, 16, 11);
-            MP.drawText(ctx, d.name, r.x + 26, r.y + 60, { size: 1, color: O() });
-            MP.drawText(ctx, d.city, r.x + 26, r.y + 72, { size: 0.65, color: '#6e4226' });
+            d.flag(ctx, r.x + r.w / 2 - 8, r.y + 58, 16, 11);
+            ctx.strokeRect(r.x + r.w / 2 - 8, r.y + 58, 16, 11);
+            MP.drawText(ctx, d.name, r.x + r.w / 2, r.y + 71, { size: 0.85, color: O(), align: 'center' });
+            MP.drawText(ctx, d.city, r.x + r.w / 2, r.y + 81, { size: 0.6, color: '#6e4226', align: 'center' });
           } else {
             MP.drawText(ctx, '?', r.x + r.w / 2, r.y + 18, { size: 3, color: '#a9a9b8', align: 'center' });
             const wob = this.panel.soon && t - this.panel.soon < 0.4 ? Math.sin((t - this.panel.soon) * 40) * 2 : 0;
-            MP.drawText(ctx, 'Tulossa pian', r.x + r.w / 2 + wob, r.y + 66, { size: 0.75, color: '#77778a', align: 'center' });
+            MP.drawText(ctx, 'Tulossa pian', r.x + r.w / 2 + wob, r.y + 66, { size: 0.62, color: '#77778a', align: 'center' });
           }
         });
         // close button
