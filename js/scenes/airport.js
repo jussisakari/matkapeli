@@ -73,7 +73,7 @@ window.MP = window.MP || {};
   MP.findDestination = (id) => MP.DESTINATIONS.find((d) => d.id === id);
 
   // How each airport looks: hall and floor colors, the land outside, the plants
-  const LOOK = {
+  const LOOK = MP.AIRPORT_LOOKS = {
     home:   { title: 'LENTOKENTTÄ', hall: '#eef1f5', floor: '#d7dbe3', land: 'forest', plant: 'leafy' },
     egypt:  { title: 'KAIRON LENTOKENTTÄ', hall: '#f1e2c4', floor: '#d9c39a', land: 'desert', plant: 'palm' },
     thailand: { title: 'PHUKETIN LENTOKENTTÄ', hall: '#fff3e0', floor: '#e8d2b0', land: 'beach', plant: 'palm' },
@@ -91,13 +91,17 @@ window.MP = window.MP || {};
   };
   const PANEL = { x: 30, y: 18, w: 260, h: 146 };
   const CLOSE = { x: 268, y: 22, r: 8 };
-  const card = (i) => ({ x: 38 + i * 50, y: 50, w: 46, h: 92 });
+  // Up to 5 places: one row of big cards. More: two rows of smaller cards (room for 10).
+  let twoRows = false;
+  const card = (i) => twoRows
+    ? { x: 38 + (i % 5) * 50, y: 44 + Math.floor(i / 5) * 59, w: 46, h: 56 }
+    : { x: 38 + i * 50, y: 50, w: 46, h: 92 };
 
-  // The places to show: not the country you are in, and two "coming soon" cards
+  // The places to show: not the country you are in ("coming soon" cards fill a row)
   function choices(country) {
-    const list = MP.DESTINATIONS.filter((d) => d.id !== country);
-    while (list.length < 5) list.push(null);
-    // room for at most 5 cards
+    const list = MP.DESTINATIONS.filter((d) => d.id !== country).slice(0, 10);
+    twoRows = list.length > 5;
+    while (list.length % 5) list.push(null);
     return list;
   }
 
@@ -224,9 +228,12 @@ window.MP = window.MP || {};
     MP.roundRect(c, 104, 28, 92, 58, 3); c.fill(); c.stroke();
     MP.drawText(c, 'LÄHDÖT', 150, 31, { size: 0.9, color: '#ffd23f', align: 'center' });
     const list = MP.DESTINATIONS.filter((d) => d.id !== country);
+    // more than 4 flights: the board flips to the next ones every 3 seconds
+    const pages = Math.ceil(list.length / 4);
+    const first = pages > 1 ? (Math.floor(t / 3) % pages) * 4 : 0;
     for (let i = 0; i < 4; i++) {
       const y = 44 + i * 10;
-      const d = list[i];
+      const d = list[first + i];
       c.fillStyle = '#2b3350';
       c.fillRect(108, y - 1, 84, 9);
       if (d) {
@@ -316,7 +323,8 @@ window.MP = window.MP || {};
       this.doorsAt = MP.time;     // the doors were just opened
       this.gateAt = -10;
       this.check = null;          // the passport check: 'walk' → 'ask' → 'show' → 'done'
-      const here = { home: 'Lentokenttä!', egypt: 'Kairon lentokenttä!', winter: 'Talvimaan lentokenttä!', thailand: 'Phuketin lentokenttä!', newyork: 'New Yorkin lentokenttä!' }[this.country] || 'Lentokenttä!';
+      const look = LOOK[this.country] || LOOK.home;
+      const here = look.title.charAt(0) + look.title.slice(1).toLowerCase() + '!';
       this.say(here + ' Napauta lähtötaulua ja valitse, minne lennetään.', 5, 0.6);
     },
 
@@ -448,6 +456,8 @@ window.MP = window.MP || {};
         ctx.beginPath(); ctx.moveTo(180, 80); ctx.lineTo(196, 58); ctx.lineTo(206, 66); ctx.lineTo(222, 80); ctx.closePath(); ctx.fill();
         ctx.fillStyle = '#ffffff';
         for (let i = 0; i < 20; i++) ctx.fillRect(60 + (i * 53) % 260, 14 + (i * 37 + MP.time * 20) % 66, 1.5, 1.5);
+      } else if (MP.LANDSCAPES && MP.LANDSCAPES[look.land]) {
+        MP.drawLandscape(ctx, look.land, { x: 60, y: -10, w: 260, h: 110 }, 0);
       } else {
         ctx.fillStyle = '#2e7d4f';
         for (let x = 64; x < 320; x += 9) {
@@ -527,7 +537,18 @@ window.MP = window.MP || {};
           ctx.strokeStyle = O();
           ctx.fillStyle = d ? '#ffffff' : '#e4e4ec';
           MP.roundRect(ctx, r.x, r.y, r.w, r.h, 6); ctx.fill(); ctx.stroke();
-          if (d) {
+          if (d && twoRows) {
+            const pic = { x: r.x + 4, y: r.y + 4, w: r.w - 8, h: 26 };
+            ctx.save();
+            MP.roundRect(ctx, pic.x, pic.y, pic.w, pic.h, 3); ctx.clip();
+            MP.drawLandscape(ctx, d.land, pic, 0);
+            ctx.restore();
+            ctx.strokeRect(pic.x, pic.y, pic.w, pic.h);
+            d.flag(ctx, r.x + 4, r.y + 33, 10, 7);
+            ctx.strokeRect(r.x + 4, r.y + 33, 10, 7);
+            if (MP.hasStamp && MP.hasStamp(d.id)) MP.drawText(ctx, '✓', r.x + r.w - 6, r.y + 32, { size: 0.7, color: '#2e8b57', align: 'center' });
+            MP.drawText(ctx, d.name, r.x + r.w / 2, r.y + 43, { size: d.name.length > 8 ? 0.55 : 0.68, color: O(), align: 'center' });
+          } else if (d) {
             const pic = { x: r.x + 5, y: r.y + 5, w: r.w - 10, h: 50 };
             ctx.save();
             MP.roundRect(ctx, pic.x, pic.y, pic.w, pic.h, 4); ctx.clip();
@@ -539,9 +560,9 @@ window.MP = window.MP || {};
             MP.drawText(ctx, d.name, r.x + r.w / 2, r.y + 71, { size: 0.85, color: O(), align: 'center' });
             MP.drawText(ctx, d.city, r.x + r.w / 2, r.y + 81, { size: 0.6, color: '#6e4226', align: 'center' });
           } else {
-            MP.drawText(ctx, '?', r.x + r.w / 2, r.y + 18, { size: 3, color: '#a9a9b8', align: 'center' });
             const wob = this.panel.soon && t - this.panel.soon < 0.4 ? Math.sin((t - this.panel.soon) * 40) * 2 : 0;
-            MP.drawText(ctx, 'Tulossa pian', r.x + r.w / 2 + wob, r.y + 66, { size: 0.52, color: '#77778a', align: 'center' });
+            MP.drawText(ctx, '?', r.x + r.w / 2, r.y + (twoRows ? 8 : 18), { size: twoRows ? 2 : 3, color: '#a9a9b8', align: 'center' });
+            MP.drawText(ctx, 'Tulossa pian', r.x + r.w / 2 + wob, r.y + (twoRows ? 38 : 66), { size: 0.52, color: '#77778a', align: 'center' });
           }
         });
         // close button

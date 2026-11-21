@@ -42,6 +42,8 @@ const FILES = [
     './js/sprites.js',
     './js/tvshow.js',
     './js/world3d.js',
+    './js/country3d.js',
+    './js/scenes/australia.js',
 ];
 
 self.addEventListener('install', (e) => {

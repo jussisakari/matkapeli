@@ -443,7 +443,9 @@ window.MP = window.MP || {};
   }
 
   // Posters from the countries you have visited (x = middle of the poster)
-  const POSTERS = [
+  // (new countries add theirs to MP.COUNTRY_POSTERS; they hang smaller on the
+  // landing wall at the top of the stairs)
+  const POSTERS = MP.COUNTRY_POSTERS = [
     { id: 'egypt',    x: 88,  land: 'desert', say: 'Juliste Egyptistä! Pyramidit ja palmut.' },
     { id: 'thailand', x: 118, land: 'beach',  say: 'Juliste Thaimaasta! Ranta ja kalliosaaret.' },
     { id: 'newyork',  x: 247, land: 'city',   say: 'Juliste New Yorkista! Pilvenpiirtäjät ja Vapaudenpatsas.' },
@@ -451,9 +453,26 @@ window.MP = window.MP || {};
   ];
   const hasPoster = (id) => !!(MP.state.treasures && MP.state.treasures.posters && MP.state.treasures.posters[id]);
 
+  const LANDING_SLOTS = [684, 707, 730, 753, 776, 799];
+  function placePosters() {
+    let n = 0;
+    for (const ps of POSTERS) if (ps.x == null) { ps.x = LANDING_SLOTS[n++ % LANDING_SLOTS.length]; ps.small = true; }
+  }
+  const posterRect = (ps) => (ps.small ? { x: ps.x - 10, y: 30, w: 20, h: 29 } : { x: ps.x - 12, y: 42, w: 24, h: 34 });
+
   function countryPoster(ctx, ps) {
     const d = MP.findDestination(ps.id);
-    const r = { x: ps.x - 12, y: 42, w: 24, h: 34 };
+    const r = posterRect(ps);
+    if (ps.small) {
+      // the smaller poster: scale the normal one down
+      ctx.save();
+      ctx.translate(ps.x, r.y);
+      ctx.scale(20 / 24, 20 / 24);
+      ctx.translate(-ps.x, -42);
+      countryPoster(ctx, Object.assign({}, ps, { small: false }));
+      ctx.restore();
+      return;
+    }
     withLine(ctx, () => {
       box(ctx, r.x, r.y, r.w, r.h, 1.5, '#fffaf0');
     });
@@ -1365,8 +1384,10 @@ window.MP = window.MP || {};
           }
         }
         // Posters from the countries visited
+        placePosters();
         for (const ps of POSTERS) {
-          if (hasPoster(ps.id) && MP.hit({ x: ps.x - 13, y: 40, w: 26, h: 36 }, wx, wy)) {
+          const pr = posterRect(ps);
+          if (hasPoster(ps.id) && MP.hit({ x: pr.x - 1, y: pr.y - 2, w: pr.w + 2, h: pr.h + 2 }, wx, wy)) {
             this.say(ps.say, 3);
             MP.sfx.tune();
             return;
@@ -1605,6 +1626,7 @@ window.MP = window.MP || {};
       MP.draw('poster', ctx, POS.poster, 38);
       standMirror(ctx, POS.standMirror, t);
       if (MP.state.treasures && MP.state.treasures.tutMask) treasureShelf(ctx, 161, t);
+      placePosters();
       for (const ps of POSTERS) if (hasPoster(ps.id)) countryPoster(ctx, ps);
       MP.draw('wardrobe', ctx, POS.wardrobe, FLOOR);
       MP.draw('nightstand', ctx, POS.nightstand, FLOOR);

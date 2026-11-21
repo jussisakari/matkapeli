@@ -17,9 +17,17 @@ window.MP = window.MP || {};
   // Landscapes (also used on the destination cards at the airport)
   //   land = 'desert' or 'forest', r = { x, y, w, h }, scroll = moves things
   // ---------------------------------------------------------------------------
+  MP.LANDSCAPES = MP.LANDSCAPES || {};
   MP.drawLandscape = function (c, land, r, scroll) {
     const horizon = r.y + r.h * 0.72;
     const sx = (k) => -(scroll || 0) * k;
+    // New countries bring their own landscape: MP.LANDSCAPES[land](c, r, horizon, k, wrap, sx)
+    const own = MP.LANDSCAPES[land];
+    if (own) {
+      const wrapOwn = (x) => r.x + ((((x - r.x) % (r.w + 80)) + r.w + 80) % (r.w + 80)) - 40;
+      own(c, r, horizon, r.h / 180, wrapOwn, sx);
+      return;
+    }
     const g = c.createLinearGradient(0, r.y, 0, horizon);
     if (land === 'desert') {
       g.addColorStop(0, '#8fc8ec'); g.addColorStop(1, '#f6e6c4');

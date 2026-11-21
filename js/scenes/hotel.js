@@ -1,4 +1,5 @@
-// hotel.js – a HOTEL ROOM on a trip (Egypt, Thailand, New York).
+// hotel.js – a HOTEL ROOM on a trip (Egypt, Thailand, New York, and the countries
+// made with country3d.js, which add their own look to MP.HOTEL_LOOKS).
 // Tap the bed: the evening things happen by themselves (snack, pyjamas,
 // teeth, toilet) and you go to sleep. The night stays until you tap.
 // Then the morning comes, and the door takes you outside again.
@@ -19,7 +20,7 @@ window.MP = window.MP || {};
   const PJ = { shirt: 'pyjama', bottom: 'pyjama', hat: 'none', costume: 'none', shoes: false };
 
   // Every country's hotel looks a bit different
-  const LOOK = {
+  const LOOK = MP.HOTEL_LOOKS = {
     egypt: {
       name: 'Hotelli Niili', land: 'desert', wall: '#f1dcb0', border: '#2f5fb5', floor: '#c99b62',
       blanket: '#e6b450', rug: '#d33a3a',
