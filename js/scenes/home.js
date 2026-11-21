@@ -70,6 +70,7 @@ window.MP = window.MP || {};
     recipe:     { x: 338, y: 268, w: 22, h: 24, standX: 374 },    // the recipe card on the fridge
     games:      { x: 277, y: 232, w: 32, h: 16, standX: 286 },    // the memory game box on the bookshelf
     drums:      { x: 644, y: 116, w: 42, h: 36, standX: 638 },    // the drum kit on the landing
+    treats:     { x: 398, y: 277, w: 18, h: 17, standX: 410 },    // the pet's treat jar on the counter
   };
   const floorOf = (spot) => (spot.y >= DOWN_Y ? 1 : 0);
 
@@ -295,6 +296,13 @@ window.MP = window.MP || {};
       box(ctx, x + 6, 103, 13, 9.5, 2, '#e04848');           // pot
       box(ctx, x + 5, 101.5, 15, 2, 1, '#a83232');
       box(ctx, x - 30, 106, 3, 6.5, 1, '#8a93a6');           // tap
+      if (MP.myPet()) {
+        // the pet's treat jar (tap it for pet school)
+        box(ctx, x - 29, 99, 14, 13, 3, 'rgba(220,240,255,0.85)');
+        box(ctx, x - 30, 97, 16, 3, 1, '#e0559a');
+        ctx.fillStyle = '#e8b878';
+        for (const [bx, by] of [[-25, 108], [-20, 106], [-23, 103.5], [-18, 109]]) ctx.fillRect(x + bx, by, 4, 1.8);
+      }
     });
   }
 
@@ -1286,6 +1294,12 @@ window.MP = window.MP || {};
         this.leave(MP.scenes.album);
         return;
       }
+      if (id === 'treats') {
+        if (!MP.myPet()) return;
+        this.say('Herkkuja! Mennään lemmikkikouluun.', 1.5);
+        this.leave(MP.scenes.pettricks);
+        return;
+      }
       if (id === 'drums') {
         this.say('Rummut! Soitetaan!', 1.5);
         this.leave(MP.scenes.drums);
@@ -1486,6 +1500,13 @@ window.MP = window.MP || {};
         if (Math.abs(wx - pet.x) < 12 && wy > py0 - 20 && wy < py0 + 4) {
           pet.happyFrom = MP.time;
           if (pet.mode === 'basket') pet.mode = 'follow';    // wakes up
+          // a pet that knows tricks shows one (pettricks.js)
+          const known = MP.petKnows ? MP.petKnows() : [];
+          if (known.length && pet.mode === 'follow' && Math.random() < 0.7) {
+            const k = known[Math.floor(Math.random() * known.length)];
+            pet.trick = { id: k.id, from: MP.time };
+            this.say(k.word, 1.5);
+          }
           MP.petSound();
           return;
         }
@@ -1530,7 +1551,7 @@ window.MP = window.MP || {};
       }
 
       // Things on this floor: walk there, then use it
-      for (const id of ['toilet', 'sink', 'mirror', 'wardrobe', 'bed', 'drums', 'stairsUp', 'games', 'books', 'album', 'passport', 'recipe', 'tv', 'sofa', 'table', 'bowl', 'shoes', 'stairsDown', 'door']) {
+      for (const id of ['toilet', 'sink', 'mirror', 'wardrobe', 'bed', 'drums', 'stairsUp', 'games', 'books', 'album', 'passport', 'recipe', 'treats', 'tv', 'sofa', 'table', 'bowl', 'shoes', 'stairsDown', 'door']) {
         const spot = SPOTS[id];
         if (floorOf(spot) === this.floor && MP.hit(spot, wx, wy)) {
           MP.sfx.tap();
@@ -1762,6 +1783,8 @@ window.MP = window.MP || {};
       }
       MP.draw('ball', ctx, POS.ball, FLOOR, { r: 4 });
       if (MP.myPet()) petBasket(ctx, POS.petBasket);
+      // the rosette ribbon from the pet show hangs on the wall by the basket
+      if (MP.myPet() && MP.state.treasures && MP.state.treasures.rosette && MP.drawRosette) MP.drawRosette(ctx, POS.petBasket + 18, 108, 0.8);
 
       // ===== Upstairs: bathroom =====
       MP.draw('toilet', ctx, POS.toilet, FLOOR);
@@ -1861,11 +1884,14 @@ window.MP = window.MP || {};
         const py0 = pet.floor === 0 ? FLOOR_UP : FLOOR_DOWN;
         const age = t - pet.happyFrom;
         const sleeping = pet.mode === 'basket';
-        MP.drawPet(ctx, pet.x, py0 - (sleeping ? 3 : 0), {
+        const petOpts = {
           kind: myPet.kind, flip: pet.facing < 0, walking: pet.walking, walkTime: pet.walkTime,
           sleep: sleeping, eat: pet.mode === 'eat', sit: !pet.walking && pet.mode === 'follow' && age > 1.2,
           happy: age >= 0 && age < 1.2 ? 1 - age / 1.2 : 0,
-        });
+        };
+        const tu = pet.trick ? (t - pet.trick.from) / 1.6 : 2;
+        if (tu < 1 && !sleeping && !pet.walking && MP.drawPetTrick) MP.drawPetTrick(ctx, pet.x, py0, petOpts, pet.trick.id, tu, true);
+        else MP.drawPet(ctx, pet.x, py0 - (sleeping ? 3 : 0), petOpts);
         MP.drawPetHearts(ctx, pet.x, py0 - 16, age);
         MP.drawPetWord(ctx, pet.x, py0 - 30, age, MP.petWord());
         if (sleeping) {

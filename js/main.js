@@ -46,6 +46,7 @@
 //   #labyrintti   the labyrinth under Ramses II's temple
 //   #kirjat       the bookshelf
 //   #galleria     all drawings and outfits
+//   #lemmikkikoulu pet school (tricks) and the pet show
 window.MP = window.MP || {};
 
 (function () {
@@ -75,6 +76,7 @@ window.MP = window.MP || {};
     leivonta:    () => { ready(false); return [MP.scenes.baking]; },
     synttarit:   () => { ready(false); return [MP.scenes.party]; },
     rummut:      () => { ready(false); return [MP.scenes.drums]; },
+    lemmikkikoulu: () => { ready(false); if (!MP.state.pet) MP.state.pet = { kind: 'dog', name: 'Nappi' }; return [MP.scenes.pettricks]; },
     muistipeli:  () => { ready(false); return [MP.scenes.memory]; },
     lentokentta: () => { ready(true); return [MP.scenes.airport, { country: 'home' }]; },
     lento:       () => { ready(true); return [MP.scenes.flight, { from: 'home', to: 'egypt' }]; },

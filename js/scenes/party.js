@@ -28,6 +28,7 @@ window.MP = window.MP || {};
     { name: 'Leo', character: 'boy', hair: '#2b1d14', outfit: { shirt: 'green', bottom: 'jeans', hat: 'partyHat', costume: 'none', shoes: false }, x: 112 },
     { name: 'Siiri', character: 'girl', hair: '#c0502a', outfit: { shirt: 'tshirt', bottom: 'shorts', hat: 'partyHat', costume: 'none', shoes: false }, x: 236 },
   ];
+  MP.PARTY_FRIENDS = FRIENDS;     // they come to the pet show too (pettricks.js)
   const DOOR_X = 16;
   const ME_X = 270;
   const TABLE_X = 170;
