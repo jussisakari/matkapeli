@@ -34,6 +34,9 @@ window.MP = window.MP || {};
     outfit: { shirt: 'green', bottom: 'skirtPurple', hat: 'none', costume: 'none', shoes: false } };
   const UKKI = { character: 'boy', hair: '#c8c8d0', glasses: true, scale: 1.32,
     outfit: { shirt: 'sailor', bottom: 'brown', hat: 'none', costume: 'none', shoes: false } };
+  MP.GRANDMA = MUMMI;    // they are in the sleepover too (sleepover.js)
+  MP.GRANDPA = UKKI;
+  const SLEEP = { x: 236, y: 4, w: 80, h: 18 };   // "Jää yökylään"
 
   function balloons(c, t) {
     const cols = ['#ff5d8f', '#ffd23f', '#4cc9f0', '#7bd389', '#b388ff'];
@@ -68,7 +71,8 @@ window.MP = window.MP || {};
   MP.scenes.grandparents = {
     noRestart: true,
 
-    enter() {
+    enter(params) {
+      params = params || {};
       this.step = 'lobby';
       this.player = new MP.Player(30, { minX: 20, maxX: 300 });
       this.player.place(30, 1);
@@ -80,6 +84,14 @@ window.MP = window.MP || {};
       this.cuckooAt = -9;
       this.fishAt = -9;
       this.say('Good morning! sanoo ovimies. Hissi on tuolla – napauta hissiä.', 'doorman');
+      if (params.back || params.down) {
+        // back from the sleepover (sleepover.js)
+        this.step = 'home';
+        this.player = new MP.Player(80, { minX: 20, maxX: 300 });
+        this.player.place(80, 1);
+        this.bubble = null;
+        if (params.down) this.goingDown();
+      }
     },
 
     say(text, who) {
@@ -116,6 +128,11 @@ window.MP = window.MP || {};
       }
       if (this.step === 'home') {
         if (this.binoculars) { this.binoculars = false; MP.sfx.tap(); return; }
+        if (MP.hit(SLEEP, x, y)) {
+          MP.sfx.bling();
+          MP.goTo(MP.scenes.sleepover);
+          return;
+        }
         if (Math.hypot(x - PULLA.x, y - PULLA.y) < 14) {
           this.bites++;
           for (let i = 0; i < 5; i++) this.crumbs.push({ x: PULLA.x + (Math.random() - 0.5) * 10, y: PULLA.y, vx: (Math.random() - 0.5) * 40, born: t });
@@ -199,6 +216,7 @@ window.MP = window.MP || {};
       else if (this.step === 'lift') this.drawLift(ctx, t);
       else this.drawHome(ctx, t);
       MP.drawButton(ctx, this.step === 'home' ? 'Hei hei!' : '◀ Ulos', BACK, { size: 0.8 });
+      if (this.step === 'home' && !this.binoculars) MP.drawButton(ctx, 'Jää yökylään', SLEEP, { size: 0.65, color: '#6b4fb5', shade: '#4a3488' });
       const b = this.bubble;
       if (b && t >= b.from) {
         const tip = b.who === 'doorman' ? [96, 104] : b.who === 'mummi' ? [MUMMI_X, 92] : b.who === 'ukki' ? [UKKI_X, 90]
