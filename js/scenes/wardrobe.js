@@ -43,7 +43,7 @@ window.MP = window.MP || {};
     },
 
     say(text, seconds) {
-      this.bubble = { text, until: MP.time + (seconds || 2) };
+      this.bubble = { text, from: MP.time, until: Infinity };   // stays until the next tap
     },
 
     // The outfit the character would have with this item on

@@ -581,7 +581,7 @@ window.MP = window.MP || {};
     },
 
     say(text, seconds, delay) {
-      this.bubble = { text, from: MP.time + (delay || 0), until: MP.time + (delay || 0) + (seconds || 4.5) };
+      this.bubble = { text, from: MP.time + (delay || 0), until: Infinity };   // stays until the next tap
     },
 
     // ---- The morning tasks ----
@@ -708,7 +708,7 @@ window.MP = window.MP || {};
         if (Math.abs(p.standX - p.x) < 0.5) {
           p.state = 'talk';
           p.t = 0;
-          this.parentBubble = { text: p.say, until: MP.time + p.talkFor };
+          this.parentBubble = { text: p.say, from: MP.time, until: Infinity };
         }
       } else if (p.state === 'talk') {
         p.t += dt;
@@ -716,7 +716,8 @@ window.MP = window.MP || {};
           p.acted = true;
           if (p.onTalk) p.onTalk();
         }
-        if (p.t >= p.talkFor) p.state = 'leave';
+        // mom or dad waits until the text has been tapped away
+        if (p.t >= p.talkFor && !this.parentBubble) p.state = 'leave';
       } else {
         const d = p.fromX - p.x;
         p.facing = d < 0 ? -1 : 1;

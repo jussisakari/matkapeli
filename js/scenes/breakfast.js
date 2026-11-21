@@ -34,7 +34,7 @@ window.MP = window.MP || {};
     },
 
     say(text, seconds) {
-      this.bubble = { text, until: MP.time + (seconds || 2.5) };
+      this.bubble = { text, from: MP.time, until: Infinity };   // stays until the next tap
     },
 
     ready() {

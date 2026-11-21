@@ -73,6 +73,16 @@ window.MP = window.MP || {};
     };
   }
 
+  // Speech bubbles stay on the screen until the next tap. A tap closes the
+  // bubbles that are showing (and still does its normal job too).
+  MP.closeBubbles = function (s) {
+    if (!s) return;
+    for (const k of ['bubble', 'parentBubble', 'mummyBubble']) {
+      const b = s[k];
+      if (b && MP.time >= (b.from || 0)) s[k] = null;
+    }
+  };
+
   function callScene(name, x, y) {
     const s = MP.scene;
     if (!s || !s[name] || fade.active) return; // no input during fades
@@ -119,7 +129,10 @@ window.MP = window.MP || {};
     MP.pointer.down = false;
     MP.audio.unlock(); // iPad Safari likes sound to be started on "up"
     callScene('onPointerUp', p.x, p.y);
-    if (wasTap) callScene('onTap', p.x, p.y);
+    if (wasTap) {
+      if (!fade.active) MP.closeBubbles(MP.scene);
+      callScene('onTap', p.x, p.y);
+    }
   }
   canvas.addEventListener('pointerup', (e) => endPointer(e, false));
   canvas.addEventListener('pointercancel', (e) => endPointer(e, true));

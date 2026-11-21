@@ -190,6 +190,20 @@ window.MP = window.MP || {};
           },
         },
         {
+          title: 'Tutankhamon',
+          text: 'Tutankhamon oli poikafaarao. Hänen haudastaan löytyi kultainen naamio ja paljon muita aarteita.',
+          art(c, r, t) {
+            sky(c, r, '#3a2614', '#7a5530');
+            const g = c.createRadialGradient(r.x + r.w / 2, r.y + r.h / 2, 4, r.x + r.w / 2, r.y + r.h / 2, r.w / 2);
+            g.addColorStop(0, 'rgba(255,215,90,0.5)');
+            g.addColorStop(1, 'rgba(255,215,90,0)');
+            c.fillStyle = g;
+            c.fillRect(r.x, r.y, r.w, r.h);
+            MP.pyramidArt.tutMask(c, r.x + r.w / 2, r.y + r.h - 6, 3.4);
+            MP.draw('sparkle', c, r.x + 18, r.y + 22, { r: 2.5 + Math.sin(t * 4) * 1 });
+          },
+        },
+        {
           title: 'Kissat ja sfinksi',
           text: 'Egyptiläiset rakastivat kissoja. Suuri sfinksi on patsas, jolla on leijonan vartalo ja ihmisen pää.',
           art(c, r) {

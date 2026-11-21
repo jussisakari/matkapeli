@@ -302,7 +302,7 @@ window.MP = window.MP || {};
     },
 
     say(text, seconds, delay) {
-      this.bubble = { text, from: MP.time + (delay || 0), until: MP.time + (delay || 0) + (seconds || 3) };
+      this.bubble = { text, from: MP.time + (delay || 0), until: Infinity };   // stays until the next tap
     },
 
     walkTo(x, z, onArrive) {
@@ -312,10 +312,10 @@ window.MP = window.MP || {};
     // ---- Things to do ----
     use(spot) {
       if (spot === 'taxi') {
-        // Hop in, and the taxi drives away to Egypt
+        // Hop in, and the taxi drives away to the airport
         this.ride = { t: 0 };
         S.ch.setVisible(false);
-        this.say('Taksi, Egyptiin kiitos!', 2.2);
+        this.say('Taksi, lentokentälle kiitos!', 2.2);
         MP.sfx.bling();
       } else if (spot === 'swing') {
         this.play = { type: 'swing', t: 0 };
@@ -363,7 +363,7 @@ window.MP = window.MP || {};
         if (!this.seen[id] && Math.hypot(p.x - pl.x, p.z - pl.z) < pl.r) {
           this.seen[id] = true;
           if (id === 'cross') this.say('Risteys! Kumpaan mennään: taksiasemalle vai leikkipuistoon?', 4.5);
-          if (id === 'taxi') this.say('Taksiasema! Napauta taksia, niin lähdetään Egyptiin!', 3.5);
+          if (id === 'taxi') this.say('Taksiasema! Napauta taksia, niin mennään lentokentälle!', 3.5);
           if (id === 'play') this.say('Leikkipuisto! Kokeile keinua, liukumäkeä, karusellia ja hiekkalaatikkoa!', 4.5);
         }
       }
@@ -380,14 +380,14 @@ window.MP = window.MP || {};
         else if (this.play.type === 'slide' && this.play.t > 2.2) this.endPlay({ x: 38.5, z: -47.2 });
       }
 
-      // --- Taxi drives away (speeding up), then on to Egypt ---
+      // --- Taxi drives away (speeding up), to the airport ---
       if (this.ride) {
         this.ride.t += dt;
         const t = Math.max(0, this.ride.t - 0.8);
         S.taxi.position.x = TAXI_AT.x - t * t * 6;
         if (this.ride.t > 2.6 && !this.ride.gone) {
           this.ride.gone = true;
-          MP.goTo(MP.scenes.egypt);
+          MP.goTo(MP.scenes.airport, { country: 'home' });
         }
       }
 

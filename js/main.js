@@ -7,6 +7,8 @@
 //   #hampaat      tooth brushing
 //   #vaatekaappi  the wardrobe
 //   #aamupala     breakfast
+//   #lentokentta  the airport (choose where to fly)
+//   #lento        the flight animation to Egypt
 //   #egypti       Egypt, the taxi just arrived
 //   #pyramidi     inside the pyramid
 //   #kirjat       the bookshelf
@@ -36,6 +38,8 @@ window.MP = window.MP || {};
     hampaat:     () => { ready(false); return [MP.scenes.brush]; },
     vaatekaappi: () => { ready(false); return [MP.scenes.wardrobe]; },
     aamupala:    () => { ready(false); return [MP.scenes.breakfast]; },
+    lentokentta: () => { ready(true); return [MP.scenes.airport, { country: 'home' }]; },
+    lento:       () => { ready(true); return [MP.scenes.flight, { from: 'home', to: 'egypt' }]; },
     egypti:      () => { ready(true); return [MP.scenes.egypt]; },
     pyramidi:    () => { ready(true); return [MP.scenes.pyramid]; },
     kirjat:      () => { ready(false); return [MP.scenes.books]; },
