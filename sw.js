@@ -43,6 +43,7 @@ const FILES = [
     './js/scenes/swim.js',
     './js/scenes/garden.js',
     './js/scenes/helsinki.js',
+    './js/scenes/school.js',
     './js/scenes/thailand.js',
     './js/scenes/temple.js',
     './js/scenes/themepark.js',

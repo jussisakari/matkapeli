@@ -245,6 +245,30 @@ window.MP = window.MP || {};
     block(-39, -47, 4.4, 2.4);
     sign('TAKSI', -39, 3.5, -46, 0, '#ffd23f', '#2b2340', null, 2.2);
 
+    // --- The school next to the taxi station (school.js) ---
+    const school = new T.Group();
+    box(10, 5, 8, '#e8c48a', 0, 0, 0, school);
+    box(10.4, 0.4, 8.4, '#c0504d', 0, 5, 0, school);
+    box(1.8, 2.4, 0.1, '#2f6fb8', 0, 0, 4.02, school);                  // the door
+    for (const wx of [-3.4, 3.4]) for (const wy of [1.2, 3.2]) box(1.6, 1.1, 0.1, '#bfe6ff', wx, wy, 4.02, school);
+    box(0.8, 0.8, 0.8, '#c8913a', 0, 5.4, 0, school);                   // the bell tower
+    const bellTop = new T.Mesh(new T.ConeGeometry(0.8, 0.9, 4), mat('#c0504d'));
+    bellTop.position.set(0, 6.6, 0); bellTop.rotation.y = Math.PI / 4;
+    school.add(bellTop);
+    ball(0.22, '#f2c230', 0, 5.75, 0.42, school);
+    const schoolSign = sign('KOULU', 0, 3.2, 4.06, 0, '#ffffff', '#2f6fb8', null, 2.6);
+    S.scene.remove(schoolSign); school.add(schoolSign);
+    // a flag pole
+    box(0.1, 6, 0.1, '#d8dde6', 6.2, 0, 4.2, school);
+    box(1.4, 0.9, 0.04, '#ffffff', 6.95, 5, 4.2, school);
+    box(1.4, 0.22, 0.05, '#003580', 6.95, 5.35, 4.2, school);
+    box(0.22, 0.9, 0.05, '#003580', 6.65, 5, 4.2, school);
+    school.position.set(-50, 0, -53);
+    add(school);
+    block(-50, -53, 10, 8);
+    school.traverse((m) => { m.userData.spot = 'school'; });
+    S.clickables.push(school);
+
     S.taxi = W.taxi(MP.OUTSIDE.taxi);
     S.taxi.position.set(TAXI_AT.x, 0, TAXI_AT.z);
     block(TAXI_AT.x, TAXI_AT.z, 4, 2);
@@ -351,6 +375,7 @@ window.MP = window.MP || {};
       sandbox: { x: 38.5, z: -55.2 },
       garden: { x: -5.6, z: 15.4 },
       busstop: { x: 4.4, z: -4.4 },
+      school: { x: -50, z: -47.4 },
       bus: { x: 3.6, z: -4.4 },
     };
 
@@ -423,10 +448,12 @@ window.MP = window.MP || {};
       const swum = params && params.from === 'pool';
       const gardened = params && params.from === 'garden';
       const bussed = params && params.from === 'bus';
+      const schooled = params && params.from === 'school';
       this.p = back ? { x: -30, z: -44.3, heading: Math.PI / 2 }
         : swum ? { x: S.spots.pool.x, z: S.spots.pool.z, heading: 0 }
           : gardened ? { x: S.spots.garden.x, z: S.spots.garden.z, heading: Math.PI / 2 }
-            : bussed ? { x: S.spots.busstop.x, z: S.spots.busstop.z, heading: Math.PI } : { x: START.x, z: START.z, heading: 0 };
+            : bussed ? { x: S.spots.busstop.x, z: S.spots.busstop.z, heading: Math.PI }
+              : schooled ? { x: S.spots.school.x, z: S.spots.school.z, heading: Math.PI } : { x: START.x, z: START.z, heading: 0 };
       this.bus = bussed ? { mode: 'leave', t: 0 } : null;     // the bus: coming / waiting / leaving
       S.bus.position.set(1.5, 0, bussed ? -4 : -70);
       S.garden.update();
@@ -437,7 +464,7 @@ window.MP = window.MP || {};
       this.walkTime = 0;
       this.play = null;          // riding the swing or the slide
       this.ride = null;          // driving away in the taxi
-      this.seen = back ? { cross: true, taxi: true } : {};   // places already visited
+      this.seen = back || schooled ? { cross: true, taxi: true } : {};   // places already visited
       this.round = { speed: 0 };
       this.swingAt = -10;
       setEvening(!!MP.state.dusk);
@@ -448,7 +475,8 @@ window.MP = window.MP || {};
       if (swum) S.pet.place(this.p.x + 1.2, this.p.z + 0.6);
       else if (back) { S.pet.place(0, 9); S.pet.happyFrom = MP.time + 0.3; }
       else S.pet.place(this.p.x + 0.8, this.p.z + 1.2);
-      if (bussed) this.say('Kotipysäkillä! Bussi 67 jatkaa matkaa. Olipa kiva reissu keskustaan!', 4, 0.4);
+      if (schooled) this.say('Koulupäivä on ohi! Kultainen tähti vihkoon. Mitä tehdään seuraavaksi?', 4, 0.4);
+      else if (bussed) this.say('Kotipysäkillä! Bussi 67 jatkaa matkaa. Olipa kiva reissu keskustaan!', 4, 0.4);
       else if (gardened) this.say('Kasvimaa on hoidettu! Huomenna kasvit ovat taas vähän isompia.', 3.5, 0.4);
       else if (swum) this.say('Olipa kivaa uida! Nyt kuivataan pyyhkeellä ja lähdetään seikkailemaan.', 4, 0.6);
       else if (back && MP.state.dusk) this.say('Takaisin kotikadulla! On jo ilta – katulamput palavat. Kotiin pääsee napauttamalla kotitalon ovea.', 4.5, 0.6);
@@ -475,6 +503,13 @@ window.MP = window.MP || {};
         MP.sfx.bling();
         this.ride = { t: 0, home: true };          // stops walking while the screen fades
         MP.goTo(MP.scenes.home, { quest: 'evening' });
+        return;
+      }
+      if (spot === 'school') {
+        this.say('Koulu! Mennään luokkaan.', 1.5);
+        MP.sfx.bling();
+        this.ride = { t: 0, home: true };          // stops walking while the screen fades
+        MP.goTo(MP.scenes.school);
         return;
       }
       if (spot === 'busstop') {
@@ -569,7 +604,7 @@ window.MP = window.MP || {};
         if (!this.seen[id] && Math.hypot(p.x - pl.x, p.z - pl.z) < pl.r) {
           this.seen[id] = true;
           if (id === 'cross') this.say('Risteys! Kumpaan mennään: taksiasemalle vai leikkipuistoon?', 4.5);
-          if (id === 'taxi') this.say('Taksiasema! Napauta taksia, niin mennään lentokentälle!', 3.5);
+          if (id === 'taxi') this.say('Taksiasema! Napauta taksia, niin mennään lentokentälle! Vieressä on koulu.', 3.5);
           if (id === 'play') this.say('Leikkipuisto! Kokeile keinua, liukumäkeä, karusellia ja hiekkalaatikkoa!', 4.5);
         }
       }

@@ -31,6 +31,7 @@
 //   #uima         swimming in the pool (swimsuit on)
 //   #kasvimaa     our own garden (one box ready to pick, one flowering)
 //   #helsinki     bus 67 to Helsinki city centre (and Janne Kataja)
+//   #koulu        the school and the math lesson
 //   #rauta        outside in the Iron hero suit (tap the suit: fly)
 //   #hamahakki    outside in the spider suit (tap the suit: web)
 //   #lemmikki     home in the morning with a pet (a kitten if none chosen yet)
@@ -89,6 +90,7 @@ window.MP = window.MP || {};
     ilta:        () => { ready(true); return [MP.scenes.home, { quest: 'evening' }]; },
     hotelli:     () => { ready(true); return [MP.scenes.hotel, { country: 'thailand' }]; },
     uima:        () => { ready(true); MP.state.outfit.costume = 'swimsuit'; return [MP.scenes.swim]; },
+    koulu:       () => { ready(true); return [MP.scenes.school]; },
     helsinki:    () => { ready(true); return [MP.scenes.helsinki]; },
     kasvimaa:    () => { ready(true); MP.state.garden = MP.state.garden || [{ seed: 'strawberry', stage: 4, watered: true }, { seed: 'sunflower', stage: 3, watered: false }, { seed: null, stage: 0, watered: false }]; return [MP.scenes.garden]; },
     rauta:       () => { ready(true); MP.state.outfit.costume = 'iron'; return [MP.scenes.street]; },
