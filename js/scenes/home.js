@@ -867,6 +867,8 @@ window.MP = window.MP || {};
         MP.state.tasks = { dinner: false, pyjama: false, brush: false, toilet: false };
         MP.state.tv = { time: 0, locked: false, lockedBy: null };
         MP.state.maskedLineup = null;     // new Masked Singer singers tonight
+        // one evening in three the doorbell rings: Turpapojat come to visit (bandvisit.js)
+        MP.state.bandBell = Math.random() < 1 / 3 ? { at: MP.time + 9, rang: false } : null;
       }
       if (waking || !MP.state.tasks) {
         MP.state.tasks = { toilet: false, brush: false, hair: false, dress: false, breakfast: false, pet: false, shoes: false };
@@ -1421,6 +1423,13 @@ window.MP = window.MP || {};
         }
         return;
       }
+      if (id === 'door' && MP.state.evening && MP.state.bandBell && MP.state.bandBell.rang) {
+        MP.state.bandBell = null;
+        this.doorOpen = true;
+        MP.sfx.bling();
+        this.leave(MP.scenes.bandvisit);
+        return;
+      }
       if (id === 'door' && MP.state.evening) {
         this.say('Nyt on ilta. Ei mennä enää ulos – huomenna uudestaan!', 3.5);
         return;
@@ -1733,6 +1742,15 @@ window.MP = window.MP || {};
         return;
       }
 
+      // --- The doorbell (Turpapojat at the door) ---
+      const bell = MP.state.bandBell;
+      if (bell && !bell.rang && MP.state.evening && MP.time >= bell.at && !this.parent && !this.tvView && !this.busy && !this.toyPick) {
+        bell.rang = true;
+        MP.sfx.note(784, 0.35, 'sine', 0.25);
+        setTimeout(() => MP.sfx.note(622, 0.5, 'sine', 0.25), 380);
+        this.say('Ding-dong! Ovikello soi! Kuka siellä on? Mennään avaamaan ovi!', 4);
+      }
+
       // --- TV running ---
       if (this.tvOn) {
         const prev = this.showT;
@@ -1836,6 +1854,17 @@ window.MP = window.MP || {};
       MP.draw('window', ctx, POS.window - 15, 34, Object.assign({ t }, this.skyNow()));
       MP.windowWeather(ctx, POS.window - 15, 34, t);
       MP.draw('poster', ctx, POS.poster, 38);
+      if (MP.state.treasures && MP.state.treasures.signedPoster) {
+        // Sasu's and Daniel's signatures (bandvisit.js)
+        ctx.save();
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 0.7;
+        for (const [sy, k0] of [[68, 0], [75, 2]]) {
+          ctx.beginPath();
+          for (let k = 0; k <= 12; k++) { const sx = POS.poster + 5 + k * 2, yy = sy + Math.sin(k * 1.3 + k0) * 1.6; k ? ctx.lineTo(sx, yy) : ctx.moveTo(sx, yy); }
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
       standMirror(ctx, POS.standMirror, t);
       if (MP.state.treasures && MP.state.treasures.tutMask) treasureShelf(ctx, 161, t);
       placePosters();
@@ -1988,7 +2017,8 @@ window.MP = window.MP || {};
       if (this.intro) {
         if (!this.intro.awake && this.intro.dawn >= 1 && !this.intro.night) spots = [SPOTS.alarm];
       } else if (!this.panel && !this.visit && !this.stairs && !this.tvView && !this.parent) {
-        const wanted = this.allDone() ? [MP.state.evening ? SPOTS.bed : SPOTS.door] : this.missing().map((k) => SPOTS[k.spot]);
+        let wanted = this.allDone() ? [MP.state.evening ? SPOTS.bed : SPOTS.door] : this.missing().map((k) => SPOTS[k.spot]);
+        if (MP.state.evening && MP.state.bandBell && MP.state.bandBell.rang) wanted = [SPOTS.door];   // somebody at the door!
         spots = wanted.filter((s) => floorOf(s) === this.floor);
         if (!spots.length && wanted.length) spots = [this.floor === 0 ? SPOTS.stairsUp : SPOTS.stairsDown];
       }

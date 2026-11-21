@@ -50,6 +50,7 @@ window.MP = window.MP || {};
       bass: [[0, 45], [2, 45], [4, 48], [6, 48], [8, 41], [10, 41], [12, 43], [14, 43]],
     },
   ];
+  MP.TURPA_SONGS = SONGS;    // they play them in our living room too (bandvisit.js)
   const VERSES = 2, SONG_BEATS = VERSES * 16 + 2;
 
   const hz = (midi) => 440 * Math.pow(2, (midi - 69) / 12);
