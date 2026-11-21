@@ -32,7 +32,7 @@ window.MP = window.MP || {};
     // upstairs: landing 640–960
     landingPicture: 650, landingPlant: 900,
     // downstairs: living room 0–320
-    plant: 22, livingWindow: 70, sofa: 110, lamp: 166, tv: 232,
+    plant: 22, livingWindow: 70, sofa: 110, lamp: 166, tv: 232, bookshelf: 293,
     // downstairs: kitchen 320–640
     fridge: 354, counter: 428, clock: 492, kitchenWindow: 516, table: 590,
     // downstairs: hallway 640–960
@@ -53,6 +53,7 @@ window.MP = window.MP || {};
     stairsUp:   { x: 640, y: 30,  w: 320, h: 126, standX: UP_MAX_X, arrowX: 712, arrowY: 112 },
     sofa:       { x: 78,  y: 290, w: 64, h: 44, standX: 110 },
     tv:         { x: 198, y: 270, w: 68, h: 62, standX: 110 },
+    books:      { x: 274, y: 246, w: 38, h: 88, standX: 286 },
     table:      { x: 556, y: 288, w: 68, h: 46, standX: 590 },
     shoes:      { x: 752, y: 306, w: 40, h: 26, standX: 772 },
     stairsDown: { x: 696, y: 182, w: 190, h: 138, standX: 872, arrowX: 846, arrowY: 268 },
@@ -370,6 +371,38 @@ window.MP = window.MP || {};
     ctx.fillStyle = on ? '#4cd964' : '#e04848';           // little light
     ctx.beginPath(); ctx.arc(x + 29, 123, 0.9, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
+  }
+
+  // Bookshelf: rows of colorful books. The Egypt book (gold) and the
+  // spider-hero book (red) stick out a little – those can be read.
+  function bookshelf(ctx, x) {
+    const cols = ['#4a78c8', '#3cb371', '#c084fc', '#e07a3a', '#ff8fc0', '#5aa84f', '#e04848', '#2bb3a3'];
+    withLine(ctx, () => {
+      box(ctx, x - 18, 68, 36, 82, 2, '#a0643c');
+      ctx.fillStyle = '#7a4a25';
+      for (let r = 0; r < 3; r++) ctx.fillRect(x - 15, 72 + r * 26, 30, 22);
+      for (let r = 0; r < 3; r++) {
+        const base = 94 + r * 26;
+        let bx = x - 14;
+        for (let i = 0; bx < x + 13; i++) {
+          const w = 3 + ((i * 7 + r * 3) % 3);
+          const h = 14 + ((i * 5 + r) % 6);
+          if (bx + w > x + 14) break;
+          let color = cols[(i * 3 + r * 5) % cols.length];
+          let out = 0;
+          if (r === 1 && i === 1) { color = '#2f6fb8'; out = 2; }     // Egypt
+          if (r === 1 && i === 4) { color = '#d62828'; out = 2; }     // spider heroes
+          ctx.fillStyle = color;
+          ctx.fillRect(bx, base - h - out, w, h);
+          ctx.strokeRect(bx, base - h - out, w, h);
+          if (out) {
+            ctx.fillStyle = color === '#2f6fb8' ? '#ffd23f' : '#2b4fa8';
+            ctx.fillRect(bx + 0.6, base - h - out + 3, w - 1.2, 1.4);
+          }
+          bx += w;
+        }
+      }
+    });
   }
 
   function plant(ctx, x) {
@@ -808,6 +841,10 @@ window.MP = window.MP || {};
         this.startTv();
         return;
       }
+      if (id === 'books') {
+        this.leave(MP.scenes.books);
+        return;
+      }
       if (id === 'door') {
         if (this.allDone()) {
           // Everything done: out we go!
@@ -906,7 +943,7 @@ window.MP = window.MP || {};
       }
 
       // Things on this floor: walk there, then use it
-      for (const id of ['toilet', 'sink', 'wardrobe', 'stairsUp', 'tv', 'sofa', 'table', 'shoes', 'stairsDown', 'door']) {
+      for (const id of ['toilet', 'sink', 'wardrobe', 'stairsUp', 'books', 'tv', 'sofa', 'table', 'shoes', 'stairsDown', 'door']) {
         const spot = SPOTS[id];
         if (floorOf(spot) === this.floor && MP.hit(spot, wx, wy)) {
           MP.sfx.tap();
@@ -1095,6 +1132,7 @@ window.MP = window.MP || {};
       sofa(ctx, POS.sofa);
       floorLamp(ctx, POS.lamp);
       tvSet(ctx, POS.tv, this.tvOn, this.showT);
+      bookshelf(ctx, POS.bookshelf);
       // kitchen
       fridge(ctx, POS.fridge);
       counter(ctx, POS.counter);

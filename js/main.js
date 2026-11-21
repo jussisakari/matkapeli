@@ -7,6 +7,9 @@
 //   #hampaat      tooth brushing
 //   #vaatekaappi  the wardrobe
 //   #aamupala     breakfast
+//   #egypti       Egypt, the taxi just arrived
+//   #pyramidi     inside the pyramid
+//   #kirjat       the bookshelf
 //   #galleria     all drawings and outfits
 window.MP = window.MP || {};
 
@@ -33,6 +36,9 @@ window.MP = window.MP || {};
     hampaat:     () => { ready(false); return [MP.scenes.brush]; },
     vaatekaappi: () => { ready(false); return [MP.scenes.wardrobe]; },
     aamupala:    () => { ready(false); return [MP.scenes.breakfast]; },
+    egypti:      () => { ready(true); return [MP.scenes.egypt]; },
+    pyramidi:    () => { ready(true); return [MP.scenes.pyramid]; },
+    kirjat:      () => { ready(false); return [MP.scenes.books]; },
     galleria:    () => [MP.scenes.gallery],
   };
 

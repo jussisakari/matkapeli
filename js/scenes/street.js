@@ -23,7 +23,6 @@ window.MP = window.MP || {};
   };
 
   const SPEED = 3.4;         // meters per second
-  const PERSON_M = 1.25;     // character height in meters
   const BOUNDS = { minX: -56, maxX: 56, minZ: -64, maxZ: 9.5 };
   const START = { x: 0, z: 8.5 };
   const PLACES = {
@@ -31,7 +30,8 @@ window.MP = window.MP || {};
     taxi: { x: -32, z: -45, r: 7 },
     play: { x: 34, z: -52, r: 9 },
   };
-  const TURN_BUTTON = { x: 290, y: 152, r: 15 };
+  const TAXI_AT = { x: -30, z: -46.5 };
+  const W3 = MP.w3d;
 
   const S = { built: false };   // everything 3D lives here
   MP.street3d = S;              // (for testing)
@@ -40,14 +40,9 @@ window.MP = window.MP || {};
   // Building the world
   // ---------------------------------------------------------------------------
   function build() {
+    W3.init();
     const T = window.THREE;
     S.T = T;
-    S.canvas = document.createElement('canvas');
-    S.canvas.id = 'game3d';
-    Object.assign(S.canvas.style, { position: 'fixed', zIndex: '0', pointerEvents: 'none', display: 'none' });
-    document.body.appendChild(S.canvas);
-
-    S.renderer = new T.WebGLRenderer({ canvas: S.canvas, antialias: true, preserveDrawingBuffer: true });
     S.scene = new T.Scene();
     S.scene.background = new T.Color(MP.OUTSIDE.sky);
     S.scene.fog = new T.Fog(MP.OUTSIDE.sky, 40, 110);
@@ -57,71 +52,12 @@ window.MP = window.MP || {};
     sun.position.set(25, 40, 15);
     S.scene.add(sun);
 
-    S.clickables = [];
-    S.obstacles = [];
-    const mats = {};
-    const mat = (color) => mats[color] || (mats[color] = new T.MeshLambertMaterial({ color }));
-
-    function add(mesh, parent) { (parent || S.scene).add(mesh); return mesh; }
-    // A box standing on (x, y, z)
-    function box(w, h, d, color, x, y, z, parent) {
-      const m = new T.Mesh(new T.BoxGeometry(w, h, d), mat(color));
-      m.position.set(x, y + h / 2, z);
-      return add(m, parent);
-    }
-    function cyl(r, h, color, x, y, z, parent, rTop) {
-      const m = new T.Mesh(new T.CylinderGeometry(rTop != null ? rTop : r, r, h, 14), mat(color));
-      m.position.set(x, y + h / 2, z);
-      return add(m, parent);
-    }
-    function ball(r, color, x, y, z, parent) {
-      const m = new T.Mesh(new T.SphereGeometry(r, 16, 12), mat(color));
-      m.position.set(x, y, z);
-      return add(m, parent);
-    }
-    // Flat piece lying on the ground
-    function flat(w, d, color, x, z, y) {
-      const m = new T.Mesh(new T.PlaneGeometry(w, d), mat(color));
-      m.rotation.x = -Math.PI / 2;
-      m.position.set(x, y || 0.01, z);
-      return add(m);
-    }
-    function block(x, z, w, d) {
-      S.obstacles.push({ minX: x - w / 2, maxX: x + w / 2, minZ: z - d / 2, maxZ: z + d / 2 });
-    }
-    // A picture with text, for signs
-    function textTexture(text, bg, fg, arrow) {
-      const c = document.createElement('canvas');
-      c.width = 512; c.height = 128;
-      const g = c.getContext('2d');
-      g.fillStyle = bg; g.fillRect(0, 0, 512, 128);
-      g.strokeStyle = '#2b2340'; g.lineWidth = 10; g.strokeRect(5, 5, 502, 118);
-      g.fillStyle = fg;
-      g.font = 'bold 64px ' + MP.FONT_FAMILY;
-      g.textAlign = 'center'; g.textBaseline = 'middle';
-      g.fillText(text, arrow ? 290 : 256, 68);
-      if (arrow) {
-        g.beginPath();
-        g.moveTo(30, 64); g.lineTo(90, 24); g.lineTo(90, 104); g.closePath();
-        g.fill();
-      }
-      return new T.CanvasTexture(c);
-    }
-    function sign(text, x, y, z, rotY, bg, fg, arrowDir, w) {
-      const tex = textTexture(text, bg, fg, !!arrowDir);
-      if (arrowDir === 'right') { tex.wrapS = T.RepeatWrapping; tex.repeat.x = -1; }
-      const m = new T.Mesh(new T.PlaneGeometry(w || 3, (w || 3) / 4), new T.MeshBasicMaterial({ map: tex, side: T.DoubleSide }));
-      if (arrowDir === 'right') {
-        // flip the picture so the arrow points right, but draw the text again unflipped
-        m.material.map = textTexture(text, bg, fg, false);
-        const arrow = new T.Mesh(new T.CircleGeometry(0.16, 3), new T.MeshBasicMaterial({ color: fg }));
-        arrow.position.set((w || 3) / 2 - 0.3, 0, 0.01);
-        m.add(arrow);
-      }
-      m.position.set(x, y, z);
-      m.rotation.y = rotY || 0;
-      return add(m);
-    }
+    const W = W3.kit(S.scene);
+    S.W = W;
+    S.clickables = W.clickables;
+    S.obstacles = W.obstacles;
+    const { add, box, cyl, ball, flat, block, sign } = W;
+    const mat = W.mat;
 
     // --- Ground, roads, sidewalks ---
     const ground = new T.Mesh(new T.PlaneGeometry(400, 400), mat(MP.OUTSIDE.grass));
@@ -224,21 +160,10 @@ window.MP = window.MP || {};
     block(-39, -47, 4.4, 2.4);
     sign('TAKSI', -39, 3.5, -46, 0, '#ffd23f', '#2b2340', null, 2.2);
 
-    const taxi = new T.Group();
-    box(3.8, 0.9, 1.8, MP.OUTSIDE.taxi, 0, 0.35, 0, taxi);
-    box(2.1, 0.75, 1.6, MP.OUTSIDE.taxi, -0.2, 1.25, 0, taxi);
-    box(1.9, 0.6, 1.62, '#bfe6ff', -0.2, 1.3, 0, taxi);        // windows
-    box(0.7, 0.3, 0.5, '#ffffff', -0.2, 2.0, 0, taxi);          // roof sign
-    for (const [wx, wz] of [[-1.2, 0.9], [1.2, 0.9], [-1.2, -0.9], [1.2, -0.9]]) {
-      const w = cyl(0.38, 0.3, '#2b2b33', wx, 0.38, wz, taxi);
-      w.rotation.x = Math.PI / 2;
-      w.position.y = 0.38;
-    }
-    taxi.position.set(-30, 0, -46.5);
-    add(taxi);
-    block(-30, -46.5, 4, 2);
-    taxi.traverse((m) => { m.userData.spot = 'taxi'; });
-    S.clickables.push(taxi);
+    S.taxi = W.taxi(MP.OUTSIDE.taxi);
+    S.taxi.position.set(TAXI_AT.x, 0, TAXI_AT.z);
+    block(TAXI_AT.x, TAXI_AT.z, 4, 2);
+    W.clickable(S.taxi, 'taxi');
 
     // --- Playground ---
     flat(17, 15, MP.OUTSIDE.sand, 34, -53, 0.015);
@@ -339,50 +264,8 @@ window.MP = window.MP || {};
       sandbox: { x: 38.5, z: -55.2 },
     };
 
-    // --- The character: a flat picture that always faces the camera ---
-    S.charCanvas = document.createElement('canvas');
-    S.charCanvas.width = 96;
-    S.charCanvas.height = 150;
-    S.charTex = new T.CanvasTexture(S.charCanvas);
-    S.sprite = new T.Sprite(new T.SpriteMaterial({ map: S.charTex, transparent: true }));
-    S.sprite.scale.set(PERSON_M * 32 / 42, PERSON_M * 50 / 42, 1);
-    S.sprite.center.set(0.5, 2 / 50);
-    add(S.sprite);
-    const shadow = new T.Mesh(new T.CircleGeometry(0.42, 20),
-      new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22 }));
-    shadow.rotation.x = -Math.PI / 2;
-    add(shadow);
-    S.shadow = shadow;
-
-    S.raycaster = new T.Raycaster();
-    S.groundPlane = new T.Plane(new T.Vector3(0, 1, 0), 0);
+    S.ch = W3.character(S.scene);
     S.built = true;
-  }
-
-  // Keeps the 3D canvas exactly under the game canvas
-  function placeCanvas() {
-    const r = MP.canvas.getBoundingClientRect();
-    const key = [r.left, r.top, r.width, r.height, window.devicePixelRatio].join(',');
-    if (key === S.placed) return;
-    S.placed = key;
-    Object.assign(S.canvas.style, {
-      left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px',
-    });
-    S.renderer.setPixelRatio(window.devicePixelRatio || 1);
-    S.renderer.setSize(Math.max(1, r.width), Math.max(1, r.height), false);
-    S.camera.aspect = r.width / Math.max(1, r.height);
-    S.camera.updateProjectionMatrix();
-  }
-
-  function blocked(x, z) {
-    return S.obstacles.some((o) => x > o.minX - 0.35 && x < o.maxX + 0.35 && z > o.minZ - 0.35 && z < o.maxZ + 0.35);
-  }
-
-  function angleDiff(a, b) {
-    let d = b - a;
-    while (d > Math.PI) d -= Math.PI * 2;
-    while (d < -Math.PI) d += Math.PI * 2;
-    return d;
   }
 
   // ---------------------------------------------------------------------------
@@ -391,32 +274,31 @@ window.MP = window.MP || {};
   MP.scenes.street = {
     transparent: true,
 
-    enter() {
+    // params.from === 'taxi': coming back from a trip, standing by the taxi
+    enter(params) {
       if (!S.built) build();
-      S.canvas.style.display = 'block';
-      MP.canvas.style.background = 'transparent';
-      MP.canvas.style.position = 'relative';
-      MP.canvas.style.zIndex = '1';
-      S.placed = null;
-
-      this.p = { x: START.x, z: START.z, heading: 0 };   // heading 0 = looking away from home
-      this.camHeading = 0;
+      W3.show();
+      const back = params && params.from === 'taxi';
+      this.p = back ? { x: -30, z: -44.3, heading: Math.PI / 2 } : { x: START.x, z: START.z, heading: 0 };
+      this.camHeading = this.p.heading;
       this.target = null;
       this.onArrive = null;
       this.walking = false;
       this.walkTime = 0;
       this.play = null;          // riding the swing or the slide
-      this.seen = {};            // places already visited
-      this.panel = null;
+      this.ride = null;          // driving away in the taxi
+      this.seen = back ? { cross: true, taxi: true } : {};   // places already visited
       this.round = { speed: 0 };
       this.swingAt = -10;
       S.castle.visible = false;
-      this.say('Ulkona! Kävellään risteykseen.', 4, 0.6);
+      S.taxi.position.set(TAXI_AT.x, 0, TAXI_AT.z);
+      S.ch.setVisible(true);
+      if (back) this.say('Kotona taas! Mennäänkö leikkipuistoon?', 3.5, 0.6);
+      else this.say('Ulkona! Kävellään risteykseen.', 4, 0.6);
     },
 
     exit() {
-      S.canvas.style.display = 'none';
-      MP.canvas.style.background = '';
+      W3.hide();
     },
 
     say(text, seconds, delay) {
@@ -424,17 +306,16 @@ window.MP = window.MP || {};
     },
 
     walkTo(x, z, onArrive) {
-      this.target = {
-        x: MP.clamp(x, BOUNDS.minX, BOUNDS.maxX),
-        z: MP.clamp(z, BOUNDS.minZ, BOUNDS.maxZ),
-      };
-      this.onArrive = onArrive || null;
+      W3.walkTo(this, BOUNDS, x, z, onArrive);
     },
 
     // ---- Things to do ----
     use(spot) {
       if (spot === 'taxi') {
-        this.panel = { from: MP.time };
+        // Hop in, and the taxi drives away to Egypt
+        this.ride = { t: 0 };
+        S.ch.setVisible(false);
+        this.say('Taksi, Egyptiin kiitos!', 2.2);
         MP.sfx.bling();
       } else if (spot === 'swing') {
         this.play = { type: 'swing', t: 0 };
@@ -456,79 +337,33 @@ window.MP = window.MP || {};
     },
 
     onTap(x, y) {
-      if (this.panel) {
-        if (MP.time - this.panel.from > 0.5) this.panel = null;
-        return;
-      }
-      if (this.play) return;
-
-      // Turn around
-      if (Math.hypot(x - TURN_BUTTON.x, y - TURN_BUTTON.y) < TURN_BUTTON.r + 3) {
+      if (this.play || this.ride) return;
+      if (W3.hitTurn(x, y)) {
         this.target = null;
         this.p.heading += Math.PI;
         MP.sfx.tap();
         return;
       }
-
-      const T = S.T;
-      const ndc = new T.Vector2(x / MP.W * 2 - 1, -(y / MP.H * 2 - 1));
-      S.raycaster.setFromCamera(ndc, S.camera);
-
-      // Tapped a thing? Walk to it and use it
-      const hits = S.raycaster.intersectObjects(S.clickables, true);
-      if (hits.length) {
-        const spot = hits[0].object.userData.spot;
+      W3.tap(this, x, y, S.camera, S.W, BOUNDS, (spot) => {
         const stand = S.spots[spot];
-        if (stand) {
-          MP.sfx.tap();
-          this.walkTo(stand.x, stand.z, () => this.use(spot));
-          return;
-        }
-      }
-      // Otherwise walk to the spot on the ground
-      const hit = new T.Vector3();
-      if (S.raycaster.ray.intersectPlane(S.groundPlane, hit)) {
-        // not too far in one go (taps near the horizon)
-        const dx = hit.x - this.p.x, dz = hit.z - this.p.z;
-        const d = Math.hypot(dx, dz);
-        const k = d > 30 ? 30 / d : 1;
-        this.walkTo(this.p.x + dx * k, this.p.z + dz * k);
-      }
+        if (!stand) return false;
+        MP.sfx.tap();
+        this.walkTo(stand.x, stand.z, () => this.use(spot));
+        return true;
+      });
     },
 
     update(dt) {
       const p = this.p;
-
-      // --- Walking ---
-      this.walking = false;
-      if (this.target && !this.play) {
-        const dx = this.target.x - p.x, dz = this.target.z - p.z;
-        const d = Math.hypot(dx, dz);
-        if (d < 0.08) {
-          this.target = null;
-          const cb = this.onArrive;
-          this.onArrive = null;
-          if (cb) cb();
-        } else {
-          const want = Math.atan2(dx, -dz);
-          p.heading += angleDiff(p.heading, want) * Math.min(1, dt * 8);
-          const step = Math.min(d, SPEED * dt);
-          const nx = p.x + dx / d * step, nz = p.z + dz / d * step;
-          if (!blocked(nx, nz)) { p.x = nx; p.z = nz; }
-          else if (!blocked(nx, p.z)) { p.x = nx; }
-          else if (!blocked(p.x, nz)) { p.z = nz; }
-          else { this.target = null; this.onArrive = null; }
-          this.walking = true;
-          this.walkTime += dt;
-        }
-      }
+      if (!this.play && !this.ride) W3.walkStep(this, dt, SPEED, S.obstacles);
+      else this.walking = false;
 
       // --- Arriving at places (said once) ---
       for (const [id, pl] of Object.entries(PLACES)) {
         if (!this.seen[id] && Math.hypot(p.x - pl.x, p.z - pl.z) < pl.r) {
           this.seen[id] = true;
           if (id === 'cross') this.say('Risteys! Kumpaan mennään: taksiasemalle vai leikkipuistoon?', 4.5);
-          if (id === 'taxi') this.say('Taksiasema! Napauta taksia.', 3.5);
+          if (id === 'taxi') this.say('Taksiasema! Napauta taksia, niin lähdetään Egyptiin!', 3.5);
           if (id === 'play') this.say('Leikkipuisto! Kokeile keinua, liukumäkeä, karusellia ja hiekkalaatikkoa!', 4.5);
         }
       }
@@ -545,22 +380,26 @@ window.MP = window.MP || {};
         else if (this.play.type === 'slide' && this.play.t > 2.2) this.endPlay({ x: 38.5, z: -47.2 });
       }
 
+      // --- Taxi drives away (speeding up), then on to Egypt ---
+      if (this.ride) {
+        this.ride.t += dt;
+        const t = Math.max(0, this.ride.t - 0.8);
+        S.taxi.position.x = TAXI_AT.x - t * t * 6;
+        if (this.ride.t > 2.6 && !this.ride.gone) {
+          this.ride.gone = true;
+          MP.goTo(MP.scenes.egypt);
+        }
+      }
+
       // --- Clouds drift ---
       for (const c of S.clouds) {
         c.position.x += dt * 0.6;
         if (c.position.x > 80) c.position.x = -80;
       }
 
-      // --- Camera behind the character ---
-      this.camHeading += angleDiff(this.camHeading, p.heading) * Math.min(1, dt * 2.5);
-      const fx = Math.sin(this.camHeading), fz = -Math.cos(this.camHeading);
-      S.camera.position.set(p.x - fx * 4.6, 2.3, p.z - fz * 4.6);
-      S.camera.lookAt(p.x + fx * 3, 0.9, p.z + fz * 3);
-
-      // --- Draw the character picture and place it ---
+      W3.follow(S.camera, this, dt);
       this.drawCharacter();
-      placeCanvas();
-      S.renderer.render(S.scene, S.camera);
+      W3.render(S.scene, S.camera);
     },
 
     endPlay(stand) {
@@ -570,10 +409,6 @@ window.MP = window.MP || {};
     },
 
     drawCharacter() {
-      const c = S.charCanvas.getContext('2d');
-      c.setTransform(1, 0, 0, 1, 0, 0);
-      c.clearRect(0, 0, 96, 150);
-      c.setTransform(3, 0, 0, 3, 0, 0);
       let x = this.p.x, z = this.p.z, y = 0;
       let sit = false;
       if (this.play && this.play.type === 'swing') {
@@ -594,58 +429,13 @@ window.MP = window.MP || {};
           sit = true;
         }
       }
-      MP.drawPerson(c, 16, 48, { back: true, sit, walking: this.walking, walkTime: this.walkTime });
-      S.charTex.needsUpdate = true;
-      S.sprite.position.set(x, y, z);
-      S.shadow.position.set(x, 0.03, z);
-      this.headPos = new S.T.Vector3(x, y + PERSON_M + 0.15, z);
+      this.headPos = S.ch.draw(x, y, z, { sit, walking: this.walking, walkTime: this.walkTime });
+      if (this.ride) this.headPos = S.taxi.position.clone().setY(2.6);
     },
 
     draw(ctx) {
-      const t = MP.time;
-      // Speech bubble over the character's head
-      const b = this.bubble;
-      if (b && t >= b.from && t < b.until && this.headPos) {
-        const v = this.headPos.clone().project(S.camera);
-        const sx = (v.x + 1) / 2 * MP.W, sy = (1 - v.y) / 2 * MP.H;
-        MP.drawBubble(ctx, b.text, sx, sy, { maxWidth: 150 });
-      }
-
-      // Turn-around button
-      ctx.save();
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = MP.COLORS.outline;
-      ctx.fillStyle = 'rgba(255,247,224,0.92)';
-      ctx.beginPath(); ctx.arc(TURN_BUTTON.x, TURN_BUTTON.y, TURN_BUTTON.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-      ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(TURN_BUTTON.x, TURN_BUTTON.y + 1, 7, Math.PI * 1.15, Math.PI * 2.6); ctx.stroke();
-      ctx.fillStyle = MP.COLORS.outline;
-      ctx.beginPath();
-      ctx.moveTo(TURN_BUTTON.x - 9.5, TURN_BUTTON.y - 5); ctx.lineTo(TURN_BUTTON.x - 3, TURN_BUTTON.y - 5.5);
-      ctx.lineTo(TURN_BUTTON.x - 7.5, TURN_BUTTON.y + 0.5); ctx.closePath(); ctx.fill();
-      ctx.restore();
-      MP.drawText(ctx, 'Käänny', TURN_BUTTON.x, TURN_BUTTON.y + TURN_BUTTON.r + 1, {
-        size: 0.6, color: '#ffffff', outline: MP.COLORS.outline, align: 'center',
-      });
-
-      // "Jatkuu pian…" at the taxi
-      if (this.panel) {
-        const a = MP.clamp((t - this.panel.from) * 4, 0, 1);
-        ctx.save();
-        ctx.globalAlpha = a;
-        ctx.fillStyle = 'rgba(20,20,40,0.45)';
-        ctx.fillRect(0, 0, MP.W, MP.H);
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = MP.COLORS.outline;
-        ctx.fillStyle = '#fff7e0';
-        MP.roundRect(ctx, 60, 45, 200, 90, 10);
-        ctx.fill();
-        ctx.stroke();
-        MP.drawText(ctx, 'Jatkuu pian…', MP.W / 2, 60, { size: 2.2, color: '#e0559a', outline: MP.COLORS.outline, align: 'center' });
-        MP.drawText(ctx, 'Seuraavaksi: taksilla Egyptiin!', MP.W / 2, 92, { size: 1, color: MP.COLORS.outline, align: 'center' });
-        MP.drawText(ctx, '(napauta)', MP.W / 2, 112, { size: 0.8, color: '#6e4226', align: 'center' });
-        ctx.restore();
-      }
+      W3.drawBubble(ctx, this.bubble, this.headPos, S.camera);
+      if (!this.ride) W3.drawTurnButton(ctx);
     },
   };
 })();
