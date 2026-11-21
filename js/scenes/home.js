@@ -1359,7 +1359,7 @@ window.MP = window.MP || {};
           for (let i = 0; i < 5; i++) {
             this.notes.push({ x: POS.poster + 8 + i * 5, y: 60, born: MP.time + i * 0.14, drift: (i % 2 ? 1 : -1) });
           }
-          this.say('Turpapojat! Muistatko konsertin?', 2);
+          this.say('Turpapojat – Sasu ja Daniel! Muistatko konsertin?', 2);
           this.player.walkTo(POS.poster + 10, () => this.leave(MP.scenes.concert));
           return;
         }

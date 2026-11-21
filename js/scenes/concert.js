@@ -62,10 +62,10 @@ window.MP = window.MP || {};
 
   const MOVES = ['jump', 'spin', 'wave', 'jump', 'clap', 'spin'];
 
-  // The two boys of the band (our own drawings)
+  // The two boys of the band, Sasu and Daniel (our own drawings)
   const BAND = [
-    { x: 40, hair: '#e8c25a', outfit: { shirt: 'kpop', bottom: 'jeans', hat: 'none', costume: 'none', shoes: true }, guitar: true },
-    { x: 86, hair: '#4a3020', outfit: { shirt: 'red', bottom: 'brown', hat: 'cap', costume: 'none', shoes: true }, mic: true },
+    { name: 'Sasu', x: 40, hair: '#e8c25a', outfit: { shirt: 'kpop', bottom: 'jeans', hat: 'none', costume: 'none', shoes: true }, guitar: true },
+    { name: 'Daniel', x: 86, hair: '#4a3020', outfit: { shirt: 'red', bottom: 'brown', hat: 'cap', costume: 'none', shoes: true }, mic: true },
   ];
 
   MP.scenes.concert = {
@@ -254,6 +254,8 @@ window.MP = window.MP || {};
           armUp: m.mic && this.done ? 0.7 : 0,
           mouth: m.mic && this.singing() ? 'yawn' : 'smile',
         });
+        // the name on the front of the stage
+        MP.drawText(ctx, m.name, m.x, STAGE_Y + 2, { size: 0.65, color: '#ffe680', outline: O(), align: 'center' });
         if (m.guitar) {
           ctx.save();
           ctx.translate(m.x + 1, STAGE_Y - 20);
@@ -516,7 +518,7 @@ window.MP = window.MP || {};
         ctx.save();
         ctx.globalAlpha = MP.clamp(t * 3, 0, 1) * MP.clamp((MEMORY - t) * 2, 0, 1);
         MP.drawText(ctx, 'Muistatko?', MP.W / 2, 60, { size: 1.8, color: '#ffffff', outline: O(), align: 'center' });
-        MP.drawText(ctx, 'Turpapoikien konsertti!', MP.W / 2, 84, { size: 1.1, color: '#ffe0ff', outline: O(), align: 'center' });
+        MP.drawText(ctx, 'Turpapoikien konsertti! Sasu ja Daniel!', MP.W / 2, 84, { size: 1.1, color: '#ffe0ff', outline: O(), align: 'center' });
         ctx.restore();
       }
       // the soft white cloud frame of a memory
