@@ -106,6 +106,9 @@ MP.CLOTHES = {
     // a souvenir from Japan (gift: in the wardrobe after visiting)
     { id: 'kimono', name: 'Kimono', gift: true, top: '#e0559a', legs: '#e0559a', boots: '#2b2340',
       obi: '#ffd23f', flowers: '#ffffff' },
+    // in the wardrobe only in winter (seasons.js)
+    { id: 'snowsuit', name: 'Toppahaalari', season: 'winter', top: '#e04848', legs: '#e04848', boots: '#2b2340',
+      mittens: '#ffd23f', zip: '#ffffff' },
     { id: 'mermaid', name: 'Merenneito',   top: '#b46be0', legs: '#2bb3a3', scales: '#1d7f74',
       fin: '#7fe0c8', shell: '#ffc6e0', starfish: '#ffb347' },
   ],
@@ -296,7 +299,7 @@ MP.findItem = function (slot, id) {
     const socks = !suit && outfit.shoes === false;
     const sit = !!opts.sit;             // sitting (legs shorter, lap shows)
     const hands = kind === 'spider' ? (suit.gloves || suit.top)
-      : (kind === 'iron' || kind === 'panther') ? suit.top : C.skin;
+      : (kind === 'iron' || kind === 'panther') ? suit.top : suit && suit.mittens ? suit.mittens : C.skin;
     const shortSleeves = !suit && shirt.sleeves === 'short';
     const arms = (kind === 'pharaoh' || kind === 'mermaid' || kind === 'swim' || shortSleeves) ? C.skin : top;
     const isGirl = charId === 'girl';
@@ -625,6 +628,15 @@ MP.findItem = function (slot, id) {
       c.save(); c.fillStyle = suit.flowers;
       for (const [fx, fy] of [[-3.6, -20], [3.8, -21.5], [-2.5, -6], [3, -3]]) { c.beginPath(); c.arc(fx, fy, 0.8, 0, Math.PI * 2); c.fill(); }
       c.restore();
+    }
+
+    if (suit && suit.zip) {
+      // Snowsuit or raincoat: a zip down the front and a furry / shiny collar
+      c.save();
+      c.strokeStyle = suit.zip; c.lineWidth = 0.8;
+      c.beginPath(); c.moveTo(0, -23.5); c.lineTo(0, -12); c.stroke();
+      c.restore();
+      ellipse(c, 0, -24.2, 4.6, 1.4); fs(c, suit.collar || '#f4f4f8');
     }
 
     if (kind === 'panther') {

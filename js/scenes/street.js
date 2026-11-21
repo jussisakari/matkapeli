@@ -65,6 +65,10 @@ window.MP = window.MP || {};
     const ground = new T.Mesh(new T.PlaneGeometry(400, 400), mat(MP.OUTSIDE.grass));
     ground.rotation.x = -Math.PI / 2;
     add(ground);
+    S.ground = ground;           // white in winter (seasons.js)
+    S.leafBalls = [];
+    S.hills = [];
+    S.flowers = [];
     flat(6, 49, MP.OUTSIDE.road, 0, -18.5);               // main street
     flat(104, 6, MP.OUTSIDE.road, 0, -40, 0.012);         // cross street
     flat(1.2, 43, MP.OUTSIDE.sidewalk, -3.6, -15.5);
@@ -155,6 +159,7 @@ window.MP = window.MP || {};
     water.rotation.x = -Math.PI / 2;
     water.position.set(0, 0.31, 0);
     pool.add(water);
+    S.poolWater = water;         // frozen in winter
     const lane = new T.Mesh(new T.PlaneGeometry(3.6, 0.12), new T.MeshBasicMaterial({ color: '#8fe0ff' }));
     lane.rotation.x = -Math.PI / 2;
     lane.position.set(0, 0.315, 0);
@@ -197,8 +202,8 @@ window.MP = window.MP || {};
     function tree(x, z, s) {
       s = s || 1;
       cyl(0.22 * s, 1.8 * s, MP.OUTSIDE.trunk, x, 0, z);
-      ball(1.3 * s, MP.OUTSIDE.leaves, x, 2.6 * s, z);
-      ball(0.9 * s, '#5cbf60', x + 0.6 * s, 3.3 * s, z + 0.3 * s);
+      S.leafBalls.push(ball(1.3 * s, MP.OUTSIDE.leaves, x, 2.6 * s, z));
+      S.leafBalls.push(ball(0.9 * s, '#5cbf60', x + 0.6 * s, 3.3 * s, z + 0.3 * s));
       block(x, z, 0.8, 0.8);
     }
     [[-7, 3], [7, -1], [-7, -13], [7, -18], [-7, -29], [7, -32], [-20, -32], [20, -31], [-45, -33],
@@ -210,7 +215,7 @@ window.MP = window.MP || {};
     }
     [[-4.6, -2], [4.6, -14], [-4.6, -26], [4.6, -34], [-16, -44.6], [16, -44.6]].forEach(([x, z]) => lamp(x, z));
     [[-90, -40, 30], [90, -30, 34], [0, -125, 40], [-60, -110, 30], [70, -105, 32], [-95, 20, 28], [95, 25, 28]]
-      .forEach(([x, z, r]) => ball(r, MP.OUTSIDE.hills, x, -r * 0.55, z));
+      .forEach(([x, z, r]) => S.hills.push(ball(r, MP.OUTSIDE.hills, x, -r * 0.55, z)));
     S.clouds = [];
     for (let i = 0; i < 9; i++) {
       const g = new T.Group();
@@ -223,7 +228,7 @@ window.MP = window.MP || {};
     for (let i = 0; i < 70; i++) {
       const x = (Math.random() - 0.5) * 100, z = 8 - Math.random() * 72;
       if (Math.abs(x) < 5 || Math.abs(z + 40) < 5) continue;
-      ball(0.12, ['#ff8fc0', '#ffd23f', '#ffffff', '#c084fc'][i % 4], x, 0.12, z);
+      S.flowers.push(ball(0.12, ['#ff8fc0', '#ffd23f', '#ffffff', '#c084fc'][i % 4], x, 0.12, z));
     }
 
     // --- Signpost at the crossroad ---
@@ -378,6 +383,8 @@ window.MP = window.MP || {};
       car: { x: -6.5, z: 1.6 },
       school: { x: -50, z: -47.4 },
       bus: { x: 3.6, z: -4.4 },
+      snowman: { x: -2.6, z: 9.2 },
+      sled: { x: -13.8, z: 4.2 },
     };
 
     // --- Our family car, parked by the street outside the fence (drive.js) ---
@@ -431,6 +438,8 @@ window.MP = window.MP || {};
 
     // --- Our own garden: three garden boxes next to the house (garden.js) ---
     S.garden = MP.garden3d(W, T);
+    // --- The seasons: snowman, sledding hill, leaf piles, Christmas lights (seasons.js) ---
+    S.season = MP.seasonStreet(S, W, T);
 
     S.ch = W3.character(S.scene);
     S.pet = MP.petBuddy(S.scene, S.clickables);     // our pet follows us outside
@@ -489,6 +498,8 @@ window.MP = window.MP || {};
       this.round = { speed: 0 };
       this.swingAt = -10;
       setEvening(!!MP.state.dusk);
+      S.season.apply();
+      const season = MP.seasonNow();
       S.castle.visible = false;
       S.taxi.position.set(TAXI_AT.x, 0, TAXI_AT.z);
       S.ch.setVisible(true);
@@ -503,6 +514,9 @@ window.MP = window.MP || {};
       else if (swum) this.say('Olipa kivaa uida! Nyt kuivataan pyyhkeellä ja lähdetään seikkailemaan.', 4, 0.6);
       else if (back && MP.state.dusk) this.say('Takaisin kotikadulla! On jo ilta – katulamput palavat. Kotiin pääsee napauttamalla kotitalon ovea.', 4.5, 0.6);
       else if (back) this.say('Takaisin kotikadulla! Leikkipuistoon vai kotiin? Kotiin pääsee napauttamalla kotitalon ovea.', 4.5, 0.6);
+      else if (season === 'christmas') this.say('Ulkona! Lunta ja jouluvalot kotitalossa! Tee lumiukko tai mene pulkkamäkeen – tai kävele risteykseen.', 4.5, 0.6);
+      else if (season === 'winter') this.say('Ulkona! Kaikkialla on lunta! Tee lumiukko talon viereen tai mene pulkkamäkeen.', 4.5, 0.6);
+      else if (season === 'autumn') this.say('Ulkona! On syksy – puut ovat keltaisia ja punaisia. Hyppää lehtikasaan!', 4.5, 0.6);
       else this.say('Ulkona! Kävellään risteykseen.', 4, 0.6);
     },
 
@@ -519,7 +533,12 @@ window.MP = window.MP || {};
     },
 
     // ---- Things to do ----
-    use(spot) {
+    use(spot, obj) {
+      if (spot === 'snowman' || spot === 'sled' || spot === 'leaves') {
+        const text = S.season.use(spot, this, obj);
+        if (text) this.say(text, 3);
+        return;
+      }
       if (spot === 'home') {
         this.say('Kotiin! Nyt on jo ilta.', 2);
         MP.sfx.bling();
@@ -566,7 +585,10 @@ window.MP = window.MP || {};
         return;
       }
       if (spot === 'pool') {
-        if (MP.heroKind() === 'swim') {
+        if (MP.isSnowy()) {
+          this.say('Allas on jäässä! Uimaan vasta kesällä. Brrr!', 3);
+          MP.sfx.tap();
+        } else if (MP.heroKind() === 'swim') {
           this.say('Uimaan! Polskis!', 1.5);
           MP.sfx.flush();
           this.ride = { t: 0, home: true };          // stops walking while the screen fades
@@ -610,15 +632,16 @@ window.MP = window.MP || {};
         MP.sfx.tap();
         return;
       }
-      W3.tap(this, x, y, S.camera, S.W, BOUNDS, (spot) => {
+      W3.tap(this, x, y, S.camera, S.W, BOUNDS, (spot, obj) => {
         if (spot === 'pet') {
           S.pet.pat();
           return true;
         }
-        const stand = S.spots[spot];
+        let stand = S.spots[spot];
+        if (spot === 'leaves' && obj && obj.userData.pile) stand = { x: obj.userData.pile.position.x, z: obj.userData.pile.position.z - 1.4 };
         if (!stand) return false;
         MP.sfx.tap();
-        this.walkTo(stand.x, stand.z, () => this.use(spot));
+        this.walkTo(stand.x, stand.z, () => this.use(spot, obj));
         return true;
       });
     },
@@ -648,6 +671,7 @@ window.MP = window.MP || {};
         this.play.t += dt;
         if (this.play.type === 'swing' && this.play.t > 4.5) this.endPlay(S.spots.swing);
         else if (this.play.type === 'slide' && this.play.t > 2.2) this.endPlay({ x: 38.5, z: -47.2 });
+        else if (S.season.playLength(this.play) && this.play.t > S.season.playLength(this.play)) this.endPlay(S.season.afterPlay(this.play));
       }
 
       // --- Taxi drives away (speeding up), to the airport ---
@@ -693,6 +717,7 @@ window.MP = window.MP || {};
       }
 
       W3.follow(S.camera, this, dt);
+      S.season.update(dt, this);
       S.pet.update(dt, this, !!this.ride || !!this.play);
       this.drawCharacter();
       W3.render(S.scene, S.camera);
@@ -707,7 +732,10 @@ window.MP = window.MP || {};
     drawCharacter() {
       let x = this.p.x, z = this.p.z, y = 0;
       let sit = false;
-      if (this.play && this.play.type === 'swing') {
+      const sp = this.play && S.season.playPos(this.play);
+      if (sp) {
+        x = sp.x; y = sp.y; z = sp.z; sit = sp.sit;
+      } else if (this.play && this.play.type === 'swing') {
         // sitting on the swing seat, moving with it
         const seat = S.swings[1];
         const a = seat.rotation.x;
@@ -730,6 +758,19 @@ window.MP = window.MP || {};
     },
 
     draw(ctx) {
+      // falling snow or autumn leaves
+      if (MP.isSnowy()) MP.drawFalling(ctx, 'snow', 0, 0, MP.W, MP.H, MP.time, 45);
+      else if (MP.seasonNow() === 'autumn') MP.drawFalling(ctx, 'leaves', 0, 0, MP.W, MP.H, MP.time, 10);
+      // leaves flying out of the pile we jumped into
+      if (this.play && this.play.type === 'leaves' && this.play.t > 0.5) {
+        const s = W3.toScreen(this.play.pile.position.clone().setY(0.3), S.camera);
+        const u = this.play.t - 0.5;
+        for (let i = 0; i < 16; i++) {
+          const a = i / 16 * Math.PI * 2;
+          ctx.fillStyle = ['#e07a2a', '#ffb02e', '#c0392b', '#d9a12a'][i % 4];
+          ctx.beginPath(); ctx.ellipse(s.x + Math.cos(a) * u * 50, s.y - Math.abs(Math.sin(a)) * u * 40 + u * u * 30, 2.4, 1.3, a + u * 5, 0, Math.PI * 2); ctx.fill();
+        }
+      }
       S.pet.draw2d(ctx, S.camera);
       W3.drawBubble(ctx, this.bubble, this.headPos, S.camera);
       if (!this.ride) W3.drawTurnButton(ctx);

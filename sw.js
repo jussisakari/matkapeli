@@ -16,6 +16,7 @@ const FILES = [
     './js/main.js',
     './js/player.js',
     './js/pet.js',
+    './js/seasons.js',
     './js/photos.js',
     './js/passport.js',
     './js/scenes/airport.js',

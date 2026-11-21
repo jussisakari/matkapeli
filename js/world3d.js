@@ -319,8 +319,10 @@ window.MP = window.MP || {};
     const T = W3.T;
     const ndc = new T.Vector2(x / MP.W * 2 - 1, -(y / MP.H * 2 - 1));
     W3.raycaster.setFromCamera(ndc, camera);
-    const hits = W3.raycaster.intersectObjects(W.clickables, true);
-    if (hits.length && hits[0].object.userData.spot && onThing(hits[0].object.userData.spot)) return;
+    // hidden things can't be tapped (e.g. the snowman in summer)
+    const shown = (o) => { for (; o; o = o.parent) if (!o.visible) return false; return true; };
+    const hits = W3.raycaster.intersectObjects(W.clickables, true).filter((h) => shown(h.object));
+    if (hits.length && hits[0].object.userData.spot && onThing(hits[0].object.userData.spot, hits[0].object)) return;
     const hit = new T.Vector3();
     if (W3.raycaster.ray.intersectPlane(W3.groundPlane, hit)) {
       // not too far in one go (taps near the horizon)

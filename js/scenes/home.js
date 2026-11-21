@@ -71,6 +71,8 @@ window.MP = window.MP || {};
     games:      { x: 277, y: 232, w: 32, h: 16, standX: 286 },    // the memory game box on the bookshelf
     drums:      { x: 644, y: 116, w: 42, h: 36, standX: 638 },    // the drum kit on the landing
     treats:     { x: 398, y: 277, w: 18, h: 17, standX: 410 },    // the pet's treat jar on the counter
+    calendar:   { x: 554, y: 212, w: 26, h: 28, standX: 566 },    // the season calendar (seasons.js)
+    xmasTree:   { x: 4,   y: 252, w: 48, h: 80, standX: 56 },     // the Christmas tree (in December)
   };
   const floorOf = (spot) => (spot.y >= DOWN_Y ? 1 : 0);
 
@@ -316,6 +318,31 @@ window.MP = window.MP || {};
       ctx.moveTo(x, y); ctx.lineTo(x + Math.sin(h) * 3.2, y - Math.cos(h) * 3.2);
       ctx.stroke();
     });
+  }
+
+  // The season calendar on the kitchen wall (tap: the next season)
+  function seasonCalendar(ctx, x, y) {
+    withLine(ctx, () => {
+      box(ctx, x - 11, y, 22, 26, 1.5, '#ffffff');
+      box(ctx, x - 11, y, 22, 7, 1.5, '#e04848');
+      ctx.fillStyle = '#2b2340';
+      for (const rx of [-6, 6]) { ctx.beginPath(); ctx.arc(x + rx, y, 1.2, 0, Math.PI * 2); ctx.fill(); }
+      const s = MP.seasonNow();
+      const cy = y + 16;
+      if (s === 'summer') {
+        ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(x, cy, 4.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      } else if (s === 'autumn') {
+        ctx.fillStyle = '#e07a2a'; ctx.beginPath(); ctx.ellipse(x, cy, 3.4, 5, 0.6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      } else if (s === 'winter') {
+        ctx.strokeStyle = '#4a78c8'; ctx.lineWidth = 1;
+        for (let i = 0; i < 3; i++) { const a = i * Math.PI / 3; ctx.beginPath(); ctx.moveTo(x - Math.cos(a) * 5, cy - Math.sin(a) * 5); ctx.lineTo(x + Math.cos(a) * 5, cy + Math.sin(a) * 5); ctx.stroke(); }
+      } else {
+        ctx.fillStyle = '#2e8b57';
+        ctx.beginPath(); ctx.moveTo(x, cy - 6); ctx.lineTo(x + 5, cy + 4); ctx.lineTo(x - 5, cy + 4); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(x, cy - 6, 1.3, 0, Math.PI * 2); ctx.fill();
+      }
+    });
+    MP.drawText(ctx, MP.seasonName(), x, y + 1, { size: 0.32, color: '#ffffff', align: 'center' });
   }
 
   function kitchenTable(ctx, x) {
@@ -1294,6 +1321,27 @@ window.MP = window.MP || {};
         this.leave(MP.scenes.album);
         return;
       }
+      if (id === 'calendar') {
+        const next = MP.nextSeason();
+        MP.sfx.tap();
+        this.say(next === 'auto' ? 'Kalenteri: oikea vuodenaika! Nyt on ' + MP.seasonName().toLowerCase() + '.'
+          : 'Kalenteri: ' + MP.seasonName(next) + '! ' + ({ summer: 'Aurinko paistaa.', autumn: 'Lehdet putoavat puista.', winter: 'Ulkona on lunta!', christmas: 'Joulukuusi olohuoneeseen!' })[next], 3);
+        return;
+      }
+      if (id === 'xmasTree') {
+        if (MP.seasonNow() !== 'christmas') return;
+        MP.state.xmasBalls = MP.state.xmasBalls || 0;
+        if (MP.state.xmasBalls < MP.XMAS_BALLS) {
+          MP.state.xmasBalls++;
+          MP.sfx.note(660 + MP.state.xmasBalls * 40, 0.25, 'sine', 0.2);
+          this.say(MP.state.xmasBalls >= MP.XMAS_BALLS ? 'Tähti latvaan ja valot päälle! Joulukuusi on valmis! Hyvää joulua!' : 'Koriste kuuseen! Napauta lisää.', 2.5);
+          if (MP.state.xmasBalls >= MP.XMAS_BALLS) MP.sfx.tune();
+        } else {
+          MP.sfx.bling();
+          this.say('Paketteja kuusen alla! Saako jo avata? Ei vielä – vasta jouluaattona! Ravistan vähän… kolin kolin.', 4);
+        }
+        return;
+      }
       if (id === 'treats') {
         if (!MP.myPet()) return;
         this.say('Herkkuja! Mennään lemmikkikouluun.', 1.5);
@@ -1551,8 +1599,9 @@ window.MP = window.MP || {};
       }
 
       // Things on this floor: walk there, then use it
-      for (const id of ['toilet', 'sink', 'mirror', 'wardrobe', 'bed', 'drums', 'stairsUp', 'games', 'books', 'album', 'passport', 'recipe', 'treats', 'tv', 'sofa', 'table', 'bowl', 'shoes', 'stairsDown', 'door']) {
+      for (const id of ['toilet', 'sink', 'mirror', 'wardrobe', 'bed', 'drums', 'stairsUp', 'games', 'books', 'album', 'passport', 'recipe', 'treats', 'calendar', 'xmasTree', 'tv', 'sofa', 'table', 'bowl', 'shoes', 'stairsDown', 'door']) {
         const spot = SPOTS[id];
+        if (id === 'xmasTree' && MP.seasonNow() !== 'christmas') continue;
         if (floorOf(spot) === this.floor && MP.hit(spot, wx, wy)) {
           MP.sfx.tap();
           this.player.walkTo(spot.standX, () => this.use(id));
@@ -1761,6 +1810,7 @@ window.MP = window.MP || {};
       // ===== Upstairs: child's room =====
       rug(ctx, POS.rug);
       MP.draw('window', ctx, POS.window - 15, 34, Object.assign({ t }, this.skyNow()));
+      MP.windowWeather(ctx, POS.window - 15, 34, t);
       MP.draw('poster', ctx, POS.poster, 38);
       standMirror(ctx, POS.standMirror, t);
       if (MP.state.treasures && MP.state.treasures.tutMask) treasureShelf(ctx, 161, t);
@@ -1811,7 +1861,9 @@ window.MP = window.MP || {};
       ctx.translate(0, DOWN_Y);
       // living room
       MP.draw('window', ctx, POS.livingWindow - 15, 36, { t });
-      plant(ctx, POS.plant);
+      MP.windowWeather(ctx, POS.livingWindow - 15, 36, t);
+      if (MP.seasonNow() === 'christmas') MP.drawXmasTree(ctx, 28, FLOOR, MP.state.xmasBalls || 0, t);
+      else plant(ctx, POS.plant);
       rug(ctx, POS.sofa + 40);
       sofa(ctx, POS.sofa);
       floorLamp(ctx, POS.lamp);
@@ -1824,6 +1876,8 @@ window.MP = window.MP || {};
       counter(ctx, POS.counter);
       wallClock(ctx, POS.clock, 40, t);
       MP.draw('window', ctx, POS.kitchenWindow, 36, { t });
+      MP.windowWeather(ctx, POS.kitchenWindow, 36, t);
+      seasonCalendar(ctx, 567, 32);
       kitchenTable(ctx, POS.table);
       if (MP.myPet()) foodBowl(ctx, POS.bowl, FLOOR, 1, !!this.bowlFull);
       // hallway

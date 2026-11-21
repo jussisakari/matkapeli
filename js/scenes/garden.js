@@ -30,6 +30,7 @@ window.MP = window.MP || {};
   };
   // A new morning: watered plants grow one step, and everything needs water again
   MP.gardenMorning = function () {
+    if (MP.isSnowy && MP.isSnowy()) return;    // winter: the plants wait under the snow
     for (const b of MP.gardenBeds()) {
       if (!b.seed) continue;
       if (b.watered && b.stage < READY) b.stage++;
@@ -214,6 +215,7 @@ window.MP = window.MP || {};
       this.player.place(30, 1);
       const anyReady = MP.state.garden.some((b) => b.seed && b.stage >= READY && b.seed !== 'sunflower');
       const thirsty = MP.state.garden.some((b) => b.seed && !b.watered && b.stage < READY);
+      if (MP.isSnowy && MP.isSnowy()) { this.say('Talvi! Kasvit nukkuvat lumen alla. Ne kasvavat taas, kun tulee kesä.'); return; }
       this.say(anyReady ? 'Jotain on valmista! Napauta, niin poimitaan.'
         : thirsty ? 'Kasvit ovat janoisia. Pidä sormea laatikon päällä, niin kastellaan.'
           : 'Oma kasvimaa! Napauta tyhjää laatikkoa, niin istutetaan siemeniä.');
