@@ -367,6 +367,7 @@ window.MP = window.MP || {};
     W.sign('Thaimaa', -3, 2.4, 1, 0, '#fff7e0', '#2b2340', null, 2.6);
     block(-3, 1, 0.4, 0.4);
 
+    S.hotel = W.hotel(22, 1, -Math.PI / 2, { wall: '#fffaf0', trim: '#2e8b57', awning: '#ff8fc0', sign: 'HOTELLI' });
     S.ch = W3.character(S.scene);
     S.built = true;
   }
@@ -377,7 +378,7 @@ window.MP = window.MP || {};
   MP.scenes.thailand = {
     transparent: true,
 
-    enter() {
+    enter(params) {
       if (!S.built) build();
       W3.show();
       this.p = { x: 2.2, z: 4.2, heading: 0 };
@@ -397,6 +398,15 @@ window.MP = window.MP || {};
       S.taxi.position.set(TAXI_AT.x, 0, TAXI_AT.z);
       this.arrive = { t: 0 };
       S.ch.setVisible(false);
+      // waking up in the hotel: out of the door, back to the trip
+      if (params && params.from === 'hotel') {
+        const d = S.hotel.door;
+        this.p = { x: d.x, z: d.z, heading: d.heading + Math.PI };
+        this.camHeading = this.p.heading;
+        this.arrive = null;
+        S.ch.setVisible(true);
+        this.say('Hyvää huomenta, Thaimaa! Aurinko paistaa taas.', 3, 0.5);
+      }
     },
 
     exit() {
@@ -416,6 +426,7 @@ window.MP = window.MP || {};
     },
 
     stand(spot) {
+      if (spot === 'hotel') return S.hotel.door;
       if (spot === 'taxi') return { x: TAXI_AT.x - 1, z: TAXI_AT.z - 1.9 };
       if (spot === 'elephant') return { x: ELEPHANT.x - 4.2, z: ELEPHANT.z + 2.4 };
       if (spot === 'temple') return { x: TEMPLE.x + 6.5, z: TEMPLE.z };
@@ -427,6 +438,13 @@ window.MP = window.MP || {};
     },
 
     use(spot) {
+      if (spot === 'hotel') {
+        // the hotel: sleep one night here
+        this.say('Hotelli! Mennään sisään.', 1.5);
+        MP.sfx.bling();
+        MP.goTo(MP.scenes.hotel, { country: 'thailand' });
+        return;
+      }
       if (spot === 'taxi') {
         this.leaving = { t: 0 };
         S.ch.setVisible(false);

@@ -1,0 +1,17 @@
+name: Vika / Bug
+description: Something in Matkapeli doesn't work or looks wrong.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What went wrong?
+      description: What you did, what happened, and what should have happened. A screenshot from the tablet helps a lot.
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      placeholder: e.g. Samsung tablet, Chrome / installed app

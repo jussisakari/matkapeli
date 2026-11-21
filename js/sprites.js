@@ -314,14 +314,56 @@ MP.findItem = function (slot, id) {
       c.restore();
     };
 
+    // Superhero tricks (opts.hero = this is the player): flying, web shooting
+    const pose = opts.pose !== undefined ? opts.pose : (opts.hero ? MP.heroPose() : null);
+    const flying = pose === 'fly' && kind === 'iron';
+    const webHand = (pose === 'aim' || pose === 'web') && kind === 'spider';
+    const lift = flying ? 13 + Math.sin(MP.time * 3) * 1.2 : 0;
+
     const t = opts.walkTime || 0;
-    const sw = opts.walking ? Math.sin(t * 11) : 0;
-    const bob = opts.walking ? -Math.abs(Math.sin(t * 11)) * 0.8 : 0;
+    const sw = opts.walking && !flying ? Math.sin(t * 11) : 0;
+    const bob = opts.walking && !flying ? -Math.abs(Math.sin(t * 11)) * 0.8 : 0;
     const s = opts.scale || 1;
 
     begin(c, 0.7);
-    c.translate(x, y + bob * s);
+    c.translate(x, y + (bob - lift) * s);
     c.scale(opts.flip ? -s : s, s);
+    if (flying && opts.walking && !opts.back) c.rotate(0.3);   // leaning forward while flying
+
+    // Remember where the hero is on the screen (tap the costume for tricks)
+    if (opts.hero && c.canvas === MP.canvas && c.getTransform) {
+      const m = c.getTransform(), k = MP.canvas.width / MP.W;
+      const sc = Math.hypot(m.a, m.b) / k;
+      MP.heroSpot = { x: (m.c * -19 + m.e) / k, y: (m.d * -19 + m.f) / k, rx: Math.max(8, 8 * sc), ry: Math.max(10, 12 * sc) };
+    }
+
+    // A big spider web all around (behind the hero)
+    if (webHand && pose === 'web') {
+      const hp = opts.hero ? MP.state.heroPose : null;
+      const k = hp ? MP.clamp((MP.time - hp.from) / 0.45, 0, 1) : 1;
+      const R = 26 * k, cy = -20, N = 12;
+      const pt = (i, r) => [Math.cos(i * Math.PI * 2 / N) * r, cy + Math.sin(i * Math.PI * 2 / N) * r];
+      c.save();
+      c.lineCap = 'round';
+      for (const [color, lw] of [['rgba(43,35,64,0.35)', 1.2], ['rgba(255,255,255,0.95)', 0.55]]) {
+        c.strokeStyle = color; c.lineWidth = lw;
+        c.beginPath();
+        for (let i = 0; i < N; i++) { const [px, py] = pt(i, R); c.moveTo(0, cy); c.lineTo(px, py); }
+        for (let ring = 1; ring <= 4; ring++) {
+          const r = R * ring / 4;
+          for (let i = 0; i <= N; i++) {
+            const [px, py] = pt(i, r);
+            if (i === 0) { c.moveTo(px, py); continue; }
+            const [mx, my] = pt(i - 0.5, r * 0.88);   // sagging threads
+            c.quadraticCurveTo(mx, my, px, py);
+          }
+        }
+        // the thread from the hand
+        c.moveTo(14.5, -21.5); c.lineTo(R * 1.15, -24);
+        c.stroke();
+      }
+      c.restore();
+    }
 
     // Long hair behind the head (girl)
     const ponytail = showHair && !suit && hat.id === 'ponytail';
@@ -344,6 +386,18 @@ MP.findItem = function (slot, id) {
     if (messy > 0) {
       for (const [mx, my, mr] of [[-9.2, -25, 3], [9.6, -21, 3.2], [-9.4, -17.5, 2.6], [9.1, -30, 2.6], [-8.8, -33, 2.4], [8.6, -15.5, 2.2]]) {
         circle(c, mx * (1 - 0.1 * (1 - messy)), my, mr * messy); fs(c, hairColor);
+      }
+    }
+
+    // Rocket flames under the boots
+    if (flying) {
+      for (const side of [-1, 1]) {
+        const fl = 4.5 + Math.sin(MP.time * 31 + side * 2) * 1.3;
+        c.save();
+        c.translate(side * 2.4 + 0.9, 0.4);
+        ellipse(c, 0, fl / 2, 1.9, fl / 2 + 0.8); c.fillStyle = '#ff8a2a'; c.fill();
+        ellipse(c, 0, fl / 2 - 0.8, 1, fl / 2 - 0.4); c.fillStyle = '#fff2a0'; c.fill();
+        c.restore();
       }
     }
 
@@ -425,11 +479,20 @@ MP.findItem = function (slot, id) {
       c.translate(side * 5.6, -21.5);
       const rest = side * 0.18 - side * sw * 0.45;
       const up = -side * (Math.PI - 0.35);            // arms stretched up
-      c.rotate(rest + (up - rest) * (opts.armUp || 0));
+      let ang = rest + (up - rest) * (opts.armUp || 0);
+      if (flying) ang = -side * 0.35;                         // arms down and a bit out, like a rocket
+      if (webHand && side === 1) ang = -Math.PI / 2 - (pose === 'web' ? 0.08 : 0);   // arm straight out
+      c.rotate(ang);
       rr(c, -1.7, 0, 3.4, 8.5, 1.7); fs(c, arms);
       if (shortSleeves) { rr(c, -2, -0.5, 4, 4, 1.6); fs(c, top); }            // short T-shirt sleeve
       if (kind === 'pharaoh') { rr(c, -1.9, 2.5, 3.8, 1.4, 0.7); fs(c, suit.gold); } // arm band
       if (kind === 'iron') { rr(c, -1.9, 4.6, 3.8, 3.6, 1.2); fs(c, suit.gold); }    // gold forearm
+      if (webHand && side === 1) {
+        // the web-shooting hand: index finger and little finger out, thumb to the side
+        rr(c, -1.75, 9.6, 0.95, 3.3, 0.45); fs(c, hands);
+        rr(c, 0.8, 9.6, 0.95, 3.3, 0.45); fs(c, hands);
+        rr(c, -2.9, 8.2, 2.2, 0.9, 0.45); fs(c, hands);
+      }
       circle(c, 0, 9.4, 1.8); fs(c, hands);
       c.restore();
     }

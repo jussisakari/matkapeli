@@ -1,0 +1,66 @@
+// sw.js – the service worker: keeps the game on the tablet so it works offline
+// (installed from the browser with "Add to Home screen").
+// Network first: when online you always get the newest version from GitHub,
+// and it is saved; without a network the saved copy is used.
+const CACHE = 'matkapeli-v1';
+const FILES = [
+    './',
+    './index.html',
+    './style.css',
+    './manifest.webmanifest',
+    './icons/icon-192.png',
+    './icons/icon-512.png',
+    './icons/apple-touch-icon.png',
+    './js/engine.js',
+    './js/lib/three.min.js',
+    './js/main.js',
+    './js/player.js',
+    './js/scenes/airport.js',
+    './js/scenes/books.js',
+    './js/scenes/breakfast.js',
+    './js/scenes/brush.js',
+    './js/scenes/egypt.js',
+    './js/scenes/flight.js',
+    './js/scenes/gallery.js',
+    './js/scenes/hairbrush.js',
+    './js/scenes/home.js',
+    './js/scenes/hotel.js',
+    './js/scenes/newyork.js',
+    './js/scenes/pyramid.js',
+    './js/scenes/start.js',
+    './js/scenes/street.js',
+    './js/scenes/swim.js',
+    './js/scenes/thailand.js',
+    './js/scenes/wardrobe.js',
+    './js/scenes/winter.js',
+    './js/sprites.js',
+    './js/tvshow.js',
+    './js/world3d.js',
+];
+
+self.addEventListener('install', (e) => {
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
+});
+
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', (e) => {
+  if (e.request.method !== 'GET' || !e.request.url.startsWith(self.location.origin)) return;
+  e.respondWith(
+    fetch(e.request)
+      .then((res) => {
+        if (res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(e.request, copy));
+        }
+        return res;
+      })
+      .catch(() => caches.match(e.request, { ignoreSearch: true }).then((hit) => hit || caches.match('./index.html')))
+  );
+});

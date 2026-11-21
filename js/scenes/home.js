@@ -1532,7 +1532,7 @@ window.MP = window.MP || {};
           MP.drawPerson(ctx, px, py + hop, {});
         } else {
           MP.drawPerson(ctx, px, py, Object.assign({
-            walking: this.player.walking, walkTime: this.player.walkTime, flip: this.player.facing < 0,
+            walking: this.player.walking, walkTime: this.player.walkTime, flip: this.player.facing < 0, hero: true,
           }, extra));
         }
       }

@@ -1,0 +1,57 @@
+name: Uusi ominaisuus / New feature
+description: An idea for Matkapeli – a new place, minigame, toy, clothes, or a fix to how something works.
+title: "[Feature] "
+labels: ["feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the idea the way you'd tell it. Claude reads these issues and implements them.
+        Short is fine – fill in what you know and leave the rest empty.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where in the game?
+      options:
+        - Home (rooms, morning / evening routine)
+        - Wardrobe / clothes / costumes
+        - Minigame (brushing, swimming, books…)
+        - Outside / home street / yard
+        - Airport / flight
+        - A country (Egypt, Talvimaa, Thailand, New York…)
+        - A new country / place
+        - Whole game (menus, buttons, sounds, saving)
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What should happen?
+      description: What the player sees and does. Step by step if it's a sequence.
+      placeholder: |
+        Example: In Thailand there is a hotel. You can go in, tap the bed, the evening things happen
+        by themselves and night comes. Tapping again brings the morning and you can go outside.
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details and wishes
+      description: Texts in Finnish, colors, which character (girl / boy), sounds, what it should look like…
+  - type: textarea
+    id: done
+    attributes:
+      label: How do we know it's ready?
+      description: Optional checklist for testing on the tablet.
+      placeholder: |
+        - [ ] Works with the girl and the boy
+        - [ ] Texts stay until tapped
+  - type: dropdown
+    id: priority
+    attributes:
+      label: How important?
+      options:
+        - Next, please!
+        - Sometime
+        - Just an idea

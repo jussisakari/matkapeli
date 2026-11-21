@@ -6,6 +6,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <title>Matkapeli</title>
+  <meta name="apple-mobile-web-app-title" content="Matkapeli">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#4fb3f6">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -37,8 +43,16 @@
   <script src="js/scenes/winter.js"></script>
   <script src="js/scenes/thailand.js"></script>
   <script src="js/scenes/newyork.js"></script>
+  <script src="js/scenes/hotel.js"></script>
+  <script src="js/scenes/swim.js"></script>
   <script src="js/scenes/pyramid.js"></script>
   <script src="js/scenes/gallery.js"></script>
   <script src="js/main.js"></script>
+  <script>
+    // Installable app + offline play (not available from file://, and that's fine)
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+  </script>
 </body>
 </html>

@@ -15,6 +15,10 @@
 //   #thaimaa      Thailand's beach, the tuk-tuk just arrived
 //   #newyork      New York, the taxi just arrived
 //   #ilta         home in the evening (evening tasks, then bed)
+//   #hotelli      a hotel room in Thailand (sleep one night)
+//   #uima         swimming in the pool (swimsuit on)
+//   #rauta        outside in the Iron hero suit (tap the suit: fly)
+//   #hamahakki    outside in the spider suit (tap the suit: web)
 //   #pyramidi     inside the pyramid
 //   #kirjat       the bookshelf
 //   #galleria     all drawings and outfits
@@ -51,6 +55,10 @@ window.MP = window.MP || {};
     thaimaa:     () => { ready(true); return [MP.scenes.thailand]; },
     newyork:     () => { ready(true); return [MP.scenes.newyork]; },
     ilta:        () => { ready(true); return [MP.scenes.home, { quest: 'evening' }]; },
+    hotelli:     () => { ready(true); return [MP.scenes.hotel, { country: 'thailand' }]; },
+    uima:        () => { ready(true); MP.state.outfit.costume = 'swimsuit'; return [MP.scenes.swim]; },
+    rauta:       () => { ready(true); MP.state.outfit.costume = 'iron'; return [MP.scenes.street]; },
+    hamahakki:   () => { ready(true); MP.state.outfit.costume = 'spider'; return [MP.scenes.street]; },
     pyramidi:    () => { ready(true); return [MP.scenes.pyramid]; },
     kirjat:      () => { ready(false); return [MP.scenes.books]; },
     galleria:    () => [MP.scenes.gallery],

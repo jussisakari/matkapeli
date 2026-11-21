@@ -58,6 +58,7 @@ window.MP = window.MP || {};
       camera.aspect = aspect;
       camera.updateProjectionMatrix();
     }
+    W3.camera = camera;
     W3.renderer.render(scene, camera);
   };
 
@@ -155,6 +156,49 @@ window.MP = window.MP || {};
       }
       return W.add(taxi);
     };
+    // A hotel: the door is on the front (+z before turning by rotY).
+    // o = { w, h, d, wall, trim, roof, sign } – tapping it uses the spot 'hotel'.
+    W.hotel = (x, z, rotY, o) => {
+      o = Object.assign({ w: 9, h: 7, d: 5, wall: '#f4efe1', trim: '#c8913a', glass: '#9fd3ef', door: '#6b3f22', awning: '#d33a3a' }, o);
+      const g = new T.Group();
+      if (!o.facadeOnly) {
+        W.box(o.w, o.h, o.d, o.wall, 0, 0, 0, g);
+        W.box(o.w + 0.4, 0.4, o.d + 0.4, o.trim, 0, o.h, 0, g);                      // flat roof edge
+      }
+      const front = o.d / 2 + 0.04;
+      // rows of windows with little balconies
+      for (let fl = 1; fl * 2.1 + 1.1 < o.h; fl++) {
+        for (let k = -1; k <= 1; k++) {
+          if (k === 0 && fl === 0) continue;
+          W.box(1.3, 1.1, 0.08, o.glass, k * (o.w / 3), fl * 2.1 + 0.4, front, g);
+          W.box(1.6, 0.12, 0.4, o.trim, k * (o.w / 3), fl * 2.1 + 0.35, front + 0.15, g);
+        }
+      }
+      // the entrance: glass doors, an awning and the sign
+      W.box(2, 2.2, 0.1, o.door, 0, 0, front, g);
+      W.box(1.6, 1.9, 0.12, o.glass, 0, 0.05, front + 0.02, g);
+      W.box(0.06, 1.9, 0.14, o.door, 0, 0.05, front + 0.03, g);
+      W.box(3.2, 0.15, 1.6, o.awning, 0, 2.5, front + 0.8, g);
+      for (const sx of [-1.45, 1.45]) W.cyl(0.06, 2.5, '#d8dde6', sx, 0, front + 1.5, g);
+      const sign = W.sign(o.sign || 'HOTELLI', 0, 3.4, front + 0.06, 0, '#2b2340', '#ffd23f', null, 3.4);
+      scene.remove(sign); g.add(sign);
+      W.box(1.4, 0.03, 1.2, '#d33a3a', 0, 0.01, front + 0.7, g);                  // red carpet
+      for (const sx of [-1.9, 1.9]) {                                             // flower pots
+        W.cyl(0.3, 0.5, '#a0643c', sx, 0, front + 0.6, g, 0.24);
+        W.ball(0.4, '#3d9a46', sx, 0.75, front + 0.6, g);
+      }
+      g.position.set(x, 0, z);
+      g.rotation.y = rotY || 0;
+      W.add(g);
+      if (!o.facadeOnly) {
+        const sideways = Math.abs(Math.sin(rotY || 0)) > 0.5;
+        W.block(x, z, sideways ? o.d : o.w, sideways ? o.w : o.d);
+      }
+      W.clickable(g, 'hotel');
+      // where to stand in front of the door (2.6 m in front)
+      const fx = Math.sin(rotY || 0), fz = Math.cos(rotY || 0);
+      return { group: g, door: { x: x + fx * (front + 2.6), z: z + fz * (front + 2.6), heading: Math.atan2(-fx, fz) } };
+    };
     return W;
   };
 
@@ -165,13 +209,15 @@ window.MP = window.MP || {};
   W3.character = function (scene) {
     const T = W3.T;
     const ch = {};
+    // 80 × 76 drawing units: room for flying up and for a big spider web around
+    const CW = 80, CH = 76, FEET = 72;
     ch.canvas = document.createElement('canvas');
-    ch.canvas.width = 96;
-    ch.canvas.height = 150;
+    ch.canvas.width = CW * 3;
+    ch.canvas.height = CH * 3;
     ch.tex = new T.CanvasTexture(ch.canvas);
     ch.sprite = new T.Sprite(new T.SpriteMaterial({ map: ch.tex, transparent: true }));
-    ch.sprite.scale.set(W3.PERSON_M * 32 / 42, W3.PERSON_M * 50 / 42, 1);
-    ch.sprite.center.set(0.5, 2 / 50);
+    ch.sprite.scale.set(W3.PERSON_M * CW / 42, W3.PERSON_M * CH / 42, 1);
+    ch.sprite.center.set(0.5, (CH - FEET) / CH);
     scene.add(ch.sprite);
     ch.shadow = new T.Mesh(new T.CircleGeometry(0.42, 20),
       new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22 }));
@@ -179,15 +225,28 @@ window.MP = window.MP || {};
     scene.add(ch.shadow);
     // Draws the character standing at (x, y, z). Returns the spot over the head.
     ch.draw = function (x, y, z, opts) {
+      opts = Object.assign({ back: true, hero: !(opts && opts.sit) }, opts);
       const c = ch.canvas.getContext('2d');
       c.setTransform(1, 0, 0, 1, 0, 0);
-      c.clearRect(0, 0, 96, 150);
+      c.clearRect(0, 0, ch.canvas.width, ch.canvas.height);
       c.setTransform(3, 0, 0, 3, 0, 0);
-      MP.drawPerson(c, 16, 48, Object.assign({ back: true }, opts));
+      MP.drawPerson(c, CW / 2, FEET, opts);
       ch.tex.needsUpdate = true;
       ch.sprite.position.set(x, y, z);
       ch.shadow.position.set(x, 0.03, z);
-      return new T.Vector3(x, y + W3.PERSON_M + 0.15, z);
+      const lift = opts.hero ? MP.heroLift() * W3.PERSON_M / 42 : 0;
+      if (opts.hero && ch.sprite.visible) {
+        // where the costume's middle is on the screen (tap it for hero tricks)
+        const mid = new T.Vector3(x, y + lift + W3.PERSON_M * 19 / 42, z);
+        const top = new T.Vector3(x, y + lift + W3.PERSON_M, z);
+        MP.heroSpot = () => {
+          if (!W3.camera) return null;
+          const a = W3.toScreen(mid, W3.camera), b = W3.toScreen(top, W3.camera);
+          const h = Math.abs(a.y - b.y);
+          return { x: a.x, y: a.y, rx: Math.max(8, h * 0.45), ry: Math.max(10, h * 0.6) };
+        };
+      }
+      return new T.Vector3(x, y + lift + W3.PERSON_M + 0.15, z);
     };
     ch.setVisible = function (v) {
       ch.sprite.visible = v;
@@ -231,7 +290,7 @@ window.MP = window.MP || {};
     }
     const want = Math.atan2(dx, -dz);
     p.heading += W3.angleDiff(p.heading, want) * Math.min(1, dt * 8);
-    const step = Math.min(d, speed * dt);
+    const step = Math.min(d, speed * (MP.heroPose() === 'fly' ? 1.7 : 1) * dt);
     const nx = p.x + dx / d * step, nz = p.z + dz / d * step;
     const B = (x, z) => W3.blocked(obstacles, x, z);
     if (!B(nx, nz)) { p.x = nx; p.z = nz; }

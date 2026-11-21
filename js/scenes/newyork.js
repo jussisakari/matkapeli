@@ -281,6 +281,8 @@ window.MP = window.MP || {};
     W.sign('Broadway', -5.5, 2.8, 4, 0, '#2e8b57', '#ffffff', null, 2.6);
     block(-5.5, 4, 0.3, 0.3);
 
+    // the hotel's entrance on the side of a skyscraper
+    S.hotel = W.hotel(10, -5, -Math.PI / 2, { facadeOnly: true, d: 0, h: 0, awning: '#b22234', sign: 'HOTELLI' });
     S.ch = W3.character(S.scene);
     S.built = true;
   }
@@ -291,7 +293,7 @@ window.MP = window.MP || {};
   MP.scenes.newyork = {
     transparent: true,
 
-    enter() {
+    enter(params) {
       if (!S.built) build();
       W3.show();
       this.p = { x: 2.2, z: 4.2, heading: 0 };
@@ -310,6 +312,15 @@ window.MP = window.MP || {};
       S.taxi.position.set(TAXI_AT.x, 0, TAXI_AT.z);
       this.arrive = { t: 0 };
       S.ch.setVisible(false);
+      // waking up in the hotel: out of the door, back to the trip
+      if (params && params.from === 'hotel') {
+        const d = S.hotel.door;
+        this.p = { x: d.x, z: d.z, heading: d.heading + Math.PI };
+        this.camHeading = this.p.heading;
+        this.arrive = null;
+        S.ch.setVisible(true);
+        this.say('Hyvää huomenta, New York! Kaupunki on jo hereillä.', 3, 0.5);
+      }
     },
 
     exit() {
@@ -325,6 +336,7 @@ window.MP = window.MP || {};
     },
 
     stand(spot) {
+      if (spot === 'hotel') return S.hotel.door;
       if (spot === 'taxi') return { x: TAXI_AT.x - 1, z: TAXI_AT.z - 1.9 };
       if (spot === 'pizza') return { x: PIZZA.x + 1.6, z: PIZZA.z };
       if (spot === 'liberty') return { x: 0, z: BOUNDS.minZ + 0.5 };
@@ -332,6 +344,13 @@ window.MP = window.MP || {};
     },
 
     use(spot) {
+      if (spot === 'hotel') {
+        // the hotel: sleep one night here
+        this.say('Hotelli! Mennään sisään.', 1.5);
+        MP.sfx.bling();
+        MP.goTo(MP.scenes.hotel, { country: 'newyork' });
+        return;
+      }
       if (spot === 'taxi') {
         this.leaving = { t: 0 };
         S.ch.setVisible(false);

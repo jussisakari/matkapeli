@@ -405,6 +405,7 @@ window.MP = window.MP || {};
     W.sign('Gizan pyramidit', -3, 2.4, 1, 0, '#fff7e0', '#2b2340', null, 3);
     block(-3, 1, 0.4, 0.4);
 
+    S.hotel = W.hotel(-15, 4, Math.PI / 2, { wall: '#e8d3a8', trim: '#c8913a', awning: '#2f5fb5', sign: 'HOTELLI' });
     S.ch = W3.character(S.scene);
     S.built = true;
   }
@@ -444,6 +445,15 @@ window.MP = window.MP || {};
         this.arrive = { t: 0 };
         S.ch.setVisible(false);
       }
+      // waking up in the hotel: out of the door, back to the trip
+      if (params && params.from === 'hotel') {
+        const d = S.hotel.door;
+        this.p = { x: d.x, z: d.z, heading: d.heading + Math.PI };
+        this.camHeading = this.p.heading;
+        this.arrive = null;
+        S.ch.setVisible(true);
+        this.say('Hyvää huomenta, Egypti! Pyramidit odottavat.', 3, 0.5);
+      }
     },
 
     exit() {
@@ -467,6 +477,7 @@ window.MP = window.MP || {};
 
     // Where to stand to use each thing
     stand(spot) {
+      if (spot === 'hotel') return S.hotel.door;
       if (spot === 'door') return { x: 0, z: DOOR_Z + 1.6 };
       if (spot === 'taxi') return { x: TAXI_AT.x - 1, z: TAXI_AT.z - 1.9 };
       if (spot === 'sphinx') return { x: SPHINX.x + 3.4, z: SPHINX.z + 7 };
@@ -480,6 +491,13 @@ window.MP = window.MP || {};
     },
 
     use(spot) {
+      if (spot === 'hotel') {
+        // the hotel: sleep one night here
+        this.say('Hotelli! Mennään sisään.', 1.5);
+        MP.sfx.bling();
+        MP.goTo(MP.scenes.hotel, { country: 'egypt' });
+        return;
+      }
       if (spot === 'door') {
         this.say('Mennään sisään!', 1.2);
         MP.sfx.bling();

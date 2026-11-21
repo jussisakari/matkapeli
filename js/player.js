@@ -53,7 +53,8 @@ MP.Player = class {
     this.walking = true;
     this.facing = d > 0 ? 1 : -1;
     this.walkTime += dt;
-    const step = Math.min(Math.abs(d), this.speed * dt);
+    const fly = MP.heroPose && MP.heroPose() === 'fly' ? 1.7 : 1;   // flying is faster
+    const step = Math.min(Math.abs(d), this.speed * fly * dt);
     this.x += Math.sign(d) * step;
     if (Math.abs(this.targetX - this.x) < 0.5) {
       this.x = this.targetX;
@@ -69,6 +70,7 @@ MP.Player = class {
       walking: this.walking,
       walkTime: this.walkTime,
       flip: this.facing < 0,
+      hero: true,
     }, extra));
   }
 };

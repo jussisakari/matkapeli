@@ -317,6 +317,7 @@ window.MP = window.MP || {};
   // The scene
   // ---------------------------------------------------------------------------
   MP.scenes.books = {
+    noRestart: true,               // the 'Sulje' button is in that corner
     enter() {
       this.book = null;       // the open book
       this.page = 0;          // which pair of pages

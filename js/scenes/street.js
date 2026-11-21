@@ -146,6 +146,44 @@ window.MP = window.MP || {};
     box(0.5, 0.35, 0.7, '#3f6fb5', -2.2, 1.1, YARD.minZ - 0.6);
     flat(3, 1.2, '#8b5a2b', -6, 14.5, 0.014);
     for (let i = 0; i < 6; i++) ball(0.16, ['#ff8fc0', '#ffd23f', '#e04848'][i % 3], -7.2 + i * 0.5, 0.2, 14.5);
+    // --- A swimming pool in our yard (swimming only with the swimsuit on) ---
+    const pool = new T.Group();
+    box(5.6, 0.3, 4.2, '#f2f5f8', 0, 0, 0, pool);                     // white tiled edge
+    const water = new T.Mesh(new T.PlaneGeometry(4.8, 3.4), new T.MeshLambertMaterial({ color: '#3fb6f0' }));
+    water.rotation.x = -Math.PI / 2;
+    water.position.set(0, 0.31, 0);
+    pool.add(water);
+    const lane = new T.Mesh(new T.PlaneGeometry(3.6, 0.12), new T.MeshBasicMaterial({ color: '#8fe0ff' }));
+    lane.rotation.x = -Math.PI / 2;
+    lane.position.set(0, 0.315, 0);
+    pool.add(lane);
+    for (const lx of [-0.25, 0.25]) {                                    // the ladder
+      const rail = cyl(0.04, 0.8, '#c9d1db', 2.2 + lx, 0.2, -1.95, pool);
+      rail.rotation.z = 0;
+    }
+    box(0.6, 0.05, 0.05, '#c9d1db', 2.2, 0.85, -1.95, pool);
+    const ring = new T.Mesh(new T.TorusGeometry(0.42, 0.13, 10, 24), mat('#ff5f8f'));   // a swim ring floating
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(-1.2, 0.36, 0.5);
+    pool.add(ring);
+    const duck = new T.Group();                                          // a rubber duck
+    ball(0.22, '#ffd23f', 0, 0.42, 0, duck).scale.set(1.3, 0.8, 1);
+    ball(0.13, '#ffd23f', 0.18, 0.62, 0, duck);
+    ball(0.06, '#ff8a2a', 0.32, 0.6, 0, duck);
+    duck.position.set(0.9, 0, -0.6);
+    pool.add(duck);
+    pool.position.set(6.2, 0, 10.4);
+    add(pool);
+    block(6.2, 10.4, 5.6, 4.2);
+    pool.traverse((m) => { m.userData.spot = 'pool'; });
+    S.clickables.push(pool);
+    S.pool = { ring, duck };
+    // a sun lounger next to it
+    const lounger = box(1, 0.35, 2.2, '#ffffff', -6.8, 0, 9.4);
+    box(1, 0.08, 1.8, '#4a78c8', -6.8, 0.35, 9.4);
+    void lounger;
+    block(-6.8, 9.4, 1, 2.2);
+
     house(-12, -4, Math.PI / 2, '#bfe3f2', '#4a78c8', '#ffd23f');
     house(-12, -21, Math.PI / 2, '#ffe0e9', '#9b6bd6', '#4caf50');
     house(12, -10, -Math.PI / 2, '#fff1c9', '#e07a3a', '#4a78c8');
@@ -304,6 +342,7 @@ window.MP = window.MP || {};
     S.spots = {
       taxi: { x: -30, z: -44.3 },
       home: { x: 0, z: 10.8 },
+      pool: { x: 5.6, z: 7.4 },
       swing: { x: 30.5, z: -49.6 },
       slide: { x: 38.5, z: -48.2 },
       roundabout: { x: 29.5, z: -54.6 },
@@ -325,7 +364,9 @@ window.MP = window.MP || {};
       if (!S.built) build();
       W3.show();
       const back = params && params.from === 'taxi';
-      this.p = back ? { x: -30, z: -44.3, heading: Math.PI / 2 } : { x: START.x, z: START.z, heading: 0 };
+      const swum = params && params.from === 'pool';
+      this.p = back ? { x: -30, z: -44.3, heading: Math.PI / 2 }
+        : swum ? { x: S.spots.pool.x, z: S.spots.pool.z, heading: 0 } : { x: START.x, z: START.z, heading: 0 };
       this.camHeading = this.p.heading;
       this.target = null;
       this.onArrive = null;
@@ -339,7 +380,8 @@ window.MP = window.MP || {};
       S.castle.visible = false;
       S.taxi.position.set(TAXI_AT.x, 0, TAXI_AT.z);
       S.ch.setVisible(true);
-      if (back) this.say('Takaisin kotikadulla! Leikkipuistoon vai kotiin? Kotiin pääsee napauttamalla kotitalon ovea.', 4.5, 0.6);
+      if (swum) this.say('Olipa kivaa uida! Nyt kuivataan pyyhkeellä ja lähdetään seikkailemaan.', 4, 0.6);
+      else if (back) this.say('Takaisin kotikadulla! Leikkipuistoon vai kotiin? Kotiin pääsee napauttamalla kotitalon ovea.', 4.5, 0.6);
       else this.say('Ulkona! Kävellään risteykseen.', 4, 0.6);
     },
 
@@ -362,6 +404,18 @@ window.MP = window.MP || {};
         MP.sfx.bling();
         this.ride = { t: 0, home: true };          // stops walking while the screen fades
         MP.goTo(MP.scenes.home, { quest: 'evening' });
+        return;
+      }
+      if (spot === 'pool') {
+        if (MP.heroKind() === 'swim') {
+          this.say('Uimaan! Polskis!', 1.5);
+          MP.sfx.flush();
+          this.ride = { t: 0, home: true };          // stops walking while the screen fades
+          MP.goTo(MP.scenes.swim);
+        } else {
+          this.say('Oma uima-allas! Uimaan pääsee vain uimapuku päällä. Uimapuvun saa vaatekaapista.', 4);
+          MP.sfx.tap();
+        }
         return;
       }
       if (spot === 'taxi') {
@@ -442,6 +496,14 @@ window.MP = window.MP || {};
           this.ride.gone = true;
           MP.goTo(MP.scenes.airport, { country: 'home' });
         }
+      }
+
+      // --- Toys bobbing in the pool ---
+      if (S.pool) {
+        S.pool.ring.position.y = 0.36 + Math.sin(MP.time * 1.6) * 0.03;
+        S.pool.ring.rotation.z = MP.time * 0.2;
+        S.pool.duck.position.y = Math.sin(MP.time * 2 + 1) * 0.03;
+        S.pool.duck.rotation.y = Math.sin(MP.time * 0.5) * 0.8;
       }
 
       // --- Clouds drift ---

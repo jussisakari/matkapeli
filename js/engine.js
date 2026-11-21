@@ -93,6 +93,79 @@ window.MP = window.MP || {};
     }
   }
 
+  // ---------- The restart button (like the browser's refresh button) ----------
+  // Top-right corner. It asks first: "Start from the beginning?"
+  const RESTART = { x: 309, y: 11, r: 8 };
+  const ASK = { x: 70, y: 52, w: 180, h: 76 };
+  const ASK_YES = { x: 86, y: 98, w: 66, h: 22 };
+  const ASK_NO = { x: 168, y: 98, w: 66, h: 22 };
+  MP.restartAsk = false;
+  const restartShown = () => {
+    const s = MP.scene;
+    return !!s && s !== MP.scenes.start && !s.noRestart && !fade.active;
+  };
+  const onRestart = (x, y) => restartShown() && Math.hypot(x - RESTART.x, y - RESTART.y) < RESTART.r + 4;
+
+  MP.restartGame = function () {
+    // Load the page again without a #shortcut: the game starts from the start screen.
+    // (The character, clothes and the souvenirs are saved and stay.)
+    try {
+      location.replace(location.href.split('#')[0]);
+    } catch (_) {
+      location.reload();
+    }
+  };
+
+  // The engine's own taps (restart button, the question, the hero). true = used.
+  function engineTap(x, y) {
+    if (MP.restartAsk) {
+      if (MP.hit(ASK_YES, x, y)) { MP.sfx.tap(); MP.restartGame(); }
+      else if (MP.hit(ASK_NO, x, y) || !MP.hit(ASK, x, y)) { MP.sfx.tap(); MP.restartAsk = false; }
+      return true;
+    }
+    if (onRestart(x, y)) {
+      MP.sfx.tap();
+      MP.restartAsk = true;
+      return true;
+    }
+    if (!fade.active && MP.heroTap && MP.heroTap(x, y)) {
+      MP.closeBubbles(MP.scene);
+      return true;
+    }
+    return false;
+  }
+
+  function drawRestart(c) {
+    if (!restartShown() && !MP.restartAsk) return;
+    c.save();
+    if (!MP.restartAsk) {
+      const { x, y, r } = RESTART;
+      c.lineWidth = 0.8;
+      c.strokeStyle = '#2b2340';
+      c.fillStyle = 'rgba(255,247,224,0.85)';
+      c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); c.stroke();
+      // a circle arrow, like the refresh button
+      c.lineWidth = 1.6;
+      c.lineCap = 'round';
+      c.beginPath(); c.arc(x, y, 4.2, -Math.PI * 0.3, Math.PI * 1.45); c.stroke();
+      c.fillStyle = '#2b2340';
+      const ax = x + Math.cos(-Math.PI * 0.3) * 4.2, ay = y + Math.sin(-Math.PI * 0.3) * 4.2;
+      c.beginPath(); c.moveTo(ax + 2.4, ay + 1.2); c.lineTo(ax - 2.6, ay + 0.4); c.lineTo(ax + 0.6, ay - 3.4); c.closePath(); c.fill();
+    } else {
+      c.fillStyle = 'rgba(13,20,51,0.55)';
+      c.fillRect(0, 0, W, H);
+      c.lineWidth = 1;
+      c.strokeStyle = '#2b2340';
+      c.fillStyle = '#fff7e0';
+      MP.roundRect(c, ASK.x, ASK.y, ASK.w, ASK.h, 8); c.fill(); c.stroke();
+      MP.drawText(c, 'Aloitetaanko alusta?', W / 2, ASK.y + 12, { size: 1.15, color: '#2b2340', align: 'center' });
+      MP.drawText(c, 'Peli alkaa ihan alusta.', W / 2, ASK.y + 28, { size: 0.75, color: '#6b5f80', align: 'center' });
+      MP.drawButton(c, 'Kyllä', ASK_YES, { size: 1 });
+      MP.drawButton(c, 'Ei', ASK_NO, { size: 1, color: '#e0559a', shade: '#a8326c' });
+    }
+    c.restore();
+  }
+
   canvas.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     MP.audio.unlock();
@@ -103,7 +176,9 @@ window.MP = window.MP || {};
     MP.pointer.x = p.x;
     MP.pointer.y = p.y;
     MP.pointer.down = true;
-    callScene('onPointerDown', p.x, p.y);
+    // the restart button and its question are not for the scene
+    active.engine = MP.restartAsk || onRestart(p.x, p.y);
+    if (!active.engine) callScene('onPointerDown', p.x, p.y);
   });
 
   canvas.addEventListener('pointermove', (e) => {
@@ -118,17 +193,23 @@ window.MP = window.MP || {};
     active.moved = Math.max(active.moved, Math.hypot(p.x - active.sx, p.y - active.sy));
     MP.pointer.x = p.x;
     MP.pointer.y = p.y;
-    callScene('onPointerMove', p.x, p.y);
+    if (!active.engine) callScene('onPointerMove', p.x, p.y);
   });
 
   function endPointer(e, cancelled) {
     if (!active || e.pointerId !== active.id) return;
     const p = toGame(e);
     const wasTap = !cancelled && active.moved < TAP_SLOP;
+    const engineOwned = active.engine;
     active = null;
     MP.pointer.down = false;
     MP.audio.unlock(); // iPad Safari likes sound to be started on "up"
+    if (engineOwned) {
+      if (wasTap) engineTap(p.x, p.y);
+      return;
+    }
     callScene('onPointerUp', p.x, p.y);
+    if (wasTap && engineTap(p.x, p.y)) return;
     if (wasTap) {
       if (!fade.active) MP.closeBubbles(MP.scene);
       callScene('onTap', p.x, p.y);
@@ -221,8 +302,9 @@ window.MP = window.MP || {};
 
     updateFade(dt);
     const s = MP.scene;
+    MP.heroSpot = null;     // the hero's place on screen, set again when it is drawn
     try {
-      if (s && s.update) s.update(dt);
+      if (s && s.update && !MP.restartAsk) s.update(dt);
     } catch (err) {
       reportError(err);
     }
@@ -247,6 +329,9 @@ window.MP = window.MP || {};
     } catch (err) {
       reportError(err);
     }
+
+    MP.gameTransform();
+    try { drawRestart(ctx); } catch (err) { reportError(err); }
 
     const a = fadeAlpha();
     if (a > 0) {
@@ -299,6 +384,39 @@ window.MP = window.MP || {};
     if (posters[id]) return false;
     posters[id] = true;
     MP.save();
+    return true;
+  };
+
+  // ---------- Superhero tricks ----------
+  // Tap the middle of your hero costume:
+  //   Rautasankari: fly ⇄ walk
+  //   spider suits: aim (web-shooting hand) → shoot webs → normal
+  MP.heroKind = function () {
+    const c = MP.findItem && MP.findItem('costume', MP.state.outfit.costume);
+    return c && c.id !== 'none' ? (c.type || c.id) : null;
+  };
+  MP.heroPose = function () {
+    const hp = MP.state.heroPose;
+    if (!hp || hp.costume !== MP.state.outfit.costume) return null;
+    return hp.pose;
+  };
+  // How high the flying hero floats (in drawPerson units)
+  MP.heroLift = function () {
+    return MP.heroPose() === 'fly' ? 13 + Math.sin(MP.time * 3) * 1.2 : 0;
+  };
+  MP.heroTap = function (x, y) {
+    const k = MP.heroKind();
+    if (k !== 'iron' && k !== 'spider') return false;
+    let spot = MP.heroSpot;
+    if (typeof spot === 'function') spot = spot();
+    if (!spot || Math.abs(x - spot.x) > spot.rx || Math.abs(y - spot.y) > spot.ry) return false;
+    const now = MP.heroPose();
+    const order = k === 'iron' ? [null, 'fly'] : [null, 'aim', 'web'];
+    const next = order[(order.indexOf(now) + 1) % order.length];
+    MP.state.heroPose = next ? { costume: MP.state.outfit.costume, pose: next, from: MP.time } : null;
+    if (next === 'fly') MP.sfx.rocket();
+    else if (next === 'web') MP.sfx.thwip();
+    else MP.sfx.tap();
     return true;
   };
 
@@ -527,6 +645,34 @@ window.MP = window.MP || {};
   }
 
   MP.sfx = {
+    // Whoosh of rocket boots
+    rocket() {
+      if (!ready()) return;
+      try {
+        const a = audio.ctx, t0 = a.currentTime;
+        const src = a.createBufferSource();
+        src.buffer = noiseBuffer();
+        const f = a.createBiquadFilter();
+        f.type = 'bandpass';
+        f.frequency.setValueAtTime(300, t0);
+        f.frequency.exponentialRampToValueAtTime(1800, t0 + 0.6);
+        const g = a.createGain();
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(0.35, t0 + 0.1);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.7);
+        src.connect(f); f.connect(g); g.connect(audio.master);
+        src.loop = true; src.start(t0); src.stop(t0 + 0.75);
+      } catch (_) {}
+    },
+    // "Thwip!" – the web shoots out
+    thwip() {
+      if (!ready()) return;
+      try {
+        tone(1800, 0, 0.06, 'square', 0.12);
+        tone(1200, 0.04, 0.08, 'triangle', 0.2);
+        tone(700, 0.1, 0.12, 'triangle', 0.15);
+      } catch (_) {}
+    },
     // Short click for buttons and choices
     tap() {
       if (!ready()) return;
