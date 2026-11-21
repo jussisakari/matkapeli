@@ -350,7 +350,40 @@ window.MP = window.MP || {};
       roundabout: { x: 29.5, z: -54.6 },
       sandbox: { x: 38.5, z: -55.2 },
       garden: { x: -5.6, z: 15.4 },
+      busstop: { x: 4.4, z: -4.4 },
+      bus: { x: 3.6, z: -4.4 },
     };
+
+    // --- The bus stop for bus 67 to Helsinki city centre (helsinki.js) ---
+    const stop = new T.Group();
+    box(0.12, 2.6, 0.12, '#5a5a6a', 0, 0, 0, stop);
+    const stopSign = sign('67', 0, 2.5, 0, Math.PI / 2, '#007ac9', '#ffffff', null, 1.1);
+    S.scene.remove(stopSign); stop.add(stopSign);
+    box(2.6, 0.1, 1.4, '#5a5a6a', 1.2, 2.2, 0, stop);                 // the shelter roof
+    box(2.6, 1.8, 0.06, '#bfe6ff', 1.2, 0.4, -0.65, stop);            // the glass wall
+    box(1.8, 0.1, 0.5, '#8a5a32', 1.2, 0.5, -0.3, stop);               // a bench
+    stop.position.set(4.5, 0, -6);
+    add(stop);
+    block(5.7, -6.2, 2.6, 1);
+    stop.traverse((m) => { m.userData.spot = 'busstop'; });
+    S.clickables.push(stop);
+    // the blue city bus (front toward +z)
+    const bus = new T.Group();
+    box(2.4, 2.6, 9, '#007ac9', 0, 0.35, 0, bus);
+    box(2.42, 0.9, 8.2, '#bfe6ff', 0, 1.6, -0.2, bus);               // windows
+    box(2.2, 1.2, 0.06, '#bfe6ff', 0, 1.4, 4.51, bus);                 // the windscreen
+    const busNo = sign('67 KESKUSTA', 0, 2.65, 4.53, 0, '#2b2340', '#ffd23f', null, 2);
+    S.scene.remove(busNo); bus.add(busNo);
+    for (const [wx, wz] of [[-1.2, 3], [1.2, 3], [-1.2, -3], [1.2, -3]]) {
+      const wheel = cyl(0.45, 0.3, '#2b2b33', wx, 0.45, wz, bus);
+      wheel.rotation.z = Math.PI / 2;
+      wheel.position.y = 0.45;
+    }
+    bus.position.set(1.5, 0, -70);
+    add(bus);
+    bus.traverse((m) => { m.userData.spot = 'bus'; });
+    S.clickables.push(bus);
+    S.bus = bus;
 
     // --- Our own garden: three garden boxes next to the house (garden.js) ---
     S.garden = MP.garden3d(W, T);
@@ -389,9 +422,13 @@ window.MP = window.MP || {};
       const back = params && params.from === 'taxi';
       const swum = params && params.from === 'pool';
       const gardened = params && params.from === 'garden';
+      const bussed = params && params.from === 'bus';
       this.p = back ? { x: -30, z: -44.3, heading: Math.PI / 2 }
         : swum ? { x: S.spots.pool.x, z: S.spots.pool.z, heading: 0 }
-          : gardened ? { x: S.spots.garden.x, z: S.spots.garden.z, heading: Math.PI / 2 } : { x: START.x, z: START.z, heading: 0 };
+          : gardened ? { x: S.spots.garden.x, z: S.spots.garden.z, heading: Math.PI / 2 }
+            : bussed ? { x: S.spots.busstop.x, z: S.spots.busstop.z, heading: Math.PI } : { x: START.x, z: START.z, heading: 0 };
+      this.bus = bussed ? { mode: 'leave', t: 0 } : null;     // the bus: coming / waiting / leaving
+      S.bus.position.set(1.5, 0, bussed ? -4 : -70);
       S.garden.update();
       this.camHeading = this.p.heading;
       this.target = null;
@@ -411,7 +448,8 @@ window.MP = window.MP || {};
       if (swum) S.pet.place(this.p.x + 1.2, this.p.z + 0.6);
       else if (back) { S.pet.place(0, 9); S.pet.happyFrom = MP.time + 0.3; }
       else S.pet.place(this.p.x + 0.8, this.p.z + 1.2);
-      if (gardened) this.say('Kasvimaa on hoidettu! Huomenna kasvit ovat taas vähän isompia.', 3.5, 0.4);
+      if (bussed) this.say('Kotipysäkillä! Bussi 67 jatkaa matkaa. Olipa kiva reissu keskustaan!', 4, 0.4);
+      else if (gardened) this.say('Kasvimaa on hoidettu! Huomenna kasvit ovat taas vähän isompia.', 3.5, 0.4);
       else if (swum) this.say('Olipa kivaa uida! Nyt kuivataan pyyhkeellä ja lähdetään seikkailemaan.', 4, 0.6);
       else if (back && MP.state.dusk) this.say('Takaisin kotikadulla! On jo ilta – katulamput palavat. Kotiin pääsee napauttamalla kotitalon ovea.', 4.5, 0.6);
       else if (back) this.say('Takaisin kotikadulla! Leikkipuistoon vai kotiin? Kotiin pääsee napauttamalla kotitalon ovea.', 4.5, 0.6);
@@ -437,6 +475,23 @@ window.MP = window.MP || {};
         MP.sfx.bling();
         this.ride = { t: 0, home: true };          // stops walking while the screen fades
         MP.goTo(MP.scenes.home, { quest: 'evening' });
+        return;
+      }
+      if (spot === 'busstop') {
+        if (this.bus && this.bus.mode !== 'leave') { this.say('Bussi 67 on jo täällä! Napauta bussia.', 2.5); return; }
+        this.bus = { mode: 'come', t: 0 };
+        this.say('Bussipysäkki! Odotetaan bussia 67… tuolta se tulee!', 3);
+        MP.sfx.tap();
+        return;
+      }
+      if (spot === 'bus') {
+        if (!this.bus || this.bus.mode !== 'wait') return;
+        this.say('Moi! Matkakortti piip! Keskustaan, kiitos!', 2);
+        MP.sfx.bling();
+        S.ch.setVisible(false);
+        this.ride = { t: 0, home: true };          // stops walking while the screen fades
+        this.bus = { mode: 'go', t: 0 };
+        setTimeout(() => MP.goTo(MP.scenes.helsinki), 1200);
         return;
       }
       if (spot === 'garden') {
@@ -539,6 +594,23 @@ window.MP = window.MP || {};
         if (this.ride.t > 2.6 && !this.ride.gone) {
           this.ride.gone = true;
           MP.goTo(MP.scenes.airport, { country: 'home' });
+        }
+      }
+
+      // --- Bus 67 ---
+      const bus = this.bus;
+      if (bus) {
+        bus.t += dt;
+        if (bus.mode === 'come') {
+          const u = MP.clamp(bus.t / 4, 0, 1);
+          S.bus.position.z = -70 + 66 * (1 - (1 - u) * (1 - u));
+          if (u >= 1) { bus.mode = 'wait'; bus.t = 0; MP.sfx.bling(); this.say('Bussi 67 tuli! Napauta bussia, niin hypätään kyytiin.', 3.5); }
+        } else if (bus.mode === 'leave') {
+          const t2 = Math.max(0, bus.t - 1.5);
+          S.bus.position.z = -4 - t2 * t2 * 4;
+          if (S.bus.position.z < -75) this.bus = null;
+        } else if (bus.mode === 'wait' && bus.t > 25) {
+          bus.mode = 'leave'; bus.t = 1.5;             // nobody came: the bus drives on
         }
       }
 
