@@ -97,6 +97,12 @@ window.MP = window.MP || {};
     c.restore();
   };
 
+  // The sky in the home's windows: dark with the moon and stars in the evening
+  // (back home after a day out or a trip), otherwise the normal day sky
+  MP.windowSky = () => (MP.state.evening || MP.state.dusk
+    ? { skyTop: '#0f1838', skyBottom: '#2f3d7c', stars: true, moon: true }
+    : {});
+
   // What falls past the home's windows (the window sprite: x, y = top left)
   MP.windowWeather = function (c, wx, wy, t) {
     const s = MP.seasonNow();

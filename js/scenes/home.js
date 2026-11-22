@@ -1101,9 +1101,7 @@ window.MP = window.MP || {};
       if (this.intro && this.intro.night) {
         return { skyTop: '#0d1433', skyBottom: '#25336b', stars: true, moon: true };
       }
-      if (MP.state.evening) {
-        return { skyTop: '#3a3a7a', skyBottom: '#ff9a6a', stars: true, moon: true };
-      }
+      if (MP.state.evening || MP.state.dusk) return MP.windowSky();
       const d = this.intro ? this.intro.dawn : 1;
       if (d >= 1) return {};
       const night = ['#14204a', '#2c3c78'], dawn = ['#ff9a6a', '#ffd9a0'], day = ['#6cc0ff', '#cdeeff'];
@@ -2082,7 +2080,7 @@ window.MP = window.MP || {};
       ctx.save();
       ctx.translate(0, DOWN_Y);
       // living room
-      MP.draw('window', ctx, POS.livingWindow - 15, 36, { t });
+      MP.draw('window', ctx, POS.livingWindow - 15, 36, Object.assign({ t }, MP.windowSky()));
       MP.windowWeather(ctx, POS.livingWindow - 15, 36, t);
       if (MP.seasonNow() === 'christmas') MP.drawXmasTree(ctx, 28, FLOOR, MP.state.xmasBalls || 0, t);
       else plant(ctx, POS.plant);
@@ -2097,7 +2095,7 @@ window.MP = window.MP || {};
       fridge(ctx, POS.fridge);
       counter(ctx, POS.counter);
       wallClock(ctx, POS.clock, 40, t);
-      MP.draw('window', ctx, POS.kitchenWindow, 36, { t });
+      MP.draw('window', ctx, POS.kitchenWindow, 36, Object.assign({ t }, MP.windowSky()));
       MP.windowWeather(ctx, POS.kitchenWindow, 36, t);
       seasonCalendar(ctx, 567, 32);
       kitchenTable(ctx, POS.table);

@@ -177,8 +177,9 @@ window.MP = window.MP || {};
       for (let yy = 0; yy < TABLE_Y; yy += 10) {
         for (let xx = ((yy / 10) % 2) * 10; xx < W; xx += 20) ctx.fillRect(xx, yy, 10, 10);
       }
-      MP.draw('window', ctx, 30, 62, { t });
-      MP.draw('window', ctx, 262, 62, { t });
+      // (a dark sky with the moon at the evening meal)
+      MP.draw('window', ctx, 30, 62, Object.assign({ t }, MP.windowSky()));
+      MP.draw('window', ctx, 262, 62, Object.assign({ t }, MP.windowSky()));
 
       // The character sitting behind the table (chewing when eating)
       const chewing = t < this.chewUntil;
