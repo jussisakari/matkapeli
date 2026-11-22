@@ -93,6 +93,7 @@ window.MP = window.MP || {};
     ground: C.cobble,
     fog: ['#eef4f8', 60, 180],
     hemiGround: 0xbdb6a8,
+    people: { hello: ['Bonjour! (Hei!)', 'Hallo! (Hei!)'] },
     bounds: { minX: -30, maxX: 30, minZ: -34, maxZ: 10 },
     car: { at: { x: 5.5, z: 6.5 }, color: '#2b2b33', name: 'Taksi' },
     sign: { text: 'Belgia', x: -3, z: 1 },

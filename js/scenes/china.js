@@ -103,6 +103,7 @@ window.MP = window.MP || {};
     ground: C.grass,
     fog: ['#eef6f0', 60, 190],
     hemiGround: 0x86b45a,
+    people: { hello: ['Nǐ hǎo! (Hei!)'] },
     bounds: { minX: -17, maxX: 32, minZ: -36, maxZ: 10 },
     car: { at: { x: 5.5, z: 6.5 }, color: '#d8342c', name: 'Taksi' },
     sign: { text: 'Kiina', x: -3, z: 1 },

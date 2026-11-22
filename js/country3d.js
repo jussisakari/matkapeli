@@ -118,6 +118,14 @@ window.MP = window.MP || {};
         W.block(cfg.sign.x, cfg.sign.z, 0.4, 0.4);
       }
       if (cfg.hotel) S.hotel = W.hotel(cfg.hotel.x, cfg.hotel.z, cfg.hotel.rot || 0, cfg.hotel.look || {});
+      // random people walking around: tap them and they say hello (npcs.js)
+      if (cfg.people !== false) {
+        const b = BOUNDS, a = cfg.people && cfg.people.area;
+        MP.makeCrowd(S.scene, W, {
+          area: a || { minX: Math.max(b.minX, -20), maxX: Math.min(b.maxX, 20), minZ: Math.max(b.minZ, -26), maxZ: b.maxZ },
+          hello: cfg.people && cfg.people.hello,
+        });
+      }
       S.ch = W3.character(S.scene);
       S.built = true;
     }

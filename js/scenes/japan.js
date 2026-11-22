@@ -82,6 +82,7 @@ window.MP = window.MP || {};
     ground: C.grass,
     fog: ['#f2e8f0', 70, 200],
     hemiGround: 0x8cc66a,
+    people: { hello: ['Konnichiwa! (Hei!)', 'Ohayō! (Huomenta!)'] },
     bounds: { minX: -38, maxX: 38, minZ: -36, maxZ: 6.5 },
     start: { x: 2.5, z: 5 },
     car: {

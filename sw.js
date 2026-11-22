@@ -66,6 +66,7 @@ const FILES = [
     './js/maskedsinger.js',
     './js/tvchannels.js',
     './js/world3d.js',
+    './js/npcs.js',
     './js/country3d.js',
     './js/scenes/australia.js',
     './js/scenes/japan.js',

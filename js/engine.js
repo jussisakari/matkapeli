@@ -76,6 +76,7 @@ window.MP = window.MP || {};
   // Speech bubbles stay on the screen until the next tap. A tap closes the
   // bubbles that are showing (and still does its normal job too).
   MP.closeBubbles = function (s) {
+    if (MP.crowdHush) MP.crowdHush();          // the other people's bubbles (npcs.js)
     if (!s) return;
     for (const k of ['bubble', 'parentBubble', 'mummyBubble']) {
       const b = s[k];
@@ -358,6 +359,10 @@ window.MP = window.MP || {};
     } catch (err) {
       reportError(err);
     }
+
+    // the other people's speech bubbles in the 3D places (npcs.js)
+    MP.gameTransform();
+    try { if (MP.crowdDraw) MP.crowdDraw(ctx, s); } catch (err) { reportError(err); }
 
     // the camera: takes the photo now (before the buttons are drawn), then its button
     MP.gameTransform();

@@ -86,6 +86,7 @@ window.MP = window.MP || {};
     ground: C.plaza,
     fog: ['#f2eef0', 60, 190],
     hemiGround: 0xd6ccb4,
+    people: { hello: ['Bonjour! (Hei!)', 'Salut! (Moi!)'] },
     bounds: { minX: -28, maxX: 28, minZ: -39, maxZ: 10 },
     car: { at: { x: 5.5, z: 6.5 }, color: '#4a78c8', name: 'Taksi' },
     sign: { text: 'Ranska', x: -3, z: 1 },

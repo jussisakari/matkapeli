@@ -301,6 +301,8 @@ window.MP = window.MP || {};
     logo.position.set(10 - 0.15, 4.8, -46);
     logo.rotation.y = -Math.PI / 2;
     W.add(logo);
+    // random people walking around: tap them and they say hello (npcs.js)
+    MP.makeCrowd(S.scene, W, { area: { minX: -8, maxX: 8, minZ: -54, maxZ: 9 }, hello: ['Hello! (Hei!)', 'Hi there! (Moi!)', 'Welcome to New York! (Tervetuloa!)'] });
     S.ch = W3.character(S.scene);
     S.built = true;
   }

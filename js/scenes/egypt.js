@@ -406,6 +406,8 @@ window.MP = window.MP || {};
     block(-3, 1, 0.4, 0.4);
 
     S.hotel = W.hotel(-15, 4, Math.PI / 2, { wall: '#e8d3a8', trim: '#c8913a', awning: '#2f5fb5', sign: 'HOTELLI' });
+    // random people walking around: tap them and they say hello (npcs.js)
+    MP.makeCrowd(S.scene, W, { area: { minX: -24, maxX: 26, minZ: -36, maxZ: 10 }, hello: ['Marhaban! (Hei!)', 'Ahlan! (Tervetuloa!)'] });
     S.ch = W3.character(S.scene);
     S.built = true;
   }

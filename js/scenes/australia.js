@@ -95,6 +95,7 @@ window.MP = window.MP || {};
     ground: C.redSand,
     fog: ['#fde4c4', 70, 200],
     hemiGround: 0xd9824a,
+    people: { hello: ["G'day! (Hei!)", 'Hello, mate! (Moi, kaveri!)'] },
     bounds: { minX: -40, maxX: 40, minZ: -36, maxZ: 10 },
     start: { x: 2.2, z: 4.2 },
     car: {

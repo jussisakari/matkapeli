@@ -278,8 +278,11 @@ MP.findItem = function (slot, id) {
 
   MP.drawPerson = function (c, x, y, opts) {
     opts = opts || {};
-    // Smile for the camera: the player cheers with both hands up
-    if (opts.hero && MP.photoPose && MP.photoPose()) opts = Object.assign({}, opts, { armUp: 0.8, mouth: 'smile', eyes: 'open' });
+    // Smile for the camera: the player turns to face the camera (not the back!),
+    // stands still and cheers with both hands up
+    if (opts.hero && MP.photoPose && MP.photoPose()) {
+      opts = Object.assign({}, opts, { armUp: 0.8, mouth: 'smile', eyes: 'open', back: false, walking: false });
+    }
     const st = MP.state || {};
     const charId = MP.CHARACTERS[opts.character] ? opts.character
       : (MP.CHARACTERS[st.character] ? st.character : 'girl');

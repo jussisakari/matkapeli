@@ -398,6 +398,8 @@ window.MP = window.MP || {};
     W.clickable(park, 'park');
     S.parkWheel = wheel;
     W.sign('HUVIPUISTO', PARK.x + 0.3, 4.6, PARK.z, Math.PI / 2, '#ffd23f', '#2b2340', null, 3.4);
+    // random people walking around: tap them and they say hello (npcs.js)
+    MP.makeCrowd(S.scene, W, { area: { minX: -26, maxX: 26, minZ: -24, maxZ: 9 }, hello: ['Sawasdee! (Hei!)', 'Sawasdee ka! (Hei!)'] });
     S.ch = W3.character(S.scene);
     S.built = true;
   }

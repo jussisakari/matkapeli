@@ -466,6 +466,8 @@ window.MP = window.MP || {};
     // --- The seasons: snowman, sledding hill, leaf piles, Christmas lights (seasons.js) ---
     S.season = MP.seasonStreet(S, W, T);
 
+    // random people walking around: tap them and they say hello (npcs.js)
+    MP.makeCrowd(S.scene, W, { area: { minX: -22, maxX: 22, minZ: -24, maxZ: 10 } });
     S.ch = W3.character(S.scene);
     S.pet = MP.petBuddy(S.scene, S.clickables);     // our pet follows us outside
     S.built = true;

@@ -39,6 +39,7 @@ window.MP = window.MP || {};
   W3.hide = function () {
     if (W3.canvas) W3.canvas.style.display = 'none';
     MP.canvas.style.background = '';
+    W3.activeCrowd = null;
   };
 
   // Keeps the 3D canvas exactly under the game canvas, then draws
@@ -59,6 +60,9 @@ window.MP = window.MP || {};
       camera.updateProjectionMatrix();
     }
     W3.camera = camera;
+    // the other people in this place walk around (npcs.js)
+    W3.activeCrowd = scene.userData.crowd || null;
+    if (W3.activeCrowd) W3.activeCrowd.step(camera);
     W3.renderer.render(scene, camera);
   };
 
@@ -322,6 +326,8 @@ window.MP = window.MP || {};
     // hidden things can't be tapped (e.g. the snowman in summer)
     const shown = (o) => { for (; o; o = o.parent) if (!o.visible) return false; return true; };
     const hits = W3.raycaster.intersectObjects(W.clickables, true).filter((h) => shown(h.object));
+    // a person walking here (npcs.js)? They say hello.
+    if (W.crowd && W.crowd.tap(W3.raycaster, hits[0])) return;
     if (hits.length && hits[0].object.userData.spot && onThing(hits[0].object.userData.spot, hits[0].object)) return;
     const hit = new T.Vector3();
     if (W3.raycaster.ray.intersectPlane(W3.groundPlane, hit)) {
