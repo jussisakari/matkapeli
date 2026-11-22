@@ -103,6 +103,9 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
+      # GitHub sometimes needs a moment before the uploaded site can be found
+      - name: Wait for the upload to show up
+        run: sleep 20
       - name: Deploy to GitHub Pages
         id: deploy
         uses: actions/deploy-pages@v4
