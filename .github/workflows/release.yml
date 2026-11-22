@@ -1,0 +1,118 @@
+# Release: makes a new GitHub release with release notes and puts the game live
+# on GitHub Pages. Pushing to master does NOT change the live game any more –
+# only this workflow does.
+#
+# Start it: GitHub → Actions → "Release" → Run workflow
+#           or from the terminal: gh workflow run release.yml
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: 'A name for the release (optional), e.g. "Talviversio"'
+        required: false
+        default: ''
+
+permissions:
+  contents: write   # make the tag and the release
+  issues: read      # read the closed issues for the release notes
+  pages: write      # deploy to GitHub Pages
+  id-token: write   # needed by deploy-pages
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # all history and tags, for the release notes
+
+      - name: Pick the next version (v1, v2, v3 ...)
+        id: version
+        run: |
+          prev=$(git tag --list 'v[0-9]*' --sort=-v:refname | head -n1)
+          if [ -n "$prev" ]; then
+            next="v$(( ${prev#v} + 1 ))"
+            if [ "$(git rev-list "$prev"..HEAD --count)" = "0" ]; then
+              echo "::error::Nothing new since $prev"
+              exit 1
+            fi
+          else
+            next="v1"
+          fi
+          echo "prev=$prev" >> "$GITHUB_OUTPUT"
+          echo "tag=$next" >> "$GITHUB_OUTPUT"
+          echo "Previous: ${prev:-none}, next: $next"
+
+      - name: Write the release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREV: ${{ steps.version.outputs.prev }}
+        run: |
+          # Issues closed since the previous release (or all of them for the first one)
+          if [ -n "$PREV" ]; then
+            since=$(TZ=UTC git log -1 --format=%cd --date=format-local:%Y-%m-%dT%H:%M:%SZ "$PREV")
+            filter="closed:>$since"
+            range="$PREV..HEAD"
+          else
+            filter=""
+            range="HEAD"
+          fi
+          issues() {
+            gh issue list --state closed --limit 300 --label "$1" \
+              --search "reason:completed $filter" \
+              --json number,title --jq '.[] | "- \(.title | ltrimstr("[Feature] ") | ltrimstr("[Bug] ")) (#\(.number))"'
+          }
+          features=$(issues feature)
+          bugs=$(issues bug)
+          {
+            if [ -n "$features" ]; then echo "## Uutta pelissä"; echo; echo "$features"; echo; fi
+            if [ -n "$bugs" ]; then echo "## Korjattu"; echo; echo "$bugs"; echo; fi
+            echo "<details><summary>Kaikki muutokset ($(git rev-list $range --count --no-merges) commitia)</summary>"
+            echo
+            git log $range --no-merges --format='- %s (%h)'
+            echo
+            echo "</details>"
+            if [ -n "$PREV" ]; then
+              echo
+              echo "**Full changelog:** https://github.com/${{ github.repository }}/compare/$PREV...${{ steps.version.outputs.tag }}"
+            fi
+          } > notes.md
+          cat notes.md
+
+      - name: Build the site
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          mkdir _site
+          git archive HEAD | tar -x -C _site
+          rm -rf _site/.github
+          # A new offline cache name for every release, so the tablet loads the new files
+          sed -i -E "s/const CACHE = '[^']*';/const CACHE = 'matkapeli-release-$TAG';/" _site/sw.js
+          grep -n "const CACHE" _site/sw.js
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
+
+      - name: Create the GitHub release (after the deploy worked)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          TITLE: ${{ inputs.title }}
+        run: |
+          name="Matkapeli $TAG"
+          if [ -n "$TITLE" ]; then name="$name – $TITLE"; fi
+          gh release create "$TAG" --target "$GITHUB_SHA" --title "$name" --notes-file notes.md

@@ -2,7 +2,9 @@
 
 A browser game for a parent and their 7-year-old daughter Ella. Finnish game texts, plain HTML/JS
 (classic scripts, no build step, must work from `file://`), played on a tablet.
-Live at https://jussisakari.github.io/matkapeli/ (GitHub Pages from `master`).
+Live at https://jussisakari.github.io/matkapeli/. Pushing to `master` does NOT update the live game:
+only a release does (`gh workflow run release.yml`, see `.github/workflows/release.yml`).
+The release notes are made from the issues closed since the previous release.
 `PLAN.md` describes every scene and feature.
 
 ## Working from GitHub issues
@@ -18,7 +20,7 @@ labels `feature` and `bug`).
 - Speech bubbles stay until tapped (`until: Infinity`).
 - Hero costumes use the names the family chose: Spiderman, Spin, Ghost Spider, Ironman, Black Panther. Otherwise no other famous characters by name or look – make our own.
 - New script files go into `index.html` **and** the `FILES` list in `sw.js` (offline app).
-  When changing cached files a lot, bump `CACHE` in `sw.js` (`matkapeli-vN`).
+  No need to bump `CACHE` in `sw.js` – the release workflow sets a new cache name for each release.
 - Shortcuts for testing are listed at the top of `js/main.js` (`index.html#ulos` etc.).
 
 ## Testing
