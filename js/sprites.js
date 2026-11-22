@@ -966,9 +966,11 @@ MP.findItem = function (slot, id) {
     ellipse(c, 0, -8.9, 0.6, 0.4); c.fill();
   };
 
-  // Window. opts: { skyTop, skyBottom, sun, moon, stars, t }
+  // Window. opts: { skyTop, skyBottom, sun, moon, stars, t, k }
+  //   k = how much bigger than the normal window (the outlines stay thin)
   D.window = function (c, o) {
     o = o || {};
+    if (o.k) { c.scale(o.k, o.k); c.lineWidth /= o.k; }
     rr(c, 0, 0, 30, 26, 3); fs(c, C.woodLight);
     const sky = c.createLinearGradient(0, 3, 0, 23);
     sky.addColorStop(0, o.skyTop || '#6cc0ff');

@@ -41,6 +41,11 @@ window.MP = window.MP || {};
     petBasket: 224, albumTable: 189, bowl: 478,
   };
 
+  // The big window in the child's room: top-left corner and how much bigger
+  // than a normal window it is (a normal window is 34 × 28)
+  const WIN = { x: 36, y: 33, k: 1.6 };
+  const WIN_RECT = { x: WIN.x, y: WIN.y, w: 34 * WIN.k, h: 28 * WIN.k };
+
   // Things you can tap (world coordinates; downstairs things are 180 lower).
   // standX = where the character stands to use it.
   const SPOTS = {
@@ -610,6 +615,84 @@ window.MP = window.MP || {};
     { id: null, name: 'Ei ketään' },
   ];
   const toyCard = (i) => ({ x: 42 + i * 60, y: 52, w: 56, h: 76 });
+
+  // The child's big window, with the weather outside. On dark winter nights a
+  // little Christmas elf (joulutonttu) peeks in now and then: is the child good?
+  // waveAt = when the window was tapped (the elf pops up and waves).
+  function childWindow(ctx, sky, t, waveAt) {
+    MP.draw('window', ctx, WIN.x, WIN.y, Object.assign({ t, k: WIN.k }, sky));
+    ctx.save();
+    ctx.translate(WIN.x, WIN.y);
+    ctx.scale(WIN.k, WIN.k);
+    MP.windowWeather(ctx, 0, 0, t);
+    if (MP.isSnowy() && sky.moon) {
+      const waving = waveAt != null && t - waveAt < 2.5;
+      // Peeking: up for 3 seconds, then down and away, then up again on the other side
+      const LOOP = 7.5;
+      const k = t % LOOP;
+      let up = k < 0.6 ? k / 0.6 : k < 3.6 ? 1 : k < 4.1 ? 1 - (k - 3.6) / 0.5 : 0;
+      let side = Math.floor(t / LOOP) % 2;
+      if (waving) { up = Math.min(1, (t - waveAt) / 0.3); side = 0; }
+      if (up > 0) {
+        ctx.save();
+        MP.roundRect(ctx, 3, 3, 24, 20, 1.5);
+        ctx.clip();
+        elf(ctx, side ? 20 : 10, 23 + 3.5 - up * 9.5, t, waving);
+        ctx.restore();
+        // the window bars go in front of the elf
+        ctx.save();
+        ctx.beginPath(); ctx.moveTo(15, 3); ctx.lineTo(15, 23); ctx.moveTo(3, 13); ctx.lineTo(27, 13);
+        ctx.lineWidth = 1.6; ctx.strokeStyle = MP.COLORS.woodLight; ctx.stroke();
+        ctx.restore();
+      }
+    }
+    ctx.restore();
+  }
+
+  // The little elf: (x, y) = the middle of the face. Small units (inside the window).
+  function elf(ctx, x, y, t, waving) {
+    ctx.save();
+    ctx.lineWidth = 0.45;
+    ctx.strokeStyle = MP.COLORS.outline;
+    const line = (fill) => { ctx.fillStyle = fill; ctx.fill(); ctx.stroke(); };
+    // the red coat and the mittens holding the window sill
+    ctx.beginPath(); ctx.ellipse(x, y + 6.5, 4.6, 3.6, 0, 0, Math.PI * 2); line('#d62828');
+    const wave = waving ? Math.sin(t * 12) * 1.5 : 0;
+    ctx.beginPath(); ctx.arc(x - 4.2, waving ? y - 1 + wave : y + 6.2, 1.3, 0, Math.PI * 2); line('#2e8b57');
+    ctx.beginPath(); ctx.arc(x + 4.2, y + 6.2, 1.3, 0, Math.PI * 2); line('#2e8b57');
+    // the face
+    ctx.beginPath(); ctx.arc(x, y, 3.2, 0, Math.PI * 2); line('#f6cfa8');
+    // the white beard
+    ctx.beginPath();
+    ctx.moveTo(x - 3.1, y + 0.6);
+    ctx.quadraticCurveTo(x - 2.6, y + 5.2, x, y + 5.4);
+    ctx.quadraticCurveTo(x + 2.6, y + 5.2, x + 3.1, y + 0.6);
+    ctx.quadraticCurveTo(x, y + 2, x - 3.1, y + 0.6);
+    line('#ffffff');
+    // the pointy red hat that flops to the side, with a white pompom
+    ctx.beginPath();
+    ctx.moveTo(x - 3.6, y - 1.2);
+    ctx.quadraticCurveTo(x - 1.5, y - 9, x + 4.5, y - 8.5);
+    ctx.quadraticCurveTo(x + 1.5, y - 5, x + 3.6, y - 1.2);
+    ctx.closePath(); line('#d62828');
+    ctx.beginPath(); ctx.arc(x + 4.7, y - 8.5, 1.1, 0, Math.PI * 2); line('#ffffff');
+    ctx.beginPath(); ctx.ellipse(x, y - 1.3, 3.9, 1, 0, 0, Math.PI * 2); line('#ffffff');
+    // the eyes look around (and blink), the round red nose, rosy cheeks
+    const look = Math.sin(t * 0.9) * 0.6;
+    ctx.fillStyle = MP.COLORS.outline;
+    if (Math.floor(t * 10) % 32 === 0) {
+      ctx.fillRect(x - 1.7 + look, y - 0.1, 1, 0.3);
+      ctx.fillRect(x + 0.7 + look, y - 0.1, 1, 0.3);
+    } else {
+      ctx.beginPath(); ctx.arc(x - 1.2 + look, y, 0.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + 1.2 + look, y, 0.5, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(255,120,140,0.55)';
+    ctx.beginPath(); ctx.arc(x - 2.1, y + 1.2, 0.7, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + 2.1, y + 1.2, 0.7, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x, y + 1, 0.85, 0, Math.PI * 2); line('#e8505b');
+    ctx.restore();
+  }
 
   // A little wall shelf with Tutankhamun's golden mask (found in the pyramid)
   function treasureShelf(ctx, x, t) {
@@ -1677,6 +1760,13 @@ window.MP = window.MP || {};
             return;
           }
         }
+        // The window: on dark winter evenings the elf peeks in – tap and it waves
+        if (MP.hit(WIN_RECT, wx, wy) && MP.isSnowy() && this.skyNow().moon) {
+          this.elfWaveAt = MP.time;
+          this.say('Joulutonttu kurkkii ikkunasta! Se katsoo, olenko ollut kiltti. Hei tonttu!', 4);
+          [1320, 1570, 1760, 2090].forEach((f, i) => setTimeout(() => MP.sfx.note(f, 0.18, 'sine', 0.12), i * 110));   // little bells
+          return;
+        }
         // The golden mask from the pyramid, on its own shelf
         if (MP.state.treasures && MP.state.treasures.tutMask && MP.hit(SPOTS.mask, wx, wy)) {
           this.say('Tutankhamonin kultainen naamio! Löysin sen Egyptin pyramidista.', 4);
@@ -1930,8 +2020,7 @@ window.MP = window.MP || {};
 
       // ===== Upstairs: child's room =====
       rug(ctx, POS.rug);
-      MP.draw('window', ctx, POS.window - 15, 34, Object.assign({ t }, this.skyNow()));
-      MP.windowWeather(ctx, POS.window - 15, 34, t);
+      childWindow(ctx, this.skyNow(), t, this.elfWaveAt);
       MP.draw('poster', ctx, POS.poster, 38);
       if (MP.state.treasures && MP.state.treasures.signedPoster) {
         // Sasu's and Daniel's signatures (bandvisit.js)
